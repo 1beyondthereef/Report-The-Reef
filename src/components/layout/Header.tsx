@@ -60,13 +60,13 @@ export function Header() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "relative flex items-center space-x-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-300",
+                  "relative flex items-center space-x-2 rounded-full px-5 py-2.5 text-xl font-medium transition-all duration-300",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-5 w-5" />
                 <span>{item.label}</span>
                 {/* Active indicator */}
                 {isActive && (
