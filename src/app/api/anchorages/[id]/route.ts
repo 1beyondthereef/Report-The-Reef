@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { getAnchorageById } from "@/lib/anchorages-data";
 
 export async function GET(
   request: NextRequest,
@@ -8,38 +8,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const anchorage = await db.anchorage.findUnique({
-      where: { id },
-      include: {
-        moorings: {
-          where: { isActive: true },
-          select: {
-            id: true,
-            name: true,
-            pricePerNight: true,
-            maxLength: true,
-          },
-        },
-        reviews: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                avatarUrl: true,
-              },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-          take: 10,
-        },
-        _count: {
-          select: {
-            reviews: true,
-          },
-        },
-      },
-    });
+    const anchorage = getAnchorageById(id);
 
     if (!anchorage) {
       return NextResponse.json(

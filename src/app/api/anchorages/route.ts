@@ -1,53 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { searchAnchorages } from "@/lib/anchorages-data";
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const island = searchParams.get("island");
-    const search = searchParams.get("search");
+    const island = searchParams.get("island") || undefined;
+    const search = searchParams.get("search") || undefined;
 
-    const where: Record<string, unknown> = {};
-
-    if (island) {
-      where.island = island;
-    }
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { description: { contains: search } },
-        { island: { contains: search } },
-      ];
-    }
-
-    const anchorages = await db.anchorage.findMany({
-      where,
-      include: {
-        moorings: {
-          where: { isActive: true },
-          select: {
-            id: true,
-            name: true,
-            pricePerNight: true,
-            maxLength: true,
-          },
-          orderBy: { pricePerNight: "asc" },
-        },
-        reviews: {
-          select: {
-            rating: true,
-          },
-        },
-        _count: {
-          select: {
-            reviews: true,
-            moorings: true,
-          },
-        },
-      },
-      orderBy: { name: "asc" },
-    });
+    const anchorages = searchAnchorages({ island, search });
 
     return NextResponse.json({ anchorages });
   } catch (error) {
