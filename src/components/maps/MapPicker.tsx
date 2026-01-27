@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from "react";
+import { useRef, useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { MapPin, ZoomIn, ZoomOut, Locate } from "lucide-react";
@@ -23,68 +23,23 @@ export const MapPicker = forwardRef<MapPickerRef, MapPickerProps>(function MapPi
   ref
 ) {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const marker = useRef<mapboxgl.Marker | null>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const onLocationSelectRef = useRef(onLocationSelect);
 
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(
     initialLocation || null
   );
 
-  // Create a styled marker element
-  const createMarkerElement = useCallback(() => {
-    const el = document.createElement("div");
-    el.style.cssText = `
-      width: 40px;
-      height: 40px;
-      cursor: grab;
-    `;
-    el.innerHTML = `
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
-        <path d="M20 2C12.268 2 6 8.268 6 16c0 10.5 14 22 14 22s14-11.5 14-22c0-7.732-6.268-14-14-14z" fill="#0d9488" stroke="#ffffff" stroke-width="2"/>
-        <circle cx="20" cy="16" r="5" fill="#ffffff"/>
-      </svg>
-    `;
-    return el;
-  }, []);
-
-  const updateMarker = useCallback(
-    (lng: number, lat: number) => {
-      if (!map.current) return;
-
-      if (marker.current) {
-        // Move existing marker
-        marker.current.setLngLat([lng, lat]);
-      } else {
-        // Create new marker
-        const el = createMarkerElement();
-
-        marker.current = new mapboxgl.Marker({
-          element: el,
-          draggable: true,
-          anchor: 'bottom'
-        })
-          .setLngLat([lng, lat])
-          .addTo(map.current);
-
-        // Handle drag end to update location
-        marker.current.on('dragend', () => {
-          const lngLat = marker.current?.getLngLat();
-          if (lngLat) {
-            setSelectedLocation({ lat: lngLat.lat, lng: lngLat.lng });
-            onLocationSelect(lngLat.lat, lngLat.lng);
-          }
-        });
-      }
-
-      setSelectedLocation({ lat, lng });
-      onLocationSelect(lat, lng);
-    },
-    [onLocationSelect, createMarkerElement]
-  );
-
+  // Keep the callback ref updated
   useEffect(() => {
-    if (!mapContainer.current || map.current) return;
+    onLocationSelectRef.current = onLocationSelect;
+  }, [onLocationSelect]);
+
+  // Initialize map once
+  useEffect(() => {
+    if (!mapContainer.current || mapRef.current) return;
 
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
     if (!token) {
@@ -92,9 +47,10 @@ export const MapPicker = forwardRef<MapPickerRef, MapPickerProps>(function MapPi
       return;
     }
 
+    console.log("MapPicker: Initializing map...");
     mapboxgl.accessToken = token;
 
-    map.current = new mapboxgl.Map({
+    const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: MAPBOX_STYLE,
       center: [BVI_BOUNDS.center.lng, BVI_BOUNDS.center.lat],
@@ -105,37 +61,83 @@ export const MapPicker = forwardRef<MapPickerRef, MapPickerProps>(function MapPi
       ],
     });
 
-    map.current.on("load", () => {
+    mapRef.current = map;
+
+    map.on("load", () => {
+      console.log("MapPicker: Map loaded successfully");
       setIsLoaded(true);
 
       // Set initial marker if provided
       if (initialLocation) {
-        updateMarker(initialLocation.lng, initialLocation.lat);
+        console.log("MapPicker: Setting initial location", initialLocation);
+        placeMarker(initialLocation.lng, initialLocation.lat);
       }
     });
 
     // Click to place marker
-    map.current.on("click", (e) => {
-      updateMarker(e.lngLat.lng, e.lngLat.lat);
+    map.on("click", (e) => {
+      console.log("MapPicker: Map clicked at", e.lngLat.lng, e.lngLat.lat);
+      placeMarker(e.lngLat.lng, e.lngLat.lat);
     });
 
     // Disable rotation
-    map.current.dragRotate.disable();
-    map.current.touchZoomRotate.disableRotation();
+    map.dragRotate.disable();
+    map.touchZoomRotate.disableRotation();
+
+    // Function to place/move marker
+    function placeMarker(lng: number, lat: number) {
+      console.log("MapPicker: placeMarker called", { lng, lat });
+
+      if (!mapRef.current) {
+        console.error("MapPicker: Map not available");
+        return;
+      }
+
+      if (markerRef.current) {
+        // Move existing marker
+        console.log("MapPicker: Moving existing marker");
+        markerRef.current.setLngLat([lng, lat]);
+      } else {
+        // Create new marker with default Mapbox style (red pin)
+        console.log("MapPicker: Creating new marker");
+
+        const marker = new mapboxgl.Marker({
+          color: "#0d9488", // Teal color
+          draggable: true,
+        })
+          .setLngLat([lng, lat])
+          .addTo(mapRef.current);
+
+        // Handle drag end
+        marker.on("dragend", () => {
+          const lngLat = marker.getLngLat();
+          console.log("MapPicker: Marker dragged to", lngLat.lng, lngLat.lat);
+          setSelectedLocation({ lat: lngLat.lat, lng: lngLat.lng });
+          onLocationSelectRef.current(lngLat.lat, lngLat.lng);
+        });
+
+        markerRef.current = marker;
+        console.log("MapPicker: Marker created and added to map");
+      }
+
+      setSelectedLocation({ lat, lng });
+      onLocationSelectRef.current(lat, lng);
+    }
 
     return () => {
-      if (marker.current) {
-        marker.current.remove();
-        marker.current = null;
+      console.log("MapPicker: Cleaning up");
+      if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
       }
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
       }
     };
-  }, [initialLocation, updateMarker]);
+  }, []); // Empty deps - only run once
 
-  const handleLocateMe = useCallback(() => {
+  const handleLocateMe = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
       return;
@@ -144,6 +146,7 @@ export const MapPicker = forwardRef<MapPickerRef, MapPickerProps>(function MapPi
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        console.log("MapPicker: Got user location", { latitude, longitude });
 
         // Check if within BVI bounds
         if (
@@ -156,31 +159,54 @@ export const MapPicker = forwardRef<MapPickerRef, MapPickerProps>(function MapPi
           return;
         }
 
-        if (map.current) {
-          map.current.flyTo({
+        if (mapRef.current) {
+          mapRef.current.flyTo({
             center: [longitude, latitude],
             zoom: 14,
           });
+
+          // Place marker at user location
+          if (markerRef.current) {
+            markerRef.current.setLngLat([longitude, latitude]);
+          } else {
+            const marker = new mapboxgl.Marker({
+              color: "#0d9488",
+              draggable: true,
+            })
+              .setLngLat([longitude, latitude])
+              .addTo(mapRef.current);
+
+            marker.on("dragend", () => {
+              const lngLat = marker.getLngLat();
+              setSelectedLocation({ lat: lngLat.lat, lng: lngLat.lng });
+              onLocationSelectRef.current(lngLat.lat, lngLat.lng);
+            });
+
+            markerRef.current = marker;
+          }
+
+          setSelectedLocation({ lat: latitude, lng: longitude });
+          onLocationSelectRef.current(latitude, longitude);
         }
-        updateMarker(longitude, latitude);
       },
-      () => {
+      (error) => {
+        console.error("MapPicker: Geolocation error", error);
         alert("Unable to retrieve your location");
       }
     );
-  }, [updateMarker]);
+  };
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
     locateUser: handleLocateMe,
-  }), [handleLocateMe]);
+  }), []);
 
   const handleZoomIn = () => {
-    map.current?.zoomIn();
+    mapRef.current?.zoomIn();
   };
 
   const handleZoomOut = () => {
-    map.current?.zoomOut();
+    mapRef.current?.zoomOut();
   };
 
   return (

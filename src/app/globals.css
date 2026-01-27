@@ -271,6 +271,99 @@
   color: inherit;
 }
 
+/* Ocean Background Styles */
+@layer components {
+  /* Subtle animated gradient background */
+  .ocean-gradient {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--background)) 0%,
+      hsl(190 30% 97%) 50%,
+      hsl(185 35% 95%) 100%
+    );
+  }
+
+  .dark .ocean-gradient {
+    background: linear-gradient(
+      180deg,
+      hsl(var(--background)) 0%,
+      hsl(190 20% 9%) 50%,
+      hsl(185 25% 8%) 100%
+    );
+  }
+
+  /* Animated wave keyframes */
+  @keyframes wave-drift {
+    0%, 100% {
+      transform: translateX(0) translateY(0);
+    }
+    50% {
+      transform: translateX(-2%) translateY(2px);
+    }
+  }
+
+  @keyframes wave-drift-slow {
+    0%, 100% {
+      transform: translateX(0) translateY(0);
+    }
+    50% {
+      transform: translateX(2%) translateY(-2px);
+    }
+  }
+
+  @keyframes wave-drift-slower {
+    0%, 100% {
+      transform: translateX(0) translateY(0);
+    }
+    50% {
+      transform: translateX(-1%) translateY(3px);
+    }
+  }
+
+  .wave-animation-1 {
+    animation: wave-drift 8s ease-in-out infinite;
+  }
+
+  .wave-animation-2 {
+    animation: wave-drift-slow 12s ease-in-out infinite;
+  }
+
+  .wave-animation-3 {
+    animation: wave-drift-slower 15s ease-in-out infinite;
+  }
+
+  /* Gentle shimmer effect for water */
+  @keyframes shimmer {
+    0%, 100% {
+      opacity: 0.03;
+    }
+    50% {
+      opacity: 0.06;
+    }
+  }
+
+  .ocean-shimmer::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 100% 50% at 50% 100%,
+      hsl(190 50% 50% / 0.04) 0%,
+      transparent 70%
+    );
+    animation: shimmer 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .dark .ocean-shimmer::before {
+    background: radial-gradient(
+      ellipse 100% 50% at 50% 100%,
+      hsl(190 50% 40% / 0.06) 0%,
+      transparent 70%
+    );
+  }
+}
+
 /* Reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

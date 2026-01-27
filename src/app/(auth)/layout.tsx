@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Anchor } from "lucide-react";
+import { OceanBackground } from "@/components/ui/OceanBackground";
 
 export default function AuthLayout({
   children,
@@ -7,8 +8,9 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-ocean-50 to-white dark:from-ocean-950 dark:to-background p-4">
-      <div className="w-full max-w-md">
+    <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
+      <OceanBackground />
+      <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <Link href="/" className="mb-8 flex items-center justify-center space-x-2">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-lg">
