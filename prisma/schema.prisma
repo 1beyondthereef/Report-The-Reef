@@ -20,6 +20,12 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  // Location sharing (opt-in for privacy)
+  showOnMap   Boolean  @default(false)
+  latitude    Float?
+  longitude   Float?
+  lastSeen    DateTime?
+
   sessions     Session[]
   incidents    Incident[]
   reservations Reservation[]
@@ -28,6 +34,26 @@ model User {
   reviews      Review[]
   blockedUsers BlockedUser[] @relation("Blocker")
   blockedBy    BlockedUser[] @relation("Blocked")
+  reports      Report[]      @relation("Reporter")
+  reportedBy   Report[]      @relation("Reported")
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  reporterId String
+  reportedId String
+  reason     String   // harassment, spam, inappropriate, safety, other
+  details    String?
+  status     String   @default("pending") // pending, reviewed, dismissed, actioned
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  reporter User @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported User @relation("Reported", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId])
+  @@index([reportedId])
+  @@index([status])
 }
 
 model Session {
