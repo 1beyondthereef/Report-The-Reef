@@ -135,7 +135,8 @@ export const MapPicker = forwardRef<MapPickerRef, MapPickerProps>(function MapPi
         mapRef.current = null;
       }
     };
-  }, []); // Empty deps - only run once
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once, initialLocation is captured at mount
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) {

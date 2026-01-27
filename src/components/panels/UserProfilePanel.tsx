@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, MessageCircle, Ban, Flag, Ship, Anchor, MapPin } from "lucide-react";
+import { X, MessageCircle, Ban, Flag, Ship, Anchor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

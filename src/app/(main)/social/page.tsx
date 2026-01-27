@@ -25,7 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getInitials, formatRelativeTime, truncate } from "@/lib/utils";
 import { MESSAGE_POLL_INTERVAL } from "@/lib/constants";
@@ -277,7 +277,7 @@ export default function SocialPage() {
             <Users className="mx-auto h-12 w-12 text-muted-foreground" />
             <CardTitle>Join the Community</CardTitle>
             <CardDescription>
-              Sign in to connect with fellow boaters, see who's nearby, send messages, and share experiences.
+              Sign in to connect with fellow boaters, see who&apos;s nearby, send messages, and share experiences.
             </CardDescription>
           </CardHeader>
           <CardContent>

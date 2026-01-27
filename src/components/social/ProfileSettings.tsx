@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Settings, Save, Loader2, MapPin, Ship, Anchor, User } from "lucide-react";
+import { Settings, Save, Loader2, MapPin, Ship, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -224,7 +224,7 @@ export function ProfileSettings({ onProfileUpdate }: ProfileSettingsProps) {
                     Show me on map
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Let other boaters see your approximate location when you're online
+                    Let other boaters see your approximate location when you&apos;re online
                   </p>
                 </div>
                 <Switch
@@ -237,7 +237,7 @@ export function ProfileSettings({ onProfileUpdate }: ProfileSettingsProps) {
               </div>
               {profile.showOnMap && (
                 <p className="text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 p-3 rounded-lg">
-                  Your location will be shared when you're using the app. You can turn this off at any time.
+                  Your location will be shared when you&apos;re using the app. You can turn this off at any time.
                 </p>
               )}
             </div>

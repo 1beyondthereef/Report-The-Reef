@@ -23,7 +23,6 @@ export function SocialMap({
   onUserClick,
   selectedUserId,
   className,
-  currentUserLocation,
   onLocationUpdate,
 }: SocialMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -139,9 +138,10 @@ export function SocialMap({
     map.dragRotate.disable();
     map.touchZoomRotate.disableRotation();
 
+    const markers = markersRef.current;
     return () => {
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current.clear();
+      markers.forEach((marker) => marker.remove());
+      markers.clear();
       map.remove();
       mapRef.current = null;
     };

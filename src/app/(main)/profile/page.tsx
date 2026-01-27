@@ -10,7 +10,6 @@ import {
   MapPin,
   Mail,
   Loader2,
-  CheckCircle,
   Calendar,
   AlertTriangle,
 } from "lucide-react";
