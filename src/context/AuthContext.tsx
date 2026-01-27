@@ -19,7 +19,7 @@ interface AuthContextType {
   profile: Profile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string) => Promise<{ success: boolean; message: string }>;
+  login: (email: string, redirectTo?: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<{ success: boolean; error?: string }>;
@@ -112,12 +112,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [supabase, refreshUser]);
 
-  const login = async (email: string): Promise<{ success: boolean; message: string }> => {
+  const login = async (email: string, redirectTo?: string): Promise<{ success: boolean; message: string }> => {
     try {
+      const callbackUrl = new URL("/auth/callback", window.location.origin);
+      if (redirectTo) {
+        callbackUrl.searchParams.set("next", redirectTo);
+      } else {
+        callbackUrl.searchParams.set("next", "/social");
+      }
+
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: callbackUrl.toString(),
         },
       });
 
