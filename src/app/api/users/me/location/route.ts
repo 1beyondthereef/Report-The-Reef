@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 
 // POST update user location (heartbeat)
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -29,14 +30,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Update location and lastSeen timestamp
-    await db.user.update({
-      where: { id: user.id },
-      data: {
+    const { error } = await supabase
+      .from("profiles")
+      .update({
         latitude,
         longitude,
-        lastSeen: new Date(),
-      },
-    });
+        last_seen: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+
+    if (error) {
+      console.error("Update location error:", error);
+      return NextResponse.json(
+        { error: "Failed to update location" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -51,19 +60,29 @@ export async function POST(request: NextRequest) {
 // DELETE clear user location (go offline)
 export async function DELETE() {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await db.user.update({
-      where: { id: user.id },
-      data: {
+    const { error } = await supabase
+      .from("profiles")
+      .update({
         latitude: null,
         longitude: null,
-        lastSeen: new Date(),
-      },
-    });
+        last_seen: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+
+    if (error) {
+      console.error("Clear location error:", error);
+      return NextResponse.json(
+        { error: "Failed to clear location" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

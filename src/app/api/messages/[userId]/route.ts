@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 import { sendMessageSchema } from "@/lib/validation";
 
 export async function GET(
@@ -8,7 +7,9 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -16,67 +17,64 @@ export async function GET(
     const { userId: otherUserId } = await params;
 
     // Check if user is blocked
-    const blocked = await db.blockedUser.findFirst({
-      where: {
-        OR: [
-          { blockerId: user.id, blockedId: otherUserId },
-          { blockerId: otherUserId, blockedId: user.id },
-        ],
-      },
-    });
+    const { data: blocked } = await supabase
+      .from("blocked_users")
+      .select("id")
+      .or(`and(blocker_id.eq.${user.id},blocked_id.eq.${otherUserId}),and(blocker_id.eq.${otherUserId},blocked_id.eq.${user.id})`)
+      .limit(1);
 
-    if (blocked) {
+    if (blocked && blocked.length > 0) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Get other user info
-    const otherUser = await db.user.findUnique({
-      where: { id: otherUserId },
-      select: {
-        id: true,
-        name: true,
-        avatarUrl: true,
-        boatName: true,
-      },
-    });
+    const { data: otherUser, error: userError } = await supabase
+      .from("profiles")
+      .select("id, display_name, avatar_url, vessel_name")
+      .eq("id", otherUserId)
+      .single();
 
-    if (!otherUser) {
+    if (userError || !otherUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Get messages
-    const messages = await db.message.findMany({
-      where: {
-        OR: [
-          { senderId: user.id, receiverId: otherUserId },
-          { senderId: otherUserId, receiverId: user.id },
-        ],
-      },
-      orderBy: { createdAt: "asc" },
-      take: 100,
-    });
+    const { data: messages, error: messagesError } = await supabase
+      .from("messages")
+      .select("*")
+      .or(`and(from_user.eq.${user.id},to_user.eq.${otherUserId}),and(from_user.eq.${otherUserId},to_user.eq.${user.id})`)
+      .order("created_at", { ascending: true })
+      .limit(100);
+
+    if (messagesError) {
+      console.error("Get messages error:", messagesError);
+      return NextResponse.json(
+        { error: "Failed to fetch messages" },
+        { status: 500 }
+      );
+    }
 
     // Mark unread messages as read
-    await db.message.updateMany({
-      where: {
-        senderId: otherUserId,
-        receiverId: user.id,
-        isRead: false,
-      },
-      data: {
-        isRead: true,
-        readAt: new Date(),
-      },
-    });
+    await supabase
+      .from("messages")
+      .update({ is_read: true })
+      .eq("from_user", otherUserId)
+      .eq("to_user", user.id)
+      .eq("is_read", false);
 
     return NextResponse.json({
-      user: otherUser,
-      messages: messages.map((m) => ({
+      user: {
+        id: otherUser.id,
+        name: otherUser.display_name,
+        avatarUrl: otherUser.avatar_url,
+        boatName: otherUser.vessel_name,
+      },
+      messages: (messages || []).map((m) => ({
         id: m.id,
         content: m.content,
-        createdAt: m.createdAt,
-        isMine: m.senderId === user.id,
-        isRead: m.isRead,
+        createdAt: m.created_at,
+        isMine: m.from_user === user.id,
+        isRead: m.is_read,
       })),
     });
   } catch (error) {
@@ -93,7 +91,9 @@ export async function POST(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -101,16 +101,13 @@ export async function POST(
     const { userId: receiverId } = await params;
 
     // Check if user is blocked
-    const blocked = await db.blockedUser.findFirst({
-      where: {
-        OR: [
-          { blockerId: user.id, blockedId: receiverId },
-          { blockerId: receiverId, blockedId: user.id },
-        ],
-      },
-    });
+    const { data: blocked } = await supabase
+      .from("blocked_users")
+      .select("id")
+      .or(`and(blocker_id.eq.${user.id},blocked_id.eq.${receiverId}),and(blocker_id.eq.${receiverId},blocked_id.eq.${user.id})`)
+      .limit(1);
 
-    if (blocked) {
+    if (blocked && blocked.length > 0) {
       return NextResponse.json(
         { error: "Cannot send message to this user" },
         { status: 403 }
@@ -118,9 +115,11 @@ export async function POST(
     }
 
     // Check if receiver exists
-    const receiver = await db.user.findUnique({
-      where: { id: receiverId },
-    });
+    const { data: receiver } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", receiverId)
+      .single();
 
     if (!receiver) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -137,19 +136,29 @@ export async function POST(
       );
     }
 
-    const message = await db.message.create({
-      data: {
-        senderId: user.id,
-        receiverId,
+    const { data: message, error } = await supabase
+      .from("messages")
+      .insert({
+        from_user: user.id,
+        to_user: receiverId,
         content: parsed.data.content,
-      },
-    });
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Send message error:", error);
+      return NextResponse.json(
+        { error: "Failed to send message" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       message: {
         id: message.id,
         content: message.content,
-        createdAt: message.createdAt,
+        createdAt: message.created_at,
         isMine: true,
         isRead: false,
       },

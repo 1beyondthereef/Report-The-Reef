@@ -1,35 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 
 // GET current user profile
 export async function GET() {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const fullUser = await db.user.findUnique({
-      where: { id: user.id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        avatarUrl: true,
-        boatName: true,
-        boatLength: true,
-        homePort: true,
-        bio: true,
-        showOnMap: true,
-        latitude: true,
-        longitude: true,
-        lastSeen: true,
-        createdAt: true,
-      },
-    });
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
 
-    return NextResponse.json({ user: fullUser });
+    if (error) {
+      console.error("Get profile error:", error);
+      return NextResponse.json(
+        { error: "Failed to fetch profile" },
+        { status: 500 }
+      );
+    }
+
+    // Map to expected format
+    const userResponse = {
+      id: profile.id,
+      email: profile.email,
+      name: profile.display_name,
+      avatarUrl: profile.avatar_url,
+      boatName: profile.vessel_name,
+      boatLength: profile.vessel_length,
+      homePort: profile.home_port,
+      bio: profile.bio,
+      showOnMap: profile.show_on_map,
+      latitude: profile.latitude,
+      longitude: profile.longitude,
+      lastSeen: profile.last_seen,
+      createdAt: profile.created_at,
+    };
+
+    return NextResponse.json({ user: userResponse });
   } catch (error) {
     console.error("Get profile error:", error);
     return NextResponse.json(
@@ -42,7 +55,9 @@ export async function GET() {
 // PATCH update current user profile
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -70,34 +85,48 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Invalid showOnMap" }, { status: 400 });
     }
 
-    const updateData: Record<string, unknown> = {};
-    if (name !== undefined) updateData.name = name || null;
-    if (boatName !== undefined) updateData.boatName = boatName || null;
-    if (boatLength !== undefined) updateData.boatLength = boatLength;
-    if (homePort !== undefined) updateData.homePort = homePort || null;
+    const updateData: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (name !== undefined) updateData.display_name = name || null;
+    if (boatName !== undefined) updateData.vessel_name = boatName || null;
+    if (boatLength !== undefined) updateData.vessel_length = boatLength;
+    if (homePort !== undefined) updateData.home_port = homePort || null;
     if (bio !== undefined) updateData.bio = bio || null;
-    if (showOnMap !== undefined) updateData.showOnMap = showOnMap;
+    if (showOnMap !== undefined) updateData.show_on_map = showOnMap;
 
-    const updatedUser = await db.user.update({
-      where: { id: user.id },
-      data: updateData,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        avatarUrl: true,
-        boatName: true,
-        boatLength: true,
-        homePort: true,
-        bio: true,
-        showOnMap: true,
-        latitude: true,
-        longitude: true,
-        lastSeen: true,
-      },
-    });
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .update(updateData)
+      .eq("id", user.id)
+      .select()
+      .single();
 
-    return NextResponse.json({ user: updatedUser });
+    if (error) {
+      console.error("Update profile error:", error);
+      return NextResponse.json(
+        { error: "Failed to update profile" },
+        { status: 500 }
+      );
+    }
+
+    // Map to expected format
+    const userResponse = {
+      id: profile.id,
+      email: profile.email,
+      name: profile.display_name,
+      avatarUrl: profile.avatar_url,
+      boatName: profile.vessel_name,
+      boatLength: profile.vessel_length,
+      homePort: profile.home_port,
+      bio: profile.bio,
+      showOnMap: profile.show_on_map,
+      latitude: profile.latitude,
+      longitude: profile.longitude,
+      lastSeen: profile.last_seen,
+    };
+
+    return NextResponse.json({ user: userResponse });
   } catch (error) {
     console.error("Update profile error:", error);
     return NextResponse.json(

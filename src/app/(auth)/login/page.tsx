@@ -10,14 +10,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { loginSchema, type LoginInput } from "@/lib/validation";
+import { useAuth } from "@/context/AuthContext";
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
+  const { login } = useAuth();
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(error);
+  const [serverError, setServerError] = useState<string | null>(
+    error === "auth_callback_error" ? "Authentication failed. Please try again." : error
+  );
 
   const {
     register,
@@ -31,25 +35,15 @@ function LoginForm() {
     setIsLoading(true);
     setServerError(null);
 
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+    const result = await login(data.email);
 
-      const result = await response.json();
-
-      if (response.ok) {
-        setIsSuccess(true);
-      } else {
-        setServerError(result.error || "Failed to send magic link");
-      }
-    } catch {
-      setServerError("Network error. Please try again.");
-    } finally {
-      setIsLoading(false);
+    if (result.success) {
+      setIsSuccess(true);
+    } else {
+      setServerError(result.message);
     }
+
+    setIsLoading(false);
   };
 
   if (isSuccess) {

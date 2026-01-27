@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 
 // POST block a user
 export async function POST(
@@ -8,7 +7,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -24,23 +25,23 @@ export async function POST(
     }
 
     // Check if user exists
-    const blockedUser = await db.user.findUnique({
-      where: { id: blockedId },
-    });
+    const { data: blockedUser } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", blockedId)
+      .single();
 
     if (!blockedUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Check if already blocked
-    const existingBlock = await db.blockedUser.findUnique({
-      where: {
-        blockerId_blockedId: {
-          blockerId: user.id,
-          blockedId,
-        },
-      },
-    });
+    const { data: existingBlock } = await supabase
+      .from("blocked_users")
+      .select("id")
+      .eq("blocker_id", user.id)
+      .eq("blocked_id", blockedId)
+      .single();
 
     if (existingBlock) {
       return NextResponse.json(
@@ -50,12 +51,20 @@ export async function POST(
     }
 
     // Create block
-    await db.blockedUser.create({
-      data: {
-        blockerId: user.id,
-        blockedId,
-      },
-    });
+    const { error } = await supabase
+      .from("blocked_users")
+      .insert({
+        blocker_id: user.id,
+        blocked_id: blockedId,
+      });
+
+    if (error) {
+      console.error("Block user error:", error);
+      return NextResponse.json(
+        { error: "Failed to block user" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -76,7 +85,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -84,12 +95,19 @@ export async function DELETE(
     const { id: blockedId } = await params;
 
     // Delete block if it exists
-    await db.blockedUser.deleteMany({
-      where: {
-        blockerId: user.id,
-        blockedId,
-      },
-    });
+    const { error } = await supabase
+      .from("blocked_users")
+      .delete()
+      .eq("blocker_id", user.id)
+      .eq("blocked_id", blockedId);
+
+    if (error) {
+      console.error("Unblock user error:", error);
+      return NextResponse.json(
+        { error: "Failed to unblock user" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

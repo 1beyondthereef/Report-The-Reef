@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 
 const VALID_REASONS = ["harassment", "spam", "inappropriate", "safety", "other"];
 
@@ -9,7 +8,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -25,9 +26,11 @@ export async function POST(
     }
 
     // Check if user exists
-    const reportedUser = await db.user.findUnique({
-      where: { id: reportedId },
-    });
+    const { data: reportedUser } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", reportedId)
+      .single();
 
     if (!reportedUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -45,13 +48,13 @@ export async function POST(
     }
 
     // Check for existing pending report
-    const existingReport = await db.report.findFirst({
-      where: {
-        reporterId: user.id,
-        reportedId,
-        status: "pending",
-      },
-    });
+    const { data: existingReport } = await supabase
+      .from("reports")
+      .select("id")
+      .eq("reporter_id", user.id)
+      .eq("reported_id", reportedId)
+      .eq("status", "pending")
+      .single();
 
     if (existingReport) {
       return NextResponse.json(
@@ -61,14 +64,25 @@ export async function POST(
     }
 
     // Create report
-    const report = await db.report.create({
-      data: {
-        reporterId: user.id,
-        reportedId,
+    const { data: report, error } = await supabase
+      .from("reports")
+      .insert({
+        reporter_id: user.id,
+        reported_id: reportedId,
         reason,
         details: details || null,
-      },
-    });
+        status: "pending",
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Report user error:", error);
+      return NextResponse.json(
+        { error: "Failed to submit report" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

@@ -242,12 +242,6 @@ export default function ProfilePage() {
                 <>
                   <div className="flex items-center justify-center gap-2 sm:justify-start">
                     <h1 className="text-2xl font-bold">{user.name || "Boater"}</h1>
-                    {user.isVerified && (
-                      <Badge variant="secondary" className="gap-1">
-                        <CheckCircle className="h-3 w-3" />
-                        Verified
-                      </Badge>
-                    )}
                   </div>
 
                   <div className="mt-2 space-y-1 text-sm text-muted-foreground">
