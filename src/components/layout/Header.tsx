@@ -37,7 +37,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-18 items-center justify-between px-6 md:px-8">
+      <div className="container flex h-44 items-center justify-between px-6 md:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center group">
           <Image
