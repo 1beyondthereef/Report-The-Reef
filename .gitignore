@@ -26,7 +26,36 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
+
+# database
+*.db
+*.db-journal
+
+# Large media files (store these elsewhere like S3/Cloudinary)
+public/*.mp4
+public/*.MP4
+public/*.mov
+public/*.MOV
+public/*.JPG
+public/*.jpeg
+public/Screenshot*
+public/WhatsApp*
+public/PHOTO-*
+public/VIDEO-*
+public/ChatGPT*
+public/Boat*
+public/DJI*
+public/dji*
+public/d9073*
+public/IMG_*
+
+# Keep only essential assets
+!public/logo*.png
+!public/Report the Reef*.png
+!public/Logo Design*.png
+!public/images/
 
 # vercel
 .vercel
@@ -34,3 +63,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma

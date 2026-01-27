@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  avatarUrl   String?
+  boatName    String?
+  boatLength  Float?
+  homePort    String?
+  bio         String?
+  isVerified  Boolean  @default(false)
+  role        String   @default("user") // user, admin, moderator
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sessions     Session[]
+  incidents    Incident[]
+  reservations Reservation[]
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  reviews      Review[]
+  blockedUsers BlockedUser[] @relation("Blocker")
+  blockedBy    BlockedUser[] @relation("Blocked")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model MagicLink {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([email])
+}
+
+model Incident {
+  id            String   @id @default(cuid())
+  userId        String?
+  reporterEmail String?  // For anonymous reports - optional contact
+  reporterName  String?  // For anonymous reports - optional name
+  title         String
+  description   String
+  category      String   // reef_damage, pollution, wildlife, safety, other
+  severity      String   // low, medium, high, critical
+  status        String   @default("pending") // pending, investigating, resolved, dismissed
+  latitude      Float
+  longitude     Float
+  locationName  String?
+  occurredAt    DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user        User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  attachments Attachment[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  incidentId String
+  filename   String
+  url        String
+  mimeType   String
+  size       Int
+  createdAt  DateTime @default(now())
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+}
+
+model Anchorage {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  latitude    Float
+  longitude   Float
+  island      String
+  depth       String?  // e.g., "15-30ft"
+  holding     String?  // e.g., "sand", "sand/mud", "rocky"
+  protection  String?  // e.g., "all weather", "fair weather", "northeast swell"
+  capacity    Int?     // approximate number of boats
+  amenities   String?  // JSON array as string: ["dinghy dock", "restaurant", "fuel"]
+  images      String?  // JSON array as string: ["url1", "url2"]
+  hasReef     Boolean  @default(false)
+  hasSeagrass Boolean  @default(false)
+  habitatWarning String?  // Warning text for sensitive habitat
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  moorings Mooring[]
+  reviews  Review[]
+
+  @@index([island])
+}
+
+model Mooring {
+  id           String   @id @default(cuid())
+  anchorageId  String
+  name         String
+  latitude     Float
+  longitude    Float
+  maxLength    Float    // in feet
+  maxWeight    Float?   // in lbs
+  pricePerNight Float
+  isActive     Boolean  @default(true)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  anchorage    Anchorage     @relation(fields: [anchorageId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@index([anchorageId])
+  @@index([isActive])
+}
+
+model Reservation {
+  id            String   @id @default(cuid())
+  userId        String
+  mooringId     String
+  startDate     DateTime
+  endDate       DateTime
+  nights        Int
+  pricePerNight Float
+  totalPrice    Float
+  status        String   @default("pending") // pending, confirmed, cancelled, completed
+  paymentStatus String   @default("pending") // pending, paid, refunded
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mooring Mooring @relation(fields: [mooringId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([mooringId])
+  @@index([status])
+  @@index([startDate, endDate])
+}
+
+model Review {
+  id          String   @id @default(cuid())
+  userId      String
+  anchorageId String
+  rating      Int      // 1-5
+  comment     String?
+  visitedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anchorage Anchorage @relation(fields: [anchorageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, anchorageId])
+  @@index([anchorageId])
+}
+
+model Message {
+  id         String    @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([senderId, receiverId])
+}
+
+model BlockedUser {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+}
