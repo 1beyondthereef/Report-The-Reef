@@ -36,16 +36,16 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl border-b border-border/40 supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-18 items-center justify-between px-6 md:px-8">
         {/* Logo */}
         <Link href="/" className="flex items-center group">
           <Image
             src="/logo-main.png"
             alt="Report The Reef"
-            width={200}
-            height={80}
-            className="h-16 w-auto object-contain transition-opacity duration-300 group-hover:opacity-90"
+            width={450}
+            height={180}
+            className="h-36 w-auto object-contain transition-opacity duration-300 group-hover:opacity-90 mix-blend-screen"
             priority
           />
         </Link>

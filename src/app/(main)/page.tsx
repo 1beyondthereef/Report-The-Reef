@@ -97,9 +97,7 @@ export default function HomePage() {
 
             {/* Main heading */}
             <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight text-foreground mb-6">
-              Protecting Paradise,
-              <br />
-              <span className="text-gradient">Together</span>
+              <span className="text-gradient">Report The Reef</span>
             </h1>
 
             {/* Subheading */}
