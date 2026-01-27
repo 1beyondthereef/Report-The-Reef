@@ -3,9 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, AlertTriangle, Anchor, Ship, Users, Menu, Sun, Moon, LogOut, User } from "lucide-react";
+import { Home, AlertTriangle, Anchor, Ship, Users, Menu, LogOut, User, Fish } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useTheme } from "@/context/ThemeContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -21,6 +20,7 @@ import { cn, getInitials } from "@/lib/utils";
 const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/report", label: "Report", icon: AlertTriangle },
+  { href: "/wildlife", label: "Wildlife", icon: Fish },
   { href: "/anchorages", label: "Explore", icon: Anchor },
   { href: "/moorings", label: "Reserve", icon: Ship },
   { href: "/social", label: "Connect", icon: Users },
@@ -29,11 +29,6 @@ const navItems = [
 export function Header() {
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuth();
-  const { resolvedTheme, setTheme } = useTheme();
-
-  const toggleTheme = () => {
-    setTheme(resolvedTheme === "dark" ? "light" : "dark");
-  };
 
   return (
     <header className="sticky top-0 z-40 w-full bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
@@ -79,21 +74,6 @@ export function Header() {
 
         {/* Right side */}
         <div className="flex items-center space-x-3">
-          {/* Theme toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="h-10 w-10 rounded-full hover:bg-muted transition-colors duration-300"
-          >
-            {resolvedTheme === "dark" ? (
-              <Sun className="h-5 w-5 text-muted-foreground" />
-            ) : (
-              <Moon className="h-5 w-5 text-muted-foreground" />
-            )}
-          </Button>
-
           {/* Auth */}
           {isAuthenticated ? (
             <DropdownMenu>

@@ -13,9 +13,42 @@ export const MAPBOX_STYLE = "mapbox://styles/mapbox/outdoors-v12";
 export const INCIDENT_CATEGORIES = [
   { value: "reef_damage", label: "Reef Damage", description: "Coral bleaching, anchor damage, or other reef harm" },
   { value: "pollution", label: "Pollution", description: "Oil spills, debris, or water contamination" },
+  { value: "abandoned_fishing_gear", label: "Abandoned Fishing Gear", description: "Ghost nets, traps, lines, or other derelict fishing equipment" },
   { value: "wildlife", label: "Wildlife Concern", description: "Injured animals, nesting disruption, or poaching" },
   { value: "safety", label: "Safety Hazard", description: "Navigation hazards, unmarked obstacles, or dangerous conditions" },
   { value: "other", label: "Other", description: "Any other environmental or boating concern" },
+] as const;
+
+// Wildlife species for megafauna reporting
+export const WILDLIFE_SPECIES = [
+  { value: "humpback_whale", label: "Humpback whale", scientific: "Megaptera novaeangliae" },
+  { value: "bottlenose_dolphin", label: "Bottlenose dolphin", scientific: "Tursiops truncatus" },
+  { value: "spinner_dolphin", label: "Spinner dolphin", scientific: "Stenella longirostris" },
+  { value: "atlantic_spotted_dolphin", label: "Atlantic spotted dolphin", scientific: "Stenella frontalis" },
+  { value: "clymene_dolphin", label: "Clymene dolphin", scientific: "Stenella clymene" },
+  { value: "rough_toothed_dolphin", label: "Rough-toothed dolphin", scientific: "Steno bredanensis" },
+  { value: "sperm_whale", label: "Sperm whale", scientific: "Physeter catodon" },
+  { value: "cuviers_beaked_whale", label: "Cuvier's beaked whale", scientific: "Ziphius cavirostris" },
+  { value: "dwarf_sperm_whale", label: "Dwarf sperm whale", scientific: "Kogia sima" },
+  { value: "pygmy_sperm_whale", label: "Pygmy sperm whale", scientific: "Kogia breviceps" },
+  { value: "west_indian_manatee", label: "West Indian manatee", scientific: "Trichechus manatus" },
+  { value: "short_finned_pilot_whale", label: "Short-finned pilot whale", scientific: "Globicephala macrorhynchus" },
+  { value: "tiger_shark", label: "Tiger shark", scientific: "Galeocerdo cuvier" },
+  { value: "great_hammerhead", label: "Great hammerhead", scientific: "Sphyrna mokarran" },
+  { value: "scalloped_hammerhead", label: "Scalloped hammerhead", scientific: "Sphyrna lewini" },
+  { value: "unknown", label: "Unknown species", scientific: "" },
+] as const;
+
+// Number of individuals for wildlife sightings
+export const WILDLIFE_COUNT = [
+  { value: "1", label: "1" },
+  { value: "2", label: "2" },
+  { value: "3", label: "3" },
+  { value: "4", label: "4" },
+  { value: "5", label: "5" },
+  { value: "6-10", label: "6-10" },
+  { value: "11-20", label: "11-20" },
+  { value: "20+", label: "20+" },
 ] as const;
 
 // Incident severity levels
