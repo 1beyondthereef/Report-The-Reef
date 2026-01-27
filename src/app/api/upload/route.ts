@@ -5,6 +5,8 @@ import { getCurrentUser } from "@/lib/session";
 import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE } from "@/lib/constants";
 import { v4 as uuidv4 } from "uuid";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();

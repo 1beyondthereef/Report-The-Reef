@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
+import { getMoorings } from "@/lib/anchorages-data";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
@@ -17,40 +20,9 @@ export async function GET(
       ? new Date(endDateStr)
       : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
-    const mooring = await db.mooring.findUnique({
-      where: { id },
-      include: {
-        anchorage: {
-          select: {
-            name: true,
-            island: true,
-          },
-        },
-        reservations: {
-          where: {
-            status: { in: ["pending", "confirmed"] },
-            OR: [
-              {
-                startDate: { gte: startDate, lte: endDate },
-              },
-              {
-                endDate: { gte: startDate, lte: endDate },
-              },
-              {
-                AND: [
-                  { startDate: { lte: startDate } },
-                  { endDate: { gte: endDate } },
-                ],
-              },
-            ],
-          },
-          select: {
-            startDate: true,
-            endDate: true,
-          },
-        },
-      },
-    });
+    // Get mooring from static data
+    const moorings = getMoorings();
+    const mooring = moorings.find(m => m.id === id);
 
     if (!mooring) {
       return NextResponse.json(
@@ -59,14 +31,25 @@ export async function GET(
       );
     }
 
+    // Get reservations from Supabase
+    const supabase = await createClient();
+    const { data: reservations } = await supabase
+      .from("reservations")
+      .select("start_date, end_date")
+      .eq("mooring_id", id)
+      .in("status", ["pending", "confirmed"])
+      .or(`start_date.gte.${startDate.toISOString()},end_date.lte.${endDate.toISOString()}`);
+
     // Generate list of unavailable dates
     const unavailableDates: string[] = [];
-    for (const reservation of mooring.reservations) {
-      const current = new Date(reservation.startDate);
-      const end = new Date(reservation.endDate);
-      while (current <= end) {
-        unavailableDates.push(current.toISOString().split("T")[0]);
-        current.setDate(current.getDate() + 1);
+    if (reservations) {
+      for (const reservation of reservations) {
+        const current = new Date(reservation.start_date);
+        const end = new Date(reservation.end_date);
+        while (current <= end) {
+          unavailableDates.push(current.toISOString().split("T")[0]);
+          current.setDate(current.getDate() + 1);
+        }
       }
     }
 

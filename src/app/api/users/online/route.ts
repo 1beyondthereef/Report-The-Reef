@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = 'force-dynamic';
+
 // Users are considered "online" if they've been seen in the last 5 minutes
 const ONLINE_THRESHOLD_MS = 5 * 60 * 1000;
 

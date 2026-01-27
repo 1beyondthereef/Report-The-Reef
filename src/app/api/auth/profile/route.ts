@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 import { updateProfileSchema } from "@/lib/validation";
+
+export const dynamic = 'force-dynamic';
 
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -21,27 +24,36 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const updatedUser = await db.user.update({
-      where: { id: user.id },
-      data: {
-        name: parsed.data.name,
-        boatName: parsed.data.boatName,
-        boatLength: parsed.data.boatLength,
-        homePort: parsed.data.homePort,
+    const { data: updatedProfile, error } = await supabase
+      .from("profiles")
+      .update({
+        display_name: parsed.data.name,
+        vessel_name: parsed.data.boatName,
+        vessel_length: parsed.data.boatLength,
+        home_port: parsed.data.homePort,
         bio: parsed.data.bio,
-      },
-    });
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Update profile error:", error);
+      return NextResponse.json(
+        { error: "Failed to update profile" },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        avatarUrl: updatedUser.avatarUrl,
-        boatName: updatedUser.boatName,
-        homePort: updatedUser.homePort,
-        isVerified: updatedUser.isVerified,
-        role: updatedUser.role,
+        id: updatedProfile.id,
+        email: user.email,
+        name: updatedProfile.display_name,
+        avatarUrl: updatedProfile.avatar_url,
+        boatName: updatedProfile.vessel_name,
+        homePort: updatedProfile.home_port,
       },
     });
   } catch (error) {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = 'force-dynamic';
+
 const VALID_REASONS = ["harassment", "spam", "inappropriate", "safety", "other"];
 
 export async function POST(

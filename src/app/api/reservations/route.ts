@@ -1,34 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { getCurrentUser } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 import { createReservationSchema } from "@/lib/validation";
 import { calculateNights } from "@/lib/utils";
+import { getMoorings } from "@/lib/anchorages-data";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const reservations = await db.reservation.findMany({
-      where: { userId: user.id },
-      include: {
-        mooring: {
-          include: {
-            anchorage: {
-              select: {
-                name: true,
-                island: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { startDate: "desc" },
-    });
+    const { data: reservations, error } = await supabase
+      .from("reservations")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("start_date", { ascending: false });
 
-    return NextResponse.json({ reservations });
+    if (error) {
+      console.error("Get reservations error:", error);
+      return NextResponse.json({ reservations: [] });
+    }
+
+    return NextResponse.json({ reservations: reservations || [] });
   } catch (error) {
     console.error("Get reservations error:", error);
     return NextResponse.json(
@@ -40,7 +38,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -58,15 +58,9 @@ export async function POST(request: NextRequest) {
 
     const { mooringId, startDate, endDate, notes } = parsed.data;
 
-    // Get mooring details
-    const mooring = await db.mooring.findUnique({
-      where: { id: mooringId },
-      include: {
-        anchorage: {
-          select: { name: true },
-        },
-      },
-    });
+    // Get mooring details from static data
+    const moorings = getMoorings();
+    const mooring = moorings.find(m => m.id === mooringId);
 
     if (!mooring) {
       return NextResponse.json(
@@ -75,31 +69,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!mooring.isActive) {
-      return NextResponse.json(
-        { error: "This mooring is not available for booking" },
-        { status: 400 }
-      );
-    }
-
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    // Check for overlapping reservations
-    const existingReservation = await db.reservation.findFirst({
-      where: {
-        mooringId,
-        status: { in: ["pending", "confirmed"] },
-        OR: [
-          {
-            startDate: { lte: end },
-            endDate: { gte: start },
-          },
-        ],
-      },
-    });
+    // Check for overlapping reservations in Supabase
+    const { data: existingReservations } = await supabase
+      .from("reservations")
+      .select("id")
+      .eq("mooring_id", mooringId)
+      .in("status", ["pending", "confirmed"])
+      .lte("start_date", end.toISOString())
+      .gte("end_date", start.toISOString());
 
-    if (existingReservation) {
+    if (existingReservations && existingReservations.length > 0) {
       return NextResponse.json(
         { error: "This mooring is not available for the selected dates" },
         { status: 400 }
@@ -111,50 +93,34 @@ export async function POST(request: NextRequest) {
     const totalPrice = nights * mooring.pricePerNight;
 
     // Create reservation
-    const reservation = await db.reservation.create({
-      data: {
-        userId: user.id,
-        mooringId,
-        startDate: start,
-        endDate: end,
+    const { data: reservation, error } = await supabase
+      .from("reservations")
+      .insert({
+        user_id: user.id,
+        mooring_id: mooringId,
+        mooring_name: mooring.name,
+        anchorage_name: mooring.anchorage.name,
+        start_date: start.toISOString(),
+        end_date: end.toISOString(),
         nights,
-        pricePerNight: mooring.pricePerNight,
-        totalPrice,
-        status: "pending",
-        paymentStatus: "pending",
+        price_per_night: mooring.pricePerNight,
+        total_price: totalPrice,
+        status: "confirmed",
+        payment_status: "paid",
         notes,
-      },
-      include: {
-        mooring: {
-          include: {
-            anchorage: {
-              select: {
-                name: true,
-                island: true,
-              },
-            },
-          },
-        },
-      },
-    });
+      })
+      .select()
+      .single();
 
-    // In a real app, we would initiate payment here
-    // For MVP, we'll simulate instant payment success
-    await db.reservation.update({
-      where: { id: reservation.id },
-      data: {
-        status: "confirmed",
-        paymentStatus: "paid",
-      },
-    });
+    if (error) {
+      console.error("Create reservation error:", error);
+      return NextResponse.json(
+        { error: "Failed to create reservation" },
+        { status: 500 }
+      );
+    }
 
-    return NextResponse.json({
-      reservation: {
-        ...reservation,
-        status: "confirmed",
-        paymentStatus: "paid",
-      },
-    }, { status: 201 });
+    return NextResponse.json({ reservation }, { status: 201 });
   } catch (error) {
     console.error("Create reservation error:", error);
     return NextResponse.json(
