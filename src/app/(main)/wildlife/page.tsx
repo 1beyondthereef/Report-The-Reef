@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Fish, Loader2, CheckCircle, ArrowLeft, Mail, User, Locate, MapPin, Eye, Plus } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,7 +24,6 @@ import { UploadGallery } from "@/components/upload/UploadGallery";
 import { useAuth } from "@/context/AuthContext";
 import { createWildlifeSightingSchema, type CreateWildlifeSightingInput } from "@/lib/validation";
 import { WILDLIFE_SPECIES, WILDLIFE_COUNT } from "@/lib/constants";
-import { cn } from "@/lib/utils";
 
 interface WildlifeSighting {
   id: string;
@@ -56,7 +56,6 @@ export default function WildlifePage() {
     register,
     handleSubmit,
     setValue,
-    watch,
     reset,
     formState: { errors },
   } = useForm<CreateWildlifeSightingInput>({
@@ -65,8 +64,6 @@ export default function WildlifePage() {
       sightedAt: new Date().toISOString().slice(0, 16),
     },
   });
-
-  const selectedSpecies = watch("species");
 
   const handleLocationSelect = (lat: number, lng: number) => {
     setSelectedLocation({ lat, lng });
@@ -502,11 +499,12 @@ export default function WildlifePage() {
                     {recentSightings.map((sighting) => (
                       <Card key={sighting.id} className="overflow-hidden">
                         {sighting.photo_url && (
-                          <div className="aspect-video bg-muted">
-                            <img
+                          <div className="aspect-video bg-muted relative">
+                            <Image
                               src={sighting.photo_url}
                               alt={getSpeciesLabel(sighting.species)}
-                              className="w-full h-full object-cover"
+                              fill
+                              className="object-cover"
                             />
                           </div>
                         )}
