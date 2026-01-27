@@ -4,49 +4,49 @@
 
 @layer base {
   :root {
-    /* Refined, sophisticated color palette */
-    --background: 0 0% 100%;
-    --foreground: 180 8% 15%;
+    /* Serene ocean palette - light, airy, Caribbean-inspired */
+    --background: 195 30% 99%;
+    --foreground: 200 15% 25%;
     --card: 0 0% 100%;
-    --card-foreground: 180 8% 15%;
+    --card-foreground: 200 15% 25%;
     --popover: 0 0% 100%;
-    --popover-foreground: 180 8% 15%;
-    --primary: 180 35% 45%;
+    --popover-foreground: 200 15% 25%;
+    --primary: 187 45% 55%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 180 10% 97%;
-    --secondary-foreground: 180 8% 25%;
-    --muted: 180 8% 96%;
-    --muted-foreground: 180 5% 50%;
-    --accent: 180 15% 94%;
-    --accent-foreground: 180 8% 20%;
-    --destructive: 0 72% 51%;
+    --secondary: 195 25% 97%;
+    --secondary-foreground: 200 12% 35%;
+    --muted: 195 20% 96%;
+    --muted-foreground: 200 10% 55%;
+    --accent: 195 30% 95%;
+    --accent-foreground: 200 12% 30%;
+    --destructive: 0 65% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 180 10% 92%;
-    --input: 180 10% 92%;
-    --ring: 180 35% 45%;
-    --radius: 0.875rem;
+    --border: 195 20% 92%;
+    --input: 195 20% 92%;
+    --ring: 187 45% 55%;
+    --radius: 1rem;
   }
 
   .dark {
-    --background: 180 15% 7%;
-    --foreground: 180 5% 95%;
-    --card: 180 12% 10%;
-    --card-foreground: 180 5% 95%;
-    --popover: 180 12% 10%;
-    --popover-foreground: 180 5% 95%;
-    --primary: 180 35% 50%;
+    --background: 200 25% 8%;
+    --foreground: 195 15% 92%;
+    --card: 200 20% 11%;
+    --card-foreground: 195 15% 92%;
+    --popover: 200 20% 11%;
+    --popover-foreground: 195 15% 92%;
+    --primary: 187 40% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 180 12% 14%;
-    --secondary-foreground: 180 5% 90%;
-    --muted: 180 10% 14%;
-    --muted-foreground: 180 5% 55%;
-    --accent: 180 12% 16%;
-    --accent-foreground: 180 5% 92%;
-    --destructive: 0 72% 51%;
+    --secondary: 200 18% 14%;
+    --secondary-foreground: 195 12% 85%;
+    --muted: 200 15% 15%;
+    --muted-foreground: 195 10% 55%;
+    --accent: 200 18% 16%;
+    --accent-foreground: 195 12% 88%;
+    --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 180 10% 16%;
-    --input: 180 10% 16%;
-    --ring: 180 35% 50%;
+    --border: 200 15% 18%;
+    --input: 200 15% 18%;
+    --ring: 187 40% 50%;
   }
 }
 
@@ -67,135 +67,254 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Elegant heading styles */
+  /* Clean, light typography */
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-tight;
+    @apply font-sans tracking-tight;
     text-wrap: balance;
   }
 
   h1 {
-    font-size: 3rem;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
+    font-size: 2.75rem;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
     font-weight: 300;
   }
 
   h2 {
-    font-size: 2.25rem;
+    font-size: 2rem;
     line-height: 1.2;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
     font-weight: 400;
   }
 
   h3 {
-    font-size: 1.875rem;
-    line-height: 1.25;
+    font-size: 1.5rem;
+    line-height: 1.3;
     letter-spacing: -0.01em;
     font-weight: 400;
   }
 
-  /* Refined paragraph styles */
   p {
     text-wrap: pretty;
+    line-height: 1.7;
   }
 
-  /* Smooth image loading */
   img {
-    @apply transition-opacity duration-500;
+    @apply transition-opacity duration-700;
   }
 }
 
-/* Premium component styles */
+/* Premium glass components */
 @layer components {
-  /* Elegant cards with subtle depth */
-  .card-premium {
-    @apply bg-card rounded-3xl border border-border/50 shadow-soft;
-    @apply transition-all duration-400 ease-smooth;
+  /* Glassmorphism card - frosted glass effect */
+  .card-glass {
+    @apply bg-white/70 dark:bg-white/5;
+    @apply backdrop-blur-xl backdrop-saturate-150;
+    @apply border border-white/50 dark:border-white/10;
+    @apply rounded-2xl;
+    @apply shadow-glass;
+    @apply transition-all duration-700 ease-out;
   }
 
-  .card-premium:hover {
-    @apply shadow-soft-lg border-border;
+  .card-glass:hover {
+    @apply bg-white/80 dark:bg-white/8;
+    @apply shadow-glass-lg;
+    transform: translateY(-1px);
+  }
+
+  /* Subtle elevated card */
+  .card-elevated {
+    @apply bg-white dark:bg-card;
+    @apply rounded-2xl;
+    @apply border border-border/40;
+    @apply shadow-soft;
+    @apply transition-all duration-500 ease-out;
+  }
+
+  .card-elevated:hover {
+    @apply shadow-soft-lg border-border/60;
     transform: translateY(-2px);
   }
 
-  /* Luxury button styles */
-  .btn-luxury {
+  /* Serene button */
+  .btn-serene {
     @apply relative overflow-hidden;
-    @apply transition-all duration-400 ease-smooth;
+    @apply transition-all duration-500 ease-out;
+    @apply bg-gradient-to-r from-primary to-primary/90;
   }
 
-  .btn-luxury::after {
+  .btn-serene::before {
     content: "";
-    @apply absolute inset-0 bg-white/10 opacity-0;
-    @apply transition-opacity duration-400;
+    @apply absolute inset-0 bg-white/0;
+    @apply transition-all duration-500;
   }
 
-  .btn-luxury:hover::after {
-    @apply opacity-100;
+  .btn-serene:hover::before {
+    @apply bg-white/10;
   }
 
-  /* Glass morphism effect */
+  /* Soft glassmorphism */
   .glass {
-    @apply bg-background/80 backdrop-blur-xl;
-    @apply border border-white/20;
+    @apply bg-white/60 dark:bg-white/5;
+    @apply backdrop-blur-2xl backdrop-saturate-150;
+    @apply border border-white/40 dark:border-white/10;
   }
 
-  /* Subtle gradient text */
-  .text-gradient {
+  .glass-subtle {
+    @apply bg-white/40 dark:bg-white/3;
+    @apply backdrop-blur-xl;
+    @apply border border-white/30 dark:border-white/5;
+  }
+
+  /* Calm gradient text */
+  .text-gradient-calm {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(180 40% 35%) 100%);
+    background-image: linear-gradient(135deg, hsl(187 45% 50%) 0%, hsl(195 40% 60%) 100%);
   }
 
-  /* Premium section padding */
-  .section-padding {
-    @apply py-20 md:py-28 lg:py-32;
+  /* Breathing room sections */
+  .section-breathing {
+    @apply py-24 md:py-32 lg:py-40;
   }
 
-  /* Elegant container */
-  .container-narrow {
-    @apply max-w-4xl mx-auto px-6 md:px-8;
+  /* Elegant container with max width */
+  .container-calm {
+    @apply max-w-5xl mx-auto px-6 md:px-8 lg:px-12;
   }
 
-  /* Animated underline */
-  .link-underline {
+  /* Soft animated underline */
+  .link-soft {
     @apply relative;
   }
 
-  .link-underline::after {
+  .link-soft::after {
     content: "";
-    @apply absolute bottom-0 left-0 w-0 h-px bg-current;
-    @apply transition-all duration-400 ease-smooth;
+    @apply absolute bottom-0 left-0 w-0 h-px;
+    @apply bg-current opacity-40;
+    @apply transition-all duration-500 ease-out;
   }
 
-  .link-underline:hover::after {
+  .link-soft:hover::after {
     @apply w-full;
   }
-
-  /* Stagger animation helpers */
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
-  .stagger-5 { animation-delay: 0.5s; }
 }
 
-/* Mapbox overrides for premium feel */
+/* Serene ocean background styles */
+@layer components {
+  /* Ultra-soft gradient - barely there */
+  .ocean-gradient-serene {
+    background: linear-gradient(
+      180deg,
+      hsl(195 30% 99%) 0%,
+      hsl(195 35% 98%) 30%,
+      hsl(190 40% 97%) 60%,
+      hsl(185 45% 96%) 100%
+    );
+  }
+
+  .dark .ocean-gradient-serene {
+    background: linear-gradient(
+      180deg,
+      hsl(200 25% 8%) 0%,
+      hsl(200 28% 9%) 30%,
+      hsl(195 30% 10%) 60%,
+      hsl(190 32% 11%) 100%
+    );
+  }
+
+  /* Extremely slow, gentle wave animations */
+  @keyframes wave-breathe {
+    0%, 100% {
+      transform: translateX(0) translateY(0);
+    }
+    50% {
+      transform: translateX(-0.5%) translateY(1px);
+    }
+  }
+
+  @keyframes wave-breathe-slow {
+    0%, 100% {
+      transform: translateX(0) translateY(0);
+    }
+    50% {
+      transform: translateX(0.5%) translateY(-1px);
+    }
+  }
+
+  @keyframes wave-breathe-slowest {
+    0%, 100% {
+      transform: translateX(0) translateY(0);
+    }
+    50% {
+      transform: translateX(-0.3%) translateY(1.5px);
+    }
+  }
+
+  .wave-serene-1 {
+    animation: wave-breathe 20s ease-in-out infinite;
+  }
+
+  .wave-serene-2 {
+    animation: wave-breathe-slow 28s ease-in-out infinite;
+  }
+
+  .wave-serene-3 {
+    animation: wave-breathe-slowest 35s ease-in-out infinite;
+  }
+
+  /* Very subtle light shimmer */
+  @keyframes light-dance {
+    0%, 100% {
+      opacity: 0.015;
+    }
+    50% {
+      opacity: 0.03;
+    }
+  }
+
+  .ocean-light::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 120% 60% at 50% 100%,
+      hsl(190 60% 70% / 0.03) 0%,
+      transparent 60%
+    );
+    animation: light-dance 12s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .dark .ocean-light::before {
+    background: radial-gradient(
+      ellipse 120% 60% at 50% 100%,
+      hsl(190 50% 40% / 0.04) 0%,
+      transparent 60%
+    );
+  }
+}
+
+/* Mapbox styling - clean and minimal */
 .mapboxgl-map {
   font-family: inherit;
 }
 
 .mapboxgl-ctrl-group {
-  border-radius: 1rem !important;
+  border-radius: 0.75rem !important;
   overflow: hidden;
-  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.08) !important;
-  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid hsl(var(--border) / 0.5) !important;
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.8) !important;
 }
 
 .mapboxgl-popup-content {
-  border-radius: 1.25rem !important;
+  border-radius: 1rem !important;
   padding: 0 !important;
-  box-shadow: 0 16px 48px -16px rgba(0, 0, 0, 0.15) !important;
-  border: 1px solid hsl(var(--border) / 0.5) !important;
+  box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid hsl(var(--border) / 0.3) !important;
+  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.9) !important;
 }
 
 .mapboxgl-popup-close-button {
@@ -203,35 +322,34 @@
   padding: 0.75rem;
   right: 0.5rem;
   top: 0.5rem;
-  opacity: 0.5;
-  transition: opacity 0.3s ease;
+  opacity: 0.4;
+  transition: opacity 0.5s ease;
 }
 
 .mapboxgl-popup-close-button:hover {
-  opacity: 1;
+  opacity: 0.8;
 }
 
-/* Custom scrollbar - minimal and elegant */
+/* Minimal scrollbar */
 @layer utilities {
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+  .scrollbar-minimal::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-track {
+  .scrollbar-minimal::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--muted-foreground) / 0.2);
-    border-radius: 2.5px;
+  .scrollbar-minimal::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.15);
+    border-radius: 2px;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: hsl(var(--muted-foreground) / 0.4);
+  .scrollbar-minimal::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.25);
   }
 
-  /* Hide scrollbar but keep functionality */
   .scrollbar-hidden::-webkit-scrollbar {
     display: none;
   }
@@ -242,129 +360,36 @@
   }
 }
 
-/* Touch-friendly tap targets */
+/* Touch targets */
 @layer utilities {
   .touch-target {
-    min-height: 48px;
-    min-width: 48px;
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 
-/* Focus visible styles - refined */
+/* Refined focus states */
 @layer base {
   :focus-visible {
-    @apply outline-none ring-2 ring-primary/30 ring-offset-2 ring-offset-background;
-    @apply transition-shadow duration-200;
+    @apply outline-none ring-2 ring-primary/20 ring-offset-2 ring-offset-background;
+    @apply transition-shadow duration-300;
   }
 }
 
-/* Skip to main content link */
+/* Skip link */
 .skip-link {
   @apply absolute -top-12 left-4 bg-primary text-primary-foreground;
   @apply px-6 py-3 rounded-full z-50 font-medium;
-  @apply transition-all duration-300 focus:top-4;
+  @apply transition-all duration-500 focus:top-4;
 }
 
-/* Selection styling */
+/* Calm selection */
 ::selection {
-  background-color: hsl(var(--primary) / 0.15);
+  background-color: hsl(var(--primary) / 0.12);
   color: inherit;
 }
 
-/* Ocean Background Styles */
-@layer components {
-  /* Subtle animated gradient background */
-  .ocean-gradient {
-    background: linear-gradient(
-      180deg,
-      hsl(var(--background)) 0%,
-      hsl(190 30% 97%) 50%,
-      hsl(185 35% 95%) 100%
-    );
-  }
-
-  .dark .ocean-gradient {
-    background: linear-gradient(
-      180deg,
-      hsl(var(--background)) 0%,
-      hsl(190 20% 9%) 50%,
-      hsl(185 25% 8%) 100%
-    );
-  }
-
-  /* Animated wave keyframes */
-  @keyframes wave-drift {
-    0%, 100% {
-      transform: translateX(0) translateY(0);
-    }
-    50% {
-      transform: translateX(-2%) translateY(2px);
-    }
-  }
-
-  @keyframes wave-drift-slow {
-    0%, 100% {
-      transform: translateX(0) translateY(0);
-    }
-    50% {
-      transform: translateX(2%) translateY(-2px);
-    }
-  }
-
-  @keyframes wave-drift-slower {
-    0%, 100% {
-      transform: translateX(0) translateY(0);
-    }
-    50% {
-      transform: translateX(-1%) translateY(3px);
-    }
-  }
-
-  .wave-animation-1 {
-    animation: wave-drift 8s ease-in-out infinite;
-  }
-
-  .wave-animation-2 {
-    animation: wave-drift-slow 12s ease-in-out infinite;
-  }
-
-  .wave-animation-3 {
-    animation: wave-drift-slower 15s ease-in-out infinite;
-  }
-
-  /* Gentle shimmer effect for water */
-  @keyframes shimmer {
-    0%, 100% {
-      opacity: 0.03;
-    }
-    50% {
-      opacity: 0.06;
-    }
-  }
-
-  .ocean-shimmer::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(
-      ellipse 100% 50% at 50% 100%,
-      hsl(190 50% 50% / 0.04) 0%,
-      transparent 70%
-    );
-    animation: shimmer 6s ease-in-out infinite;
-    pointer-events: none;
-  }
-
-  .dark .ocean-shimmer::before {
-    background: radial-gradient(
-      ellipse 100% 50% at 50% 100%,
-      hsl(190 50% 40% / 0.06) 0%,
-      transparent 70%
-    );
-  }
-}
-
-/* Reduced motion preferences */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
