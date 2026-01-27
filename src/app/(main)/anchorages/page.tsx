@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, X, Anchor, Loader2, Waves } from "lucide-react";
+import { Search, Filter, X, Anchor, Loader2, Waves, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,8 +14,10 @@ import {
 import { AnchorageMap } from "@/components/maps/AnchorageMap";
 import { AnchoragePanel } from "@/components/panels/AnchoragePanel";
 import { DiveSitePanel } from "@/components/panels/DiveSitePanel";
+import { RestrictedAreaPanel } from "@/components/panels/RestrictedAreaPanel";
 import { BVI_ISLANDS } from "@/lib/constants";
 import { BVI_DIVE_SITES, type DiveSite } from "@/lib/constants/dive-sites";
+import { BVI_RESTRICTED_AREAS, type RestrictedArea } from "@/lib/constants/restricted-areas";
 import { cn } from "@/lib/utils";
 
 interface Anchorage {
@@ -39,13 +41,14 @@ interface Anchorage {
   _count?: { reviews: number; moorings: number };
 }
 
-type MarkerFilter = "all" | "anchorages" | "dive-sites";
+type MarkerFilter = "all" | "anchorages" | "dive-sites" | "protected-areas";
 
 export default function AnchoragesPage() {
   const [anchorages, setAnchorages] = useState<Anchorage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAnchorage, setSelectedAnchorage] = useState<Anchorage | null>(null);
   const [selectedDiveSite, setSelectedDiveSite] = useState<DiveSite | null>(null);
+  const [selectedRestrictedArea, setSelectedRestrictedArea] = useState<RestrictedArea | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIsland, setSelectedIsland] = useState<string>("");
@@ -63,17 +66,37 @@ export default function AnchoragesPage() {
     );
   });
 
+  // Filter restricted areas based on search
+  const filteredRestrictedAreas = BVI_RESTRICTED_AREAS.filter((area) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      area.name.toLowerCase().includes(query) ||
+      area.location.toLowerCase().includes(query) ||
+      area.reason.toLowerCase().includes(query)
+    );
+  });
+
   const showAnchorages = markerFilter === "all" || markerFilter === "anchorages";
   const showDiveSites = markerFilter === "all" || markerFilter === "dive-sites";
+  const showRestrictedAreas = markerFilter === "all" || markerFilter === "protected-areas";
 
   const handleSelectAnchorage = (anchorage: Anchorage) => {
     setSelectedDiveSite(null);
+    setSelectedRestrictedArea(null);
     setSelectedAnchorage(anchorage);
   };
 
   const handleSelectDiveSite = (diveSite: DiveSite) => {
     setSelectedAnchorage(null);
+    setSelectedRestrictedArea(null);
     setSelectedDiveSite(diveSite);
+  };
+
+  const handleSelectRestrictedArea = (area: RestrictedArea) => {
+    setSelectedAnchorage(null);
+    setSelectedDiveSite(null);
+    setSelectedRestrictedArea(area);
   };
 
   const fetchAnchorages = useCallback(async () => {
@@ -180,6 +203,12 @@ export default function AnchoragesPage() {
                     Dive Sites Only
                   </span>
                 </SelectItem>
+                <SelectItem value="protected-areas">
+                  <span className="flex items-center gap-2">
+                    <Ban className="h-4 w-4 text-red-500" />
+                    Protected Areas
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
 
@@ -212,16 +241,20 @@ export default function AnchoragesPage() {
         <AnchorageMap
           anchorages={anchorages}
           diveSites={filteredDiveSites}
+          restrictedAreas={filteredRestrictedAreas}
           selectedId={selectedAnchorage?.id}
           selectedDiveSiteId={selectedDiveSite?.id}
+          selectedRestrictedAreaId={selectedRestrictedArea?.id}
           onSelect={handleSelectAnchorage}
           onSelectDiveSite={handleSelectDiveSite}
+          onSelectRestrictedArea={handleSelectRestrictedArea}
           showAnchorages={showAnchorages}
           showDiveSites={showDiveSites}
+          showRestrictedAreas={showRestrictedAreas}
           className={cn(
             "h-full pt-16",
             showFilters && "pt-28",
-            (selectedAnchorage || selectedDiveSite) && "md:pr-96"
+            (selectedAnchorage || selectedDiveSite || selectedRestrictedArea) && "md:pr-96"
           )}
         />
       )}
@@ -336,6 +369,12 @@ export default function AnchoragesPage() {
       <DiveSitePanel
         diveSite={selectedDiveSite}
         onClose={() => setSelectedDiveSite(null)}
+      />
+
+      {/* Restricted Area Panel */}
+      <RestrictedAreaPanel
+        area={selectedRestrictedArea}
+        onClose={() => setSelectedRestrictedArea(null)}
       />
     </div>
   );

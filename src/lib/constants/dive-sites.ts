@@ -35,8 +35,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Sharkplaneo',
     location: 'Virgin Gorda',
     coordinates: {
-      lat: 18.4521,
-      lng: -64.4285
+      lat: 18.28779,  // Verified by Beyond The Reef
+      lng: -64.27288  // Verified by Beyond The Reef
     },
     depthRange: {
       min: 35,
@@ -63,10 +63,10 @@ export const BVI_DIVE_SITES: DiveSite[] = [
   {
     id: 'willy-t-wreck',
     name: 'Willy T Wreck',
-    location: 'The Bight, Norman Island',
+    location: 'Key Bay, Peter Island',
     coordinates: {
-      lat: 18.3180,
-      lng: -64.6190
+      lat: 18.3461,  // Verified: 18°20.768'N
+      lng: -64.5989  // Verified: 64°35.933'W
     },
     depthRange: {
       min: 40,
@@ -93,10 +93,10 @@ export const BVI_DIVE_SITES: DiveSite[] = [
   {
     id: 'kodiak-queen',
     name: 'Kodiak Queen (BVI Art Reef)',
-    location: 'Virgin Gorda',
+    location: 'Mountain Point, Virgin Gorda',
     coordinates: {
-      lat: 18.4456,
-      lng: -64.4198
+      lat: 18.4979,  // Verified: 18°29.871'N
+      lng: -64.4142  // Verified: 64°24.852'W
     },
     depthRange: {
       min: 45,
@@ -130,8 +130,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Wreck of the RMS Rhone',
     location: 'Salt Island',
     coordinates: {
-      lat: 18.3978,
-      lng: -64.5012
+      lat: 18.4067,  // Verified: 18°24.4'N
+      lng: -64.5317  // Verified: 64°31.9'W
     },
     depthRange: {
       min: 30,
@@ -156,8 +156,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'The Indians',
     location: 'Pelican Island, near Norman Island',
     coordinates: {
-      lat: 18.3275,
-      lng: -64.6089
+      lat: 18.3322,  // Verified: N18°19.930'
+      lng: -64.6297  // Verified: W64°37.781'
     },
     depthRange: {
       min: 20,
@@ -182,8 +182,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Wreck Alley',
     location: 'Cooper Island',
     coordinates: {
-      lat: 18.3856,
-      lng: -64.5123
+      lat: 18.3693,  // Verified: N18°22.158' (Marie L waypoint)
+      lng: -64.5107  // Verified: W64°30.642'
     },
     depthRange: {
       min: 50,
@@ -205,10 +205,10 @@ export const BVI_DIVE_SITES: DiveSite[] = [
   {
     id: 'the-chimney',
     name: 'The Chimney',
-    location: 'Great Dog Island',
+    location: 'Northwest of Great Dog Island',
     coordinates: {
-      lat: 18.4678,
-      lng: -64.6234
+      lat: 18.4850,  // Northwest of Great Dog (18.483), 15 min from Spanish Town
+      lng: -64.4650  // On NW side of Great Dog Island
     },
     depthRange: {
       min: 15,
@@ -232,8 +232,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Blonde Rock',
     location: 'Between Dead Chest Island & Salt Island',
     coordinates: {
-      lat: 18.3812,
-      lng: -64.5234
+      lat: 18.3800,  // NEEDS VERIFICATION - approximate, in Salt Island Passage
+      lng: -64.5250  // NEEDS VERIFICATION - between Dead Chest & Salt Island
     },
     depthRange: {
       min: 15,
@@ -257,8 +257,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Santa Monica Rock',
     location: 'Norman Island',
     coordinates: {
-      lat: 18.3145,
-      lng: -64.6345
+      lat: 18.2995,  // Verified: N18°17.972'
+      lng: -64.6349  // Verified: W64°38.093'
     },
     depthRange: {
       min: 50,
@@ -282,8 +282,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'The Caves',
     location: 'Norman Island',
     coordinates: {
-      lat: 18.3198,
-      lng: -64.6234
+      lat: 18.315769,  // Verified
+      lng: -64.623893  // Verified
     },
     depthRange: {
       min: 10,
@@ -307,8 +307,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Alice in Wonderland',
     location: 'Ginger Island',
     coordinates: {
-      lat: 18.3789,
-      lng: -64.5456
+      lat: 18.3924,  // Verified: N18°23.541' (Alice's Back Door waypoint nearby)
+      lng: -64.4916  // Verified: W64°29.496'
     },
     depthRange: {
       min: 15,
@@ -332,8 +332,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Painted Walls',
     location: 'Dead Chest Island',
     coordinates: {
-      lat: 18.3723,
-      lng: -64.5123
+      lat: 18.363065,  // Verified
+      lng: -64.560117  // Verified
     },
     depthRange: {
       min: 20,
@@ -357,8 +357,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Vanishing Reef',
     location: 'Ginger Island',
     coordinates: {
-      lat: 18.3812,
-      lng: -64.5389
+      lat: 18.377965,  // Verified
+      lng: -64.519856  // Verified
     },
     depthRange: {
       min: 25,
@@ -380,17 +380,17 @@ export const BVI_DIVE_SITES: DiveSite[] = [
   {
     id: 'rainbow-canyons',
     name: 'Rainbow Canyons',
-    location: 'Ginger Island',
+    location: 'Between The Indians & Pelican Island',
     coordinates: {
-      lat: 18.3756,
-      lng: -64.5512
+      lat: 18.3310,  // Near The Indians, slightly south toward Norman Island
+      lng: -64.6270  // Between The Indians and Pelican Island
     },
     depthRange: {
       min: 30,
       max: 60
     },
     difficulty: 'intermediate',
-    history: 'A series of underwater canyons and channels carved into the reef structure, creating swim-throughs decorated with colorful sponges and corals. The canyon walls catch the light creating rainbow-like effects throughout the dive.',
+    history: 'Located between The Indians and Pelican Island, this site features a series of underwater canyons and channels carved into the reef structure, creating swim-throughs decorated with colorful sponges and corals. The canyon walls catch the light creating rainbow-like effects throughout the dive.',
     highlights: [
       'Dramatic canyon formations',
       'Multiple swim-throughs',
@@ -407,8 +407,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Angelfish Reef',
     location: 'Norman Island',
     coordinates: {
-      lat: 18.3234,
-      lng: -64.6156
+      lat: 18.3094,  // Verified: N18°18.566'
+      lng: -64.6289  // Verified: W64°37.731'
     },
     depthRange: {
       min: 20,

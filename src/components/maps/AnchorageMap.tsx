@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BVI_BOUNDS, MAPBOX_STYLE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { DiveSite } from "@/lib/constants/dive-sites";
+import type { RestrictedArea } from "@/lib/constants/restricted-areas";
 
 interface BaseAnchorage {
   id: string;
@@ -25,30 +26,39 @@ interface BaseAnchorage {
 interface AnchorageMapProps<T extends BaseAnchorage> {
   anchorages: T[];
   diveSites?: DiveSite[];
+  restrictedAreas?: RestrictedArea[];
   selectedId?: string;
   selectedDiveSiteId?: string;
+  selectedRestrictedAreaId?: string;
   onSelect: (anchorage: T) => void;
   onSelectDiveSite?: (diveSite: DiveSite) => void;
+  onSelectRestrictedArea?: (area: RestrictedArea) => void;
   showDiveSites?: boolean;
   showAnchorages?: boolean;
+  showRestrictedAreas?: boolean;
   className?: string;
 }
 
 export function AnchorageMap<T extends BaseAnchorage>({
   anchorages,
   diveSites = [],
+  restrictedAreas = [],
   selectedId,
   selectedDiveSiteId,
+  selectedRestrictedAreaId,
   onSelect,
   onSelectDiveSite,
+  onSelectRestrictedArea,
   showDiveSites = true,
   showAnchorages = true,
+  showRestrictedAreas = true,
   className
 }: AnchorageMapProps<T>) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
   const diveSiteMarkers = useRef<mapboxgl.Marker[]>([]);
+  const restrictedAreaMarkers = useRef<mapboxgl.Marker[]>([]);
 
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -87,6 +97,8 @@ export function AnchorageMap<T extends BaseAnchorage>({
       markers.current = [];
       diveSiteMarkers.current.forEach((m) => m.remove());
       diveSiteMarkers.current = [];
+      restrictedAreaMarkers.current.forEach((m) => m.remove());
+      restrictedAreaMarkers.current = [];
       if (map.current) {
         map.current.remove();
         map.current = null;
@@ -217,6 +229,66 @@ export function AnchorageMap<T extends BaseAnchorage>({
     });
   }, [diveSites, selectedDiveSiteId, isLoaded, onSelectDiveSite, showDiveSites]);
 
+  // Update restricted area markers when restrictedAreas change
+  useEffect(() => {
+    if (!map.current || !isLoaded) return;
+
+    // Remove existing restricted area markers
+    restrictedAreaMarkers.current.forEach((m) => m.remove());
+    restrictedAreaMarkers.current = [];
+
+    // Only add markers if showRestrictedAreas is true
+    if (!showRestrictedAreas || !onSelectRestrictedArea) return;
+
+    // Add restricted area markers
+    restrictedAreas.forEach((area) => {
+      const isSelected = area.id === selectedRestrictedAreaId;
+      const isNoEntry = area.restrictions.noEntry;
+
+      const el = document.createElement("div");
+      el.className = "restricted-area-marker cursor-pointer";
+      el.innerHTML = `
+        <div class="relative group">
+          <div class="${cn(
+            "flex items-center justify-center rounded-full shadow-lg transition-transform border-2",
+            isSelected
+              ? "h-12 w-12 bg-red-600 border-white scale-110"
+              : isNoEntry
+                ? "h-9 w-9 bg-red-700 border-red-300 hover:scale-110"
+                : "h-9 w-9 bg-red-600 border-white hover:scale-110"
+          )}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="${isSelected ? 26 : 20}" height="${isSelected ? 26 : 20}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+            </svg>
+          </div>
+          ${
+            area.seasonalRestrictions
+              ? `<div class="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-amber-500 border-2 border-white flex items-center justify-center shadow-sm">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="16" y1="2" x2="16" y2="6"/>
+                    <line x1="8" y1="2" x2="8" y2="6"/>
+                    <line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </div>`
+              : ""
+          }
+        </div>
+      `;
+
+      el.addEventListener("click", () => {
+        onSelectRestrictedArea(area);
+      });
+
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat([area.coordinates.lng, area.coordinates.lat])
+        .addTo(map.current!);
+
+      restrictedAreaMarkers.current.push(marker);
+    });
+  }, [restrictedAreas, selectedRestrictedAreaId, isLoaded, onSelectRestrictedArea, showRestrictedAreas]);
+
   // Fly to selected anchorage
   useEffect(() => {
     if (!map.current || !selectedId) return;
@@ -244,6 +316,20 @@ export function AnchorageMap<T extends BaseAnchorage>({
       });
     }
   }, [selectedDiveSiteId, diveSites]);
+
+  // Fly to selected restricted area
+  useEffect(() => {
+    if (!map.current || !selectedRestrictedAreaId) return;
+
+    const area = restrictedAreas.find((a) => a.id === selectedRestrictedAreaId);
+    if (area) {
+      map.current.flyTo({
+        center: [area.coordinates.lng, area.coordinates.lat],
+        zoom: 13,
+        duration: 1000,
+      });
+    }
+  }, [selectedRestrictedAreaId, restrictedAreas]);
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) return;
@@ -376,6 +462,31 @@ export function AnchorageMap<T extends BaseAnchorage>({
                   <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-purple-600 border border-white" />
                 </div>
                 <span>BVI Art Reef</span>
+              </div>
+            </>
+          )}
+          {showRestrictedAreas && (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-full bg-red-600 border-2 border-white shadow-sm flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                  </svg>
+                </div>
+                <span>Protected Area</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative h-4 w-4">
+                  <div className="h-4 w-4 rounded-full bg-red-600 border border-white flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                    </svg>
+                  </div>
+                  <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 border border-white" />
+                </div>
+                <span>Seasonal Restrictions</span>
               </div>
             </>
           )}
