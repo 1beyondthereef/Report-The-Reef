@@ -103,10 +103,10 @@ export const BVI_DIVE_SITES: DiveSite[] = [
       max: 75
     },
     difficulty: 'advanced',
-    history: 'Part of the BVI Art Reef created by Beyond The Reef. The Kodiak Queen is a historic US Navy fuel barge (YO-44) that survived the attack on Pearl Harbor on December 7, 1941. In 2017, it was transformed into the worlds largest underwater art installation through a collaboration between Virgin Unite and artist Owen Philips, featuring an 80-foot kraken sculpture emerging from the vessel.',
+    history: 'Part of the BVI Art Reef created by Beyond The Reef. The Kodiak Queen is a historic US Navy fuel barge (YO-44) that survived the attack on Pearl Harbor on December 7, 1941. In 2017, it was transformed into the worlds largest underwater art installation through a collaboration between Virgin Unite, artists, engineers and the community. 80-foot kraken sculpture emerging from the vessel. The kraken sculpture was damaged in a storm, but the vessel remains a great dive site.',
     highlights: [
       'Pearl Harbor survivor vessel',
-      '80-foot kraken sculpture by Owen Philips',
+      '80-foot kraken sculpture (storm damaged)',
       'Worlds largest underwater art installation',
       'Historic WWII significance',
       'Incredible photo opportunities',
