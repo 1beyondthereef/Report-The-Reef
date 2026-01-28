@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, parseJsonArray } from "@/lib/utils";
 import { ANCHORAGE_AMENITIES } from "@/lib/constants";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 interface Anchorage {
   id: string;
@@ -43,6 +44,9 @@ export function AnchoragePanel({ anchorage, isLoading, onClose, className }: Anc
   const amenities = anchorage ? parseJsonArray(anchorage.amenities) : [];
   const images = anchorage ? parseJsonArray(anchorage.images) : [];
 
+  // Lock body scroll when panel is open (mobile)
+  useBodyScrollLock(!!anchorage || !!isLoading);
+
   const averageRating = anchorage?.reviews?.length
     ? anchorage.reviews.reduce((sum, r) => sum + r.rating, 0) / anchorage.reviews.length
     : null;
@@ -68,28 +72,37 @@ export function AnchoragePanel({ anchorage, isLoading, onClose, className }: Anc
   return (
     <div
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 max-h-[70vh] overflow-hidden rounded-t-3xl border-t bg-background shadow-2xl transition-transform duration-300 md:absolute md:inset-auto md:right-0 md:top-0 md:h-full md:max-h-none md:w-96 md:rounded-none md:rounded-l-xl md:border-l md:border-t-0",
+        "fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-hidden rounded-t-3xl border-t bg-background shadow-2xl transition-transform duration-300 md:absolute md:inset-auto md:right-0 md:top-0 md:h-full md:max-h-none md:w-96 md:rounded-none md:rounded-l-xl md:border-l md:border-t-0",
         className
       )}
     >
-      {/* Handle bar (mobile) */}
-      <div className="flex justify-center py-2 md:hidden">
-        <div className="h-1 w-12 rounded-full bg-muted-foreground/30" />
+      {/* Sticky header with handle bar and close button */}
+      <div className="sticky top-0 z-20 bg-background">
+        {/* Handle bar (mobile) */}
+        <div className="flex justify-center py-2 md:hidden">
+          <div className="h-1 w-12 rounded-full bg-muted-foreground/30" />
+        </div>
+
+        {/* Close button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="absolute right-2 top-2 z-10 bg-background/80 backdrop-blur-sm hover:bg-background"
+          aria-label="Close panel"
+        >
+          <X className="h-5 w-5" />
+        </Button>
       </div>
 
-      {/* Close button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onClose}
-        className="absolute right-2 top-2 z-10"
-        aria-label="Close panel"
+      {/* Scrollable Content */}
+      <div
+        className="h-full overflow-y-auto pb-24 md:pb-4 scrollbar-thin overscroll-contain"
+        style={{
+          WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y',
+        }}
       >
-        <X className="h-5 w-5" />
-      </Button>
-
-      {/* Content */}
-      <div className="h-full overflow-y-auto pb-20 md:pb-0 scrollbar-thin">
         {isLoading ? (
           <div className="p-4 space-y-4">
             <Skeleton className="h-48 w-full rounded-xl" />
