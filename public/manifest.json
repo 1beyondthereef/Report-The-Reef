@@ -1,11 +1,11 @@
 {
   "name": "Report The Reef",
-  "short_name": "Report Reef",
+  "short_name": "ReportReef",
   "description": "Protect British Virgin Islands waters through community-driven conservation. Explore pristine anchorages, reserve moorings, and connect with fellow sailors.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#111716",
-  "theme_color": "#0891b2",
+  "background_color": "#ffffff",
+  "theme_color": "#14b8a6",
   "orientation": "portrait-primary",
   "scope": "/",
   "icons": [

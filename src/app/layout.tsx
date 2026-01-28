@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { Toaster } from "@/components/ui/toaster";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import "./globals.css";
 
 const inter = Inter({
@@ -81,10 +82,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#111716" },
-  ],
+  themeColor: "#14b8a6",
 };
 
 export default function RootLayout({
@@ -104,6 +102,7 @@ export default function RootLayout({
             </a>
             {children}
             <Toaster />
+            <InstallPrompt />
           </AuthProvider>
         </ThemeProvider>
       </body>
