@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, AlertTriangle, Anchor, Ship, Users, Menu, LogOut, User, Fish } from "lucide-react";
+import { Home, AlertTriangle, Anchor, Ship, Users, Menu, LogOut, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,11 +17,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn, getInitials } from "@/lib/utils";
 import { usePWAStandalone } from "@/hooks/usePWAStandalone";
+import { WhaleIcon } from "@/components/icons/WhaleIcon";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/report", label: "Report", icon: AlertTriangle },
-  { href: "/wildlife", label: "Wildlife", icon: Fish },
+  { href: "/wildlife", label: "Wildlife", icon: WhaleIcon },
   { href: "/anchorages", label: "Explore", icon: Anchor },
   { href: "/moorings", label: "Reserve", icon: Ship },
   { href: "/social", label: "Connect", icon: Users },

@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, AlertTriangle, Anchor, Ship, Users, Fish } from "lucide-react";
+import { Home, AlertTriangle, Anchor, Ship, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePWAStandalone } from "@/hooks/usePWAStandalone";
+import { WhaleIcon } from "@/components/icons/WhaleIcon";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/report", label: "Report", icon: AlertTriangle },
-  { href: "/wildlife", label: "Wildlife", icon: Fish },
+  { href: "/wildlife", label: "Wildlife", icon: WhaleIcon },
   { href: "/anchorages", label: "Explore", icon: Anchor },
   { href: "/moorings", label: "Reserve", icon: Ship },
   { href: "/social", label: "Connect", icon: Users },
