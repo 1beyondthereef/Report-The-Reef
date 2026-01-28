@@ -35,21 +35,21 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Sharkplaneo',
     location: 'Virgin Gorda',
     coordinates: {
-      lat: 18.28779,  // Verified by Beyond The Reef
-      lng: -64.27288  // Verified by Beyond The Reef
+      lat: 18.479767,
+      lng: -64.454984
     },
     depthRange: {
       min: 35,
       max: 45
     },
     difficulty: 'intermediate',
-    history: 'Part of the BVI Art Reef created by Beyond The Reef. This unique attraction features a purposely sunk airplane transformed into an underwater art installation, designed to create an artificial reef habitat for marine life while providing a unique diving experience.',
+    history: 'Part of the BVI Art Reef created by Beyond The Reef. This unique attraction features 3 purposely sunk airplanes transformed into sharks as an underwater art installation. The site features a bull shark, nurse shark and hammerhead shark and was designed to create an artificial reef habitat for marine life while providing a unique diving experience.',
     highlights: [
-      'Unique airplane wreck',
+      '3 airplane shark sculptures',
+      'Bull shark, nurse shark, hammerhead shark',
       'Artificial reef habitat',
       'Growing coral colonies',
-      'Abundant fish life',
-      'Underwater art installation'
+      'Abundant fish life'
     ],
     isArtReef: true,
     artReefInfo: {
