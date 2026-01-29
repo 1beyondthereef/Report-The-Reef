@@ -72,12 +72,12 @@ export function AnchoragePanel({ anchorage, isLoading, onClose, className }: Anc
   return (
     <div
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 max-h-[85vh] overflow-hidden rounded-t-3xl border-t bg-background shadow-2xl transition-transform duration-300 md:absolute md:inset-auto md:right-0 md:top-0 md:h-full md:max-h-none md:w-96 md:rounded-none md:rounded-l-xl md:border-l md:border-t-0",
+        "fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col overflow-hidden rounded-t-3xl border-t bg-background shadow-2xl transition-transform duration-300 md:absolute md:inset-auto md:right-0 md:top-0 md:h-full md:max-h-none md:w-96 md:rounded-none md:rounded-l-xl md:border-l md:border-t-0",
         className
       )}
     >
-      {/* Sticky header with handle bar and close button */}
-      <div className="sticky top-0 z-20 bg-background">
+      {/* Fixed header with handle bar and close button */}
+      <div className="relative z-20 flex-shrink-0 bg-background">
         {/* Handle bar (mobile) */}
         <div className="flex justify-center py-2 md:hidden">
           <div className="h-1 w-12 rounded-full bg-muted-foreground/30" />
@@ -97,7 +97,7 @@ export function AnchoragePanel({ anchorage, isLoading, onClose, className }: Anc
 
       {/* Scrollable Content */}
       <div
-        className="h-full overflow-y-auto pb-24 md:pb-4 scrollbar-thin overscroll-contain"
+        className="min-h-0 flex-1 overflow-y-auto pb-24 md:pb-4 scrollbar-thin overscroll-contain"
         style={{
           WebkitOverflowScrolling: 'touch',
           touchAction: 'pan-y',
