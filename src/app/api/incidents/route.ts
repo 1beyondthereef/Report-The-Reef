@@ -67,6 +67,9 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
+    // Extract photo URLs from the request body (array of storage paths)
+    const photoUrls: string[] = body.photoUrls || [];
+
     const { data: incident, error } = await supabase
       .from("incidents")
       .insert({
@@ -82,6 +85,7 @@ export async function POST(request: NextRequest) {
         location_name: data.locationName,
         occurred_at: data.occurredAt,
         status: "pending",
+        photo_urls: photoUrls.length > 0 ? photoUrls : null,
       })
       .select()
       .single();

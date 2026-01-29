@@ -1,37 +1,51 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import { Upload, X, Image as ImageIcon, Film, Loader2, AlertCircle } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Film, Loader2, AlertCircle, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ALLOWED_FILE_TYPES, MAX_FILE_SIZE, MAX_FILES_PER_INCIDENT } from "@/lib/constants";
+import {
+  uploadToStorage,
+  STORAGE_BUCKETS,
+  type StorageBucket,
+  validateUploadFile,
+} from "@/lib/supabase/storage";
 
-interface UploadedFile {
+export interface UploadedFile {
   id: string;
   file: File;
   preview: string;
   progress: number;
   error?: string;
   uploaded?: boolean;
-  url?: string;
+  url?: string;       // Public URL (for wildlife) or storage path (for incidents)
+  storagePath?: string; // Storage path in Supabase
 }
 
 interface UploadGalleryProps {
   onFilesChange: (files: UploadedFile[]) => void;
   maxFiles?: number;
   className?: string;
+  bucket?: StorageBucket;
 }
 
 export function UploadGallery({
   onFilesChange,
   maxFiles = MAX_FILES_PER_INCIDENT,
   className,
+  bucket = STORAGE_BUCKETS.INCIDENT_REPORTS,
 }: UploadGalleryProps) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File): string | null => {
+    const result = validateUploadFile(file);
+    if (!result.valid) {
+      return result.error || "Invalid file";
+    }
+    // Also check against legacy constants for backwards compatibility
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       return "File type not supported. Please upload images or videos.";
     }
@@ -45,26 +59,30 @@ export function UploadGallery({
     return URL.createObjectURL(file);
   };
 
-  const simulateUpload = async (uploadedFile: UploadedFile): Promise<UploadedFile> => {
-    // Simulate upload progress
-    return new Promise((resolve) => {
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 10;
-        if (progress >= 100) {
-          clearInterval(interval);
-          resolve({
-            ...uploadedFile,
-            progress: 100,
-            uploaded: true,
-            url: uploadedFile.preview, // In real app, this would be the server URL
-          });
-        }
-        setFiles((prev) =>
-          prev.map((f) => (f.id === uploadedFile.id ? { ...f, progress } : f))
-        );
-      }, 100);
+  const uploadFile = async (uploadedFile: UploadedFile): Promise<UploadedFile> => {
+    // Upload to Supabase Storage
+    const result = await uploadToStorage(uploadedFile.file, bucket, (progress) => {
+      setFiles((prev) =>
+        prev.map((f) => (f.id === uploadedFile.id ? { ...f, progress } : f))
+      );
     });
+
+    if (result.success) {
+      return {
+        ...uploadedFile,
+        progress: 100,
+        uploaded: true,
+        // For public bucket (wildlife), use public URL; for private (incidents), use storage path
+        url: result.publicUrl || result.path,
+        storagePath: result.path,
+      };
+    } else {
+      return {
+        ...uploadedFile,
+        progress: 0,
+        error: result.error,
+      };
+    }
   };
 
   const addFiles = useCallback(
@@ -98,14 +116,16 @@ export function UploadGallery({
       // Upload files without errors
       for (const uploadedFile of newUploadedFiles) {
         if (!uploadedFile.error) {
-          const uploaded = await simulateUpload(uploadedFile);
-          setFiles((prev) =>
-            prev.map((f) => (f.id === uploaded.id ? uploaded : f))
-          );
+          const uploaded = await uploadFile(uploadedFile);
+          setFiles((prev) => {
+            const newFiles = prev.map((f) => (f.id === uploaded.id ? uploaded : f));
+            onFilesChange(newFiles);
+            return newFiles;
+          });
         }
       }
     },
-    [files, maxFiles, onFilesChange]
+    [files, maxFiles, onFilesChange, bucket]
   );
 
   const removeFile = useCallback(
@@ -113,6 +133,7 @@ export function UploadGallery({
       const file = files.find((f) => f.id === id);
       if (file) {
         URL.revokeObjectURL(file.preview);
+        // Note: We don't delete from Supabase storage here - orphaned files can be cleaned up periodically
       }
       const updatedFiles = files.filter((f) => f.id !== id);
       setFiles(updatedFiles);
@@ -169,7 +190,7 @@ export function UploadGallery({
           ref={inputRef}
           type="file"
           accept={ALLOWED_FILE_TYPES.join(",")}
-          multiple
+          multiple={maxFiles > 1}
           onChange={handleInputChange}
           className="hidden"
           disabled={files.length >= maxFiles}
@@ -179,10 +200,10 @@ export function UploadGallery({
           {isDragging ? "Drop files here" : "Drag & drop or click to upload"}
         </p>
         <p className="text-xs text-muted-foreground">
-          Images or videos up to {MAX_FILE_SIZE / 1024 / 1024}MB each
+          JPG, PNG, HEIC, MP4, MOV up to {MAX_FILE_SIZE / 1024 / 1024}MB each
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          {files.length} / {maxFiles} files uploaded
+          {files.length} / {maxFiles} file{maxFiles !== 1 ? "s" : ""} uploaded
         </p>
       </div>
 
@@ -196,8 +217,9 @@ export function UploadGallery({
             >
               {/* Preview */}
               {isVideo(uploadedFile.file) ? (
-                <div className="flex h-full items-center justify-center">
+                <div className="flex h-full flex-col items-center justify-center bg-muted">
                   <Film className="h-8 w-8 text-muted-foreground" />
+                  <span className="mt-1 text-xs text-muted-foreground">Video</span>
                 </div>
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -210,21 +232,35 @@ export function UploadGallery({
 
               {/* Progress overlay */}
               {!uploadedFile.uploaded && !uploadedFile.error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                  <div className="text-center text-white">
-                    <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-                    <p className="mt-1 text-xs">{uploadedFile.progress}%</p>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60">
+                  <Loader2 className="h-6 w-6 animate-spin text-white" />
+                  <p className="mt-2 text-sm font-medium text-white">
+                    {uploadedFile.progress}%
+                  </p>
+                  {/* Progress bar */}
+                  <div className="mt-2 h-1.5 w-3/4 overflow-hidden rounded-full bg-white/30">
+                    <div
+                      className="h-full bg-white transition-all duration-300"
+                      style={{ width: `${uploadedFile.progress}%` }}
+                    />
                   </div>
+                </div>
+              )}
+
+              {/* Success overlay (brief flash) */}
+              {uploadedFile.uploaded && (
+                <div className="absolute bottom-1 right-1 rounded-full bg-green-500 p-1">
+                  <Check className="h-3 w-3 text-white" />
                 </div>
               )}
 
               {/* Error overlay */}
               {uploadedFile.error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-destructive/90 p-2">
-                  <div className="text-center text-white">
-                    <AlertCircle className="mx-auto h-6 w-6" />
-                    <p className="mt-1 text-xs">{uploadedFile.error}</p>
-                  </div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-destructive/90 p-2">
+                  <AlertCircle className="h-6 w-6 text-white" />
+                  <p className="mt-1 text-center text-xs text-white">
+                    {uploadedFile.error}
+                  </p>
                 </div>
               )}
 
@@ -233,7 +269,10 @@ export function UploadGallery({
                 type="button"
                 variant="destructive"
                 size="icon"
-                onClick={() => removeFile(uploadedFile.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeFile(uploadedFile.id);
+                }}
                 className="absolute right-1 top-1 h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100"
                 aria-label="Remove file"
               >

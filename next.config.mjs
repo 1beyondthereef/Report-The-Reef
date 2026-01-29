@@ -40,6 +40,17 @@ const withPWA = withPWAInit({
       },
     },
     {
+      urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+      handler: 'CacheFirst',
+      options: {
+        cacheName: 'supabase-storage-cache',
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+        },
+      },
+    },
+    {
       urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
       handler: 'CacheFirst',
       options: {
@@ -55,6 +66,15 @@ const withPWA = withPWAInit({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
   webpack: (config, { isServer }) => {
     // Fix for @libsql modules
     config.module.rules.push({

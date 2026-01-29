@@ -19,10 +19,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { MapPicker, type MapPickerRef } from "@/components/maps/MapPicker";
-import { UploadGallery } from "@/components/upload/UploadGallery";
+import { UploadGallery, type UploadedFile } from "@/components/upload/UploadGallery";
 import { useAuth } from "@/context/AuthContext";
 import { createIncidentSchema, type CreateIncidentInput } from "@/lib/validation";
 import { INCIDENT_CATEGORIES, INCIDENT_SEVERITY } from "@/lib/constants";
+import { STORAGE_BUCKETS } from "@/lib/supabase/storage";
 import { cn } from "@/lib/utils";
 
 export default function ReportPage() {
@@ -34,7 +35,7 @@ export default function ReportPage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [uploadedFiles, setUploadedFiles] = useState<{ id: string; url?: string }[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   const {
     register,
@@ -69,25 +70,17 @@ export default function ReportPage() {
     setServerError(null);
 
     try {
-      const attachments: { filename: string; url: string; mimeType: string; size: number }[] = [];
-
-      for (const file of uploadedFiles) {
-        if (file.url) {
-          attachments.push({
-            filename: "uploaded_file",
-            url: file.url,
-            mimeType: "image/jpeg",
-            size: 0,
-          });
-        }
-      }
+      // Get storage paths from uploaded files (for private bucket, we store the path)
+      const photoUrls = uploadedFiles
+        .filter((file) => file.uploaded && file.storagePath)
+        .map((file) => file.storagePath as string);
 
       const response = await fetch("/api/incidents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          attachments,
+          photoUrls,
         }),
       });
 
@@ -359,9 +352,8 @@ export default function ReportPage() {
           </CardHeader>
           <CardContent>
             <UploadGallery
-              onFilesChange={(files) =>
-                setUploadedFiles(files.map((f) => ({ id: f.id, url: f.url })))
-              }
+              onFilesChange={setUploadedFiles}
+              bucket={STORAGE_BUCKETS.INCIDENT_REPORTS}
             />
           </CardContent>
         </Card>

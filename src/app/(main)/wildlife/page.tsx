@@ -20,10 +20,11 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPicker, type MapPickerRef } from "@/components/maps/MapPicker";
-import { UploadGallery } from "@/components/upload/UploadGallery";
+import { UploadGallery, type UploadedFile } from "@/components/upload/UploadGallery";
 import { useAuth } from "@/context/AuthContext";
 import { createWildlifeSightingSchema, type CreateWildlifeSightingInput } from "@/lib/validation";
 import { WILDLIFE_SPECIES, WILDLIFE_COUNT } from "@/lib/constants";
+import { STORAGE_BUCKETS } from "@/lib/supabase/storage";
 
 interface WildlifeSighting {
   id: string;
@@ -48,7 +49,7 @@ export default function WildlifePage() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [uploadedFiles, setUploadedFiles] = useState<{ id: string; url?: string }[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [recentSightings, setRecentSightings] = useState<WildlifeSighting[]>([]);
   const [isLoadingSightings, setIsLoadingSightings] = useState(false);
 
@@ -102,7 +103,9 @@ export default function WildlifePage() {
     setServerError(null);
 
     try {
-      const photoUrl = uploadedFiles.find(f => f.url)?.url;
+      // Get the public URL from the uploaded file (for public bucket)
+      const uploadedFile = uploadedFiles.find(f => f.uploaded && f.url);
+      const photoUrl = uploadedFile?.url;
 
       const response = await fetch("/api/wildlife", {
         method: "POST",
@@ -388,10 +391,9 @@ export default function WildlifePage() {
               </CardHeader>
               <CardContent>
                 <UploadGallery
-                  onFilesChange={(files) =>
-                    setUploadedFiles(files.map((f) => ({ id: f.id, url: f.url })))
-                  }
+                  onFilesChange={setUploadedFiles}
                   maxFiles={1}
+                  bucket={STORAGE_BUCKETS.WILDLIFE_SIGHTINGS}
                 />
               </CardContent>
             </Card>
