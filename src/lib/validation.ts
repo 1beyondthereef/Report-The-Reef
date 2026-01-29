@@ -19,6 +19,17 @@ export const updateProfileSchema = z.object({
   bio: z.string().max(500).optional(),
 });
 
+// Helper to validate datetime-local format (YYYY-MM-DDTHH:mm) or full ISO
+const datetimeLocalOrISO = z.string().refine(
+  (val) => {
+    // Accept datetime-local format: YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss
+    // Also accept full ISO format: YYYY-MM-DDTHH:mm:ss.sssZ
+    const datetimeLocalRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d{3})?(Z|[+-]\d{2}:\d{2})?$/;
+    return datetimeLocalRegex.test(val) && !isNaN(new Date(val).getTime());
+  },
+  { message: "Please enter a valid date and time" }
+);
+
 // Incident schemas
 export const createIncidentSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters").max(200),
@@ -32,7 +43,7 @@ export const createIncidentSchema = z.object({
     .min(BVI_BOUNDS.southwest.lng, "Location must be within BVI waters")
     .max(BVI_BOUNDS.northeast.lng, "Location must be within BVI waters"),
   locationName: z.string().max(200).optional(),
-  occurredAt: z.string().datetime().or(z.date()),
+  occurredAt: datetimeLocalOrISO,
   // Optional reporter info for anonymous submissions
   reporterEmail: z.string().email("Please enter a valid email").optional().or(z.literal("")),
   reporterName: z.string().max(100).optional(),
@@ -57,7 +68,7 @@ export const createWildlifeSightingSchema = z.object({
     .min(BVI_BOUNDS.southwest.lng, "Location must be within BVI waters")
     .max(BVI_BOUNDS.northeast.lng, "Location must be within BVI waters"),
   locationName: z.string().max(200).optional(),
-  sightedAt: z.string().datetime().or(z.date()),
+  sightedAt: datetimeLocalOrISO,
   count: z.enum(["1", "2", "3", "4", "5", "6-10", "11-20", "20+"]),
   comments: z.string().max(2000).optional(),
   // Optional reporter info for anonymous submissions
