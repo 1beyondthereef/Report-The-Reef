@@ -189,7 +189,14 @@ export default function WildlifePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button onClick={() => setActiveTab("view")} variant="outline" className="w-full rounded-full">
+            <Button
+              onClick={() => {
+                setIsSuccess(false);
+                setActiveTab("view");
+              }}
+              variant="outline"
+              className="w-full rounded-full"
+            >
               View Recent Sightings
             </Button>
             <Button

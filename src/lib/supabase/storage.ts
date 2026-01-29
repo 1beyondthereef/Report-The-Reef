@@ -1,9 +1,9 @@
 import { createClient } from "./client";
 
-// Storage bucket names
+// Storage bucket names (must match exactly what's in Supabase - case sensitive)
 export const STORAGE_BUCKETS = {
-  INCIDENT_REPORTS: "incident-reports",    // Private bucket
-  WILDLIFE_SIGHTINGS: "wildlife-sightings", // Public bucket
+  INCIDENT_REPORTS: "Incident-report-photos",    // Private bucket
+  WILDLIFE_SIGHTINGS: "Wildlife-sighting-photos", // Public bucket
 } as const;
 
 export type StorageBucket = typeof STORAGE_BUCKETS[keyof typeof STORAGE_BUCKETS];
