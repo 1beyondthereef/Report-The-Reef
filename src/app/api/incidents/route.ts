@@ -70,30 +70,40 @@ export async function POST(request: NextRequest) {
     // Extract photo URLs from the request body (array of storage paths)
     const photoUrls: string[] = body.photoUrls || [];
 
+    // Build the insert object
+    const insertData = {
+      user_id: user?.id || null,
+      reporter_email: data.reporterEmail || null,
+      reporter_name: data.reporterName || null,
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      severity: data.severity,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      location_name: data.locationName,
+      occurred_at: data.occurredAt,
+      status: "pending",
+      photo_urls: photoUrls.length > 0 ? photoUrls : null,
+    };
+
+    console.log("Attempting to insert incident with data:", JSON.stringify(insertData, null, 2));
+
     const { data: incident, error } = await supabase
       .from("incidents")
-      .insert({
-        user_id: user?.id || null,
-        reporter_email: data.reporterEmail || null,
-        reporter_name: data.reporterName || null,
-        title: data.title,
-        description: data.description,
-        category: data.category,
-        severity: data.severity,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        location_name: data.locationName,
-        occurred_at: data.occurredAt,
-        status: "pending",
-        photo_urls: photoUrls.length > 0 ? photoUrls : null,
-      })
+      .insert(insertData)
       .select()
       .single();
 
     if (error) {
-      console.error("Create incident error:", error);
+      console.error("=== SUPABASE INSERT ERROR ===");
+      console.error("Error code:", error.code);
+      console.error("Error message:", error.message);
+      console.error("Error details:", error.details);
+      console.error("Error hint:", error.hint);
+      console.error("Full error object:", JSON.stringify(error, null, 2));
       return NextResponse.json(
-        { error: "Failed to create incident" },
+        { error: `Failed to create incident: ${error.message}` },
         { status: 500 }
       );
     }
