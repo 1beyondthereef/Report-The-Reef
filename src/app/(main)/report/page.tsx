@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertTriangle, Loader2, CheckCircle, ArrowLeft, Mail, User, Locate, MapPin } from "lucide-react";
+import { AlertTriangle, Loader2, ArrowLeft, Mail, User, Locate, MapPin } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ import {
 import { MapPicker, type MapPickerRef } from "@/components/maps/MapPicker";
 import { UploadGallery, type UploadedFile } from "@/components/upload/UploadGallery";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { createIncidentSchema, type CreateIncidentInput } from "@/lib/validation";
 import { INCIDENT_CATEGORIES, INCIDENT_SEVERITY } from "@/lib/constants";
 import { STORAGE_BUCKETS } from "@/lib/supabase/storage";
@@ -66,10 +67,10 @@ function convertToISOString(datetimeLocal: string): string {
 export default function ReportPage() {
   const router = useRouter();
   const { isAuthenticated, user } = useAuth();
+  const { toast } = useToast();
   const mapRef = useRef<MapPickerRef>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -126,7 +127,20 @@ export default function ReportPage() {
       });
 
       if (response.ok) {
-        setIsSuccess(true);
+        // Show success toast
+        toast({
+          title: "Report submitted successfully!",
+          description: "Thank you for helping protect BVI waters.",
+        });
+
+        // Clear the form
+        reset();
+        setSelectedLocation(null);
+        setUploadedFiles([]);
+        setServerError(null);
+
+        // Redirect to home page
+        router.push("/");
       } else {
         const result = await response.json();
         setServerError(result.error || "Failed to submit report");
@@ -137,41 +151,6 @@ export default function ReportPage() {
       setIsSubmitting(false);
     }
   };
-
-  if (isSuccess) {
-    return (
-      <div className="container max-w-lg px-6 py-16">
-        <Card className="text-center">
-          <CardHeader>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
-            </div>
-            <CardTitle className="font-serif text-2xl">Report Submitted</CardTitle>
-            <CardDescription className="text-base">
-              Thank you for helping protect BVI waters. Our team will review your report and take appropriate action.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button onClick={() => router.push("/")} className="w-full rounded-full">
-              Return Home
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsSuccess(false);
-                setSelectedLocation(null);
-                setUploadedFiles([]);
-                reset();
-              }}
-              className="w-full rounded-full"
-            >
-              Submit Another Report
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="container max-w-3xl px-6 py-8">

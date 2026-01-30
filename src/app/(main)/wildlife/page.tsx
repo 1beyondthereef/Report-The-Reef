@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Fish, Loader2, CheckCircle, ArrowLeft, Mail, User, Locate, MapPin, Eye, Plus, Check } from "lucide-react";
+import { Fish, Loader2, ArrowLeft, Mail, User, Locate, MapPin, Eye, Plus, Check, Calendar, Users } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -22,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MapPicker, type MapPickerRef } from "@/components/maps/MapPicker";
 import { UploadGallery, type UploadedFile } from "@/components/upload/UploadGallery";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { createWildlifeSightingSchema, type CreateWildlifeSightingInput } from "@/lib/validation";
 import { WILDLIFE_SPECIES, WILDLIFE_COUNT } from "@/lib/constants";
 import { STORAGE_BUCKETS } from "@/lib/supabase/storage";
@@ -79,16 +86,17 @@ interface WildlifeSighting {
 
 export default function WildlifePage() {
   const { isAuthenticated, user } = useAuth();
+  const { toast } = useToast();
   const mapRef = useRef<MapPickerRef>(null);
 
   const [activeTab, setActiveTab] = useState<"report" | "view">("report");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [recentSightings, setRecentSightings] = useState<WildlifeSighting[]>([]);
   const [isLoadingSightings, setIsLoadingSightings] = useState(false);
+  const [selectedSighting, setSelectedSighting] = useState<WildlifeSighting | null>(null);
 
   const {
     register,
@@ -191,7 +199,21 @@ export default function WildlifePage() {
       console.log("API response:", result);
 
       if (response.ok) {
-        setIsSuccess(true);
+        // Show success toast
+        toast({
+          title: "Sighting submitted successfully!",
+          description: "Thank you for contributing to marine wildlife research.",
+        });
+
+        // Clear the form
+        reset();
+        setSelectedLocation(null);
+        setUploadedFiles([]);
+        setServerError(null);
+
+        // Switch to view tab and refresh sightings
+        setActiveTab("view");
+        fetchRecentSightings();
       } else {
         setServerError(result.error || "Failed to submit sighting");
       }
@@ -207,47 +229,6 @@ export default function WildlifePage() {
     const species = WILDLIFE_SPECIES.find(s => s.value === value);
     return species ? `${species.label}${species.scientific ? ` (${species.scientific})` : ''}` : value;
   };
-
-  if (isSuccess) {
-    return (
-      <div className="container max-w-lg px-6 py-16">
-        <Card className="text-center">
-          <CardHeader>
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
-            </div>
-            <CardTitle className="font-serif text-2xl">Sighting Reported!</CardTitle>
-            <CardDescription className="text-base">
-              Thank you for contributing to marine wildlife research in the BVI. Your sighting has been recorded.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              onClick={() => {
-                setIsSuccess(false);
-                setActiveTab("view");
-              }}
-              variant="outline"
-              className="w-full rounded-full"
-            >
-              View Recent Sightings
-            </Button>
-            <Button
-              onClick={() => {
-                setIsSuccess(false);
-                setSelectedLocation(null);
-                setUploadedFiles([]);
-                reset();
-              }}
-              className="w-full rounded-full"
-            >
-              Report Another Sighting
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="container max-w-4xl px-6 py-8">
@@ -604,7 +585,11 @@ export default function WildlifePage() {
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2">
                     {recentSightings.map((sighting) => (
-                      <Card key={sighting.id} className="overflow-hidden">
+                      <Card
+                        key={sighting.id}
+                        className="overflow-hidden cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]"
+                        onClick={() => setSelectedSighting(sighting)}
+                      >
                         {sighting.photo_url && (
                           <div className="aspect-video bg-muted relative">
                             <Image
@@ -659,6 +644,121 @@ export default function WildlifePage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Sighting Detail Modal */}
+      <Dialog open={!!selectedSighting} onOpenChange={(open) => !open && setSelectedSighting(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          {selectedSighting && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-serif text-xl font-light">
+                  {WILDLIFE_SPECIES.find(s => s.value === selectedSighting.species)?.label || selectedSighting.species}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground italic">
+                  {WILDLIFE_SPECIES.find(s => s.value === selectedSighting.species)?.scientific}
+                </p>
+              </DialogHeader>
+
+              {/* Full-size photo */}
+              {selectedSighting.photo_url && (
+                <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
+                  <Image
+                    src={selectedSighting.photo_url}
+                    alt={getSpeciesLabel(selectedSighting.species)}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Sighting details */}
+              <div className="space-y-4">
+                {/* Date */}
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <Calendar className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Date & Time</p>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(selectedSighting.sighted_at).toLocaleDateString("en-US", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Count */}
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Number of Individuals</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedSighting.count} individual{selectedSighting.count !== "1" ? "s" : ""}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Location */}
+                {selectedSighting.location_name && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                      <MapPin className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Location</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedSighting.location_name}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Comments */}
+                {selectedSighting.comments && (
+                  <div className="rounded-lg bg-muted/50 p-4">
+                    <p className="text-sm font-medium mb-2">Comments</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {selectedSighting.comments}
+                    </p>
+                  </div>
+                )}
+
+                {/* Reporter */}
+                {selectedSighting.reporter_name && (
+                  <div className="flex items-center gap-3 pt-2 border-t">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                      <User className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Reported by</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedSighting.reporter_name}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Close button */}
+              <Button
+                variant="outline"
+                className="w-full rounded-full mt-2"
+                onClick={() => setSelectedSighting(null)}
+              >
+                Close
+              </Button>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
