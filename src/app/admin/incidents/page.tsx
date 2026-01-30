@@ -18,32 +18,22 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { INCIDENT_CATEGORIES, INCIDENT_SEVERITY } from "@/lib/constants";
+import { ACTIVITY_TYPES } from "@/lib/constants";
 
 interface Incident {
   id: string;
-  title: string;
+  activity_type: string;
   description: string;
-  category: string;
-  severity: string;
   status: string;
   latitude: number;
   longitude: number;
-  location_name?: string;
-  occurred_at: string;
+  observed_at: string;
   photo_urls?: string[];
-  reporter_name?: string;
-  reporter_email?: string;
-  user_id?: string;
+  contact_name?: string;
+  contact_email?: string;
+  reporter_id?: string;
   created_at: string;
 }
-
-const severityColors: Record<string, string> = {
-  low: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  medium: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
-  high: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
-  critical: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-};
 
 const statusColors: Record<string, string> = {
   pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
@@ -76,14 +66,9 @@ export default function AdminIncidentsPage() {
     }
   };
 
-  const getCategoryLabel = (value: string) => {
-    const category = INCIDENT_CATEGORIES.find(c => c.value === value);
-    return category?.label || value;
-  };
-
-  const getSeverityLabel = (value: string) => {
-    const severity = INCIDENT_SEVERITY.find(s => s.value === value);
-    return severity?.label || value;
+  const getActivityTypeLabel = (value: string) => {
+    const activityType = ACTIVITY_TYPES.find(t => t.value === value);
+    return activityType?.label || value;
   };
 
   const formatDate = (dateString: string) => {
@@ -104,34 +89,28 @@ export default function AdminIncidentsPage() {
   const exportToCSV = () => {
     const headers = [
       "ID",
-      "Title",
-      "Category",
-      "Severity",
+      "Activity Type",
       "Status",
-      "Date Occurred",
-      "Location Name",
+      "Date Observed",
       "Latitude",
       "Longitude",
       "Description",
-      "Reporter Name",
-      "Reporter Email",
+      "Contact Name",
+      "Contact Email",
       "Photo Count",
       "Created At",
     ];
 
     const rows = incidents.map(i => [
       i.id,
-      i.title?.replace(/"/g, '""') || "",
-      getCategoryLabel(i.category),
-      getSeverityLabel(i.severity),
+      getActivityTypeLabel(i.activity_type),
       i.status,
-      i.occurred_at,
-      i.location_name || "",
+      i.observed_at,
       i.latitude,
       i.longitude,
       i.description?.replace(/"/g, '""') || "",
-      i.reporter_name || "",
-      i.reporter_email || "",
+      i.contact_name || "",
+      i.contact_email || "",
       i.photo_urls?.length || 0,
       i.created_at,
     ]);
@@ -183,12 +162,11 @@ export default function AdminIncidentsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[60px]">Media</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Severity</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Description</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
-                  <TableHead>Reporter</TableHead>
+                  <TableHead>Contact</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -222,16 +200,11 @@ export default function AdminIncidentsPage() {
                             </div>
                           )}
                         </TableCell>
-                        <TableCell>
-                          <p className="font-medium line-clamp-1">{incident.title}</p>
-                        </TableCell>
                         <TableCell className="text-sm">
-                          {getCategoryLabel(incident.category)}
+                          {getActivityTypeLabel(incident.activity_type)}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className={severityColors[incident.severity]}>
-                            {getSeverityLabel(incident.severity)}
-                          </Badge>
+                          <p className="font-medium line-clamp-1 max-w-[200px]">{incident.description}</p>
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className={statusColors[incident.status]}>
@@ -239,10 +212,10 @@ export default function AdminIncidentsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">
-                          {formatDate(incident.occurred_at)}
+                          {formatDate(incident.observed_at)}
                         </TableCell>
                         <TableCell className="text-sm">
-                          {incident.reporter_name || (
+                          {incident.contact_name || (
                             <span className="text-muted-foreground">Anonymous</span>
                           )}
                         </TableCell>
@@ -260,7 +233,7 @@ export default function AdminIncidentsPage() {
                       </TableRow>
                       <CollapsibleContent asChild>
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableCell colSpan={8} className="p-4">
+                          <TableCell colSpan={7} className="p-4">
                             <div className="grid gap-6 md:grid-cols-2">
                               {/* Photos/Videos */}
                               {incident.photo_urls && incident.photo_urls.length > 0 && (
@@ -302,7 +275,7 @@ export default function AdminIncidentsPage() {
                                   <div className="flex items-center gap-2">
                                     <Calendar className="h-4 w-4 text-muted-foreground" />
                                     <span className="text-sm">
-                                      {new Date(incident.occurred_at).toLocaleDateString("en-US", {
+                                      {new Date(incident.observed_at).toLocaleDateString("en-US", {
                                         weekday: "long",
                                         year: "numeric",
                                         month: "long",
@@ -315,16 +288,16 @@ export default function AdminIncidentsPage() {
                                   <div className="flex items-center gap-2">
                                     <MapPin className="h-4 w-4 text-muted-foreground" />
                                     <span className="text-sm">
-                                      {incident.location_name || "No location name"} ({incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)})
+                                      {incident.latitude.toFixed(6)}, {incident.longitude.toFixed(6)}
                                     </span>
                                   </div>
-                                  {(incident.reporter_name || incident.reporter_email) && (
+                                  {(incident.contact_name || incident.contact_email) && (
                                     <div className="flex items-center gap-2">
                                       <User className="h-4 w-4 text-muted-foreground" />
                                       <span className="text-sm">
-                                        {incident.reporter_name || "Anonymous"}
-                                        {incident.reporter_email && (
-                                          <span className="text-muted-foreground"> ({incident.reporter_email})</span>
+                                        {incident.contact_name || "Anonymous"}
+                                        {incident.contact_email && (
+                                          <span className="text-muted-foreground"> ({incident.contact_email})</span>
                                         )}
                                       </span>
                                     </div>

@@ -23,9 +23,8 @@ import { UploadGallery, type UploadedFile } from "@/components/upload/UploadGall
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { createIncidentSchema, type CreateIncidentInput } from "@/lib/validation";
-import { INCIDENT_CATEGORIES, INCIDENT_SEVERITY } from "@/lib/constants";
+import { ACTIVITY_TYPES } from "@/lib/constants";
 import { STORAGE_BUCKETS } from "@/lib/supabase/storage";
-import { cn } from "@/lib/utils";
 
 /**
  * Get current date/time in BVI timezone (Atlantic Standard Time, UTC-4)
@@ -85,12 +84,11 @@ export default function ReportPage() {
   } = useForm<CreateIncidentInput>({
     resolver: zodResolver(createIncidentSchema),
     defaultValues: {
-      occurredAt: getCurrentDateTimeAST(),
+      observedAt: getCurrentDateTimeAST(),
     },
   });
 
-  const selectedCategory = watch("category");
-  const selectedSeverity = watch("severity");
+  const selectedActivityType = watch("activityType");
 
   const handleLocationSelect = (lat: number, lng: number) => {
     setSelectedLocation({ lat, lng });
@@ -114,14 +112,14 @@ export default function ReportPage() {
         .map((file) => file.storagePath as string);
 
       // Convert datetime-local to ISO string (treating input as AST/UTC-4)
-      const occurredAtISO = convertToISOString(data.occurredAt);
+      const observedAtISO = convertToISOString(data.observedAt);
 
       const response = await fetch("/api/incidents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          occurredAt: occurredAtISO,
+          observedAt: observedAtISO,
           photoUrls,
         }),
       });
@@ -239,16 +237,6 @@ export default function ReportPage() {
                 Please select a location on the map
               </p>
             )}
-
-            <div>
-              <Label htmlFor="locationName">Location Name (optional)</Label>
-              <Input
-                id="locationName"
-                placeholder="e.g., Norman Island, The Bight"
-                {...register("locationName")}
-                className="mt-1"
-              />
-            </div>
           </CardContent>
         </Card>
 
@@ -262,15 +250,28 @@ export default function ReportPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                placeholder="Brief description of the incident"
-                {...register("title")}
-                className="mt-1"
-              />
-              {errors.title && (
-                <p className="mt-1 text-sm text-destructive">{errors.title.message}</p>
+              <Label>Activity Type</Label>
+              <Select
+                onValueChange={(value) => setValue("activityType", value as CreateIncidentInput["activityType"], { shouldValidate: true })}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select type of incident" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTIVITY_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.activityType && (
+                <p className="mt-1 text-sm text-destructive">{errors.activityType.message}</p>
+              )}
+              {selectedActivityType && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {ACTIVITY_TYPES.find((t) => t.value === selectedActivityType)?.description}
+                </p>
               )}
             </div>
 
@@ -288,75 +289,16 @@ export default function ReportPage() {
               )}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <Label>Category</Label>
-                <Select
-                  onValueChange={(value) => setValue("category", value as CreateIncidentInput["category"], { shouldValidate: true })}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INCIDENT_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.category && (
-                  <p className="mt-1 text-sm text-destructive">{errors.category.message}</p>
-                )}
-                {selectedCategory && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {INCIDENT_CATEGORIES.find((c) => c.value === selectedCategory)?.description}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label>Severity</Label>
-                <Select
-                  onValueChange={(value) => setValue("severity", value as CreateIncidentInput["severity"], { shouldValidate: true })}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select severity" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INCIDENT_SEVERITY.map((sev) => (
-                      <SelectItem key={sev.value} value={sev.value}>
-                        <span className="flex items-center gap-2">
-                          <span
-                            className={cn("h-2 w-2 rounded-full", sev.color)}
-                          />
-                          {sev.label}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.severity && (
-                  <p className="mt-1 text-sm text-destructive">{errors.severity.message}</p>
-                )}
-                {selectedSeverity && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {INCIDENT_SEVERITY.find((s) => s.value === selectedSeverity)?.description}
-                  </p>
-                )}
-              </div>
-            </div>
-
             <div>
-              <Label htmlFor="occurredAt">When did this occur?</Label>
+              <Label htmlFor="observedAt">When did this occur?</Label>
               <Input
-                id="occurredAt"
+                id="observedAt"
                 type="datetime-local"
-                {...register("occurredAt")}
+                {...register("observedAt")}
                 className="mt-1"
               />
-              {errors.occurredAt && (
-                <p className="mt-1 text-sm text-destructive">{errors.occurredAt.message}</p>
+              {errors.observedAt && (
+                <p className="mt-1 text-sm text-destructive">{errors.observedAt.message}</p>
               )}
             </div>
           </CardContent>
@@ -389,31 +331,31 @@ export default function ReportPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="reporterName" className="flex items-center gap-2">
+                <Label htmlFor="contactName" className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   Your Name
                 </Label>
                 <Input
-                  id="reporterName"
+                  id="contactName"
                   placeholder="Optional"
-                  {...register("reporterName")}
+                  {...register("contactName")}
                   className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="reporterEmail" className="flex items-center gap-2">
+                <Label htmlFor="contactEmail" className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
                   Email Address
                 </Label>
                 <Input
-                  id="reporterEmail"
+                  id="contactEmail"
                   type="email"
                   placeholder="Optional — for follow-up only"
-                  {...register("reporterEmail")}
+                  {...register("contactEmail")}
                   className="mt-1"
                 />
-                {errors.reporterEmail && (
-                  <p className="mt-1 text-sm text-destructive">{errors.reporterEmail.message}</p>
+                {errors.contactEmail && (
+                  <p className="mt-1 text-sm text-destructive">{errors.contactEmail.message}</p>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">

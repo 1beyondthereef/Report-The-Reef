@@ -9,8 +9,8 @@ export const BVI_BOUNDS = {
 // Mapbox style
 export const MAPBOX_STYLE = "mapbox://styles/mapbox/outdoors-v12";
 
-// Incident categories
-export const INCIDENT_CATEGORIES = [
+// Activity types for incident reports (matches Supabase activity_type column)
+export const ACTIVITY_TYPES = [
   { value: "reef_damage", label: "Reef Damage", description: "Coral bleaching, anchor damage, or other reef harm" },
   { value: "pollution", label: "Pollution", description: "Oil spills, debris, or water contamination" },
   { value: "abandoned_fishing_gear", label: "Abandoned Fishing Gear", description: "Ghost nets, traps, lines, or other derelict fishing equipment" },
@@ -18,6 +18,9 @@ export const INCIDENT_CATEGORIES = [
   { value: "safety", label: "Safety Hazard", description: "Navigation hazards, unmarked obstacles, or dangerous conditions" },
   { value: "other", label: "Other", description: "Any other environmental or boating concern" },
 ] as const;
+
+// Legacy alias for backwards compatibility
+export const INCIDENT_CATEGORIES = ACTIVITY_TYPES;
 
 // Wildlife species for megafauna reporting
 export const WILDLIFE_SPECIES = [

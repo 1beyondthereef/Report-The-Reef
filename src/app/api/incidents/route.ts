@@ -70,19 +70,16 @@ export async function POST(request: NextRequest) {
     // Extract photo URLs from the request body (array of storage paths)
     const photoUrls: string[] = body.photoUrls || [];
 
-    // Build the insert object
+    // Build the insert object (matches Supabase incidents table columns)
     const insertData = {
-      user_id: user?.id || null,
-      reporter_email: data.reporterEmail || null,
-      reporter_name: data.reporterName || null,
-      title: data.title,
+      reporter_id: user?.id || null,
+      contact_email: data.contactEmail || null,
+      contact_name: data.contactName || null,
+      activity_type: data.activityType,
       description: data.description,
-      category: data.category,
-      severity: data.severity,
       latitude: data.latitude,
       longitude: data.longitude,
-      location_name: data.locationName,
-      occurred_at: data.occurredAt,
+      observed_at: data.observedAt,
       status: "pending",
       photo_urls: photoUrls.length > 0 ? photoUrls : null,
     };

@@ -30,23 +30,20 @@ const datetimeLocalOrISO = z.string().refine(
   { message: "Please enter a valid date and time" }
 );
 
-// Incident schemas
+// Incident schemas (matches Supabase incidents table columns)
 export const createIncidentSchema = z.object({
-  title: z.string().min(5, "Title must be at least 5 characters").max(200),
+  activityType: z.enum(["reef_damage", "pollution", "abandoned_fishing_gear", "wildlife", "safety", "other"]),
   description: z.string().min(20, "Please provide more details (at least 20 characters)").max(2000),
-  category: z.enum(["reef_damage", "pollution", "abandoned_fishing_gear", "wildlife", "safety", "other"]),
-  severity: z.enum(["low", "medium", "high", "critical"]),
   latitude: z.number()
     .min(BVI_BOUNDS.southwest.lat, "Location must be within BVI waters")
     .max(BVI_BOUNDS.northeast.lat, "Location must be within BVI waters"),
   longitude: z.number()
     .min(BVI_BOUNDS.southwest.lng, "Location must be within BVI waters")
     .max(BVI_BOUNDS.northeast.lng, "Location must be within BVI waters"),
-  locationName: z.string().max(200).optional(),
-  occurredAt: datetimeLocalOrISO,
-  // Optional reporter info for anonymous submissions
-  reporterEmail: z.string().email("Please enter a valid email").optional().or(z.literal("")),
-  reporterName: z.string().max(100).optional(),
+  observedAt: datetimeLocalOrISO,
+  // Optional contact info for anonymous submissions
+  contactEmail: z.string().email("Please enter a valid email").optional().or(z.literal("")),
+  contactName: z.string().max(100).optional(),
 });
 
 export const updateIncidentSchema = createIncidentSchema.partial().extend({
