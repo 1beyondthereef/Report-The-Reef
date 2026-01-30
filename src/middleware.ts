@@ -10,13 +10,6 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      auth: {
-        // Use implicit flow for magic links (must match client config)
-        flowType: "implicit",
-        detectSessionInUrl: true,
-        persistSession: true,
-        autoRefreshToken: true,
-      },
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -36,8 +29,17 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session if expired - required for Server Components
+  // IMPORTANT: Do not run any Supabase operations between createServerClient
+  // and supabase.auth.getUser(). A simple getUser() call can refresh an expired
+  // session and set new cookies.
   await supabase.auth.getUser();
+
+  // Optional: Protect routes that require authentication
+  // if (!user && request.nextUrl.pathname.startsWith('/protected')) {
+  //   const url = request.nextUrl.clone();
+  //   url.pathname = '/login';
+  //   return NextResponse.redirect(url);
+  // }
 
   return supabaseResponse;
 }
@@ -49,7 +51,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
+     * - public folder files
      */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
