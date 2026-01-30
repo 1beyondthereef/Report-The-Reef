@@ -64,8 +64,9 @@ export const INCIDENT_SEVERITY = [
 
 // Incident status
 export const INCIDENT_STATUS = [
-  { value: "pending", label: "Pending Review", color: "bg-gray-500" },
-  { value: "investigating", label: "Under Investigation", color: "bg-blue-500" },
+  { value: "pending", label: "Pending", color: "bg-yellow-500" },
+  { value: "in_progress", label: "In Progress", color: "bg-blue-500" },
+  { value: "reviewed", label: "Reviewed", color: "bg-purple-500" },
   { value: "resolved", label: "Resolved", color: "bg-green-500" },
   { value: "dismissed", label: "Dismissed", color: "bg-gray-400" },
 ] as const;
