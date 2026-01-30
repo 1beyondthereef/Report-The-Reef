@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (redirectTo) {
         callbackUrl.searchParams.set("next", redirectTo);
       } else {
-        callbackUrl.searchParams.set("next", "/social");
+        callbackUrl.searchParams.set("next", "/connect");
       }
 
       const { error } = await supabase.auth.signInWithOtp({
