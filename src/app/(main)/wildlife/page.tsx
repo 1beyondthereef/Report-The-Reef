@@ -95,8 +95,7 @@ export default function WildlifePage() {
     handleSubmit,
     setValue,
     reset,
-    watch,
-    formState: { errors, isValid },
+    formState: { errors },
   } = useForm<CreateWildlifeSightingInput>({
     resolver: zodResolver(createWildlifeSightingSchema),
     defaultValues: {
@@ -104,9 +103,6 @@ export default function WildlifePage() {
     },
     mode: "onChange", // Validate on change to show errors immediately
   });
-
-  // Debug: watch all form values
-  const formValues = watch();
 
   const handleLocationSelect = (lat: number, lng: number) => {
     setSelectedLocation({ lat, lng });

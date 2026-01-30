@@ -59,31 +59,34 @@ export function UploadGallery({
     return URL.createObjectURL(file);
   };
 
-  const uploadFile = async (uploadedFile: UploadedFile): Promise<UploadedFile> => {
-    // Upload to Supabase Storage
-    const result = await uploadToStorage(uploadedFile.file, bucket, (progress) => {
-      setFiles((prev) =>
-        prev.map((f) => (f.id === uploadedFile.id ? { ...f, progress } : f))
-      );
-    });
+  const uploadFile = useCallback(
+    async (uploadedFile: UploadedFile): Promise<UploadedFile> => {
+      // Upload to Supabase Storage
+      const result = await uploadToStorage(uploadedFile.file, bucket, (progress) => {
+        setFiles((prev) =>
+          prev.map((f) => (f.id === uploadedFile.id ? { ...f, progress } : f))
+        );
+      });
 
-    if (result.success) {
-      return {
-        ...uploadedFile,
-        progress: 100,
-        uploaded: true,
-        // For public bucket (wildlife), use public URL; for private (incidents), use storage path
-        url: result.publicUrl || result.path,
-        storagePath: result.path,
-      };
-    } else {
-      return {
-        ...uploadedFile,
-        progress: 0,
-        error: result.error,
-      };
-    }
-  };
+      if (result.success) {
+        return {
+          ...uploadedFile,
+          progress: 100,
+          uploaded: true,
+          // For public bucket (wildlife), use public URL; for private (incidents), use storage path
+          url: result.publicUrl || result.path,
+          storagePath: result.path,
+        };
+      } else {
+        return {
+          ...uploadedFile,
+          progress: 0,
+          error: result.error,
+        };
+      }
+    },
+    [bucket]
+  );
 
   const addFiles = useCallback(
     async (newFiles: FileList | File[]) => {
@@ -125,7 +128,7 @@ export function UploadGallery({
         }
       }
     },
-    [files, maxFiles, onFilesChange, bucket]
+    [files, maxFiles, onFilesChange, uploadFile]
   );
 
   const removeFile = useCallback(
