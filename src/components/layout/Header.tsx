@@ -25,7 +25,7 @@ const navItems = [
   { href: "/wildlife", label: "Wildlife", icon: WhaleIcon },
   { href: "/anchorages", label: "Explore", icon: Anchor },
   { href: "/moorings", label: "Reserve", icon: Ship },
-  { href: "/social", label: "Connect", icon: Users },
+  { href: "/connect", label: "Connect", icon: Users },
 ];
 
 export function Header() {
