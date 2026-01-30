@@ -4,15 +4,39 @@ import { createWildlifeSightingSchema } from "@/lib/validation";
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+const DEFAULT_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 50;
+
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
 
+    // Parse pagination parameters
+    const { searchParams } = new URL(request.url);
+    const limitParam = searchParams.get("limit");
+    const offsetParam = searchParams.get("offset");
+
+    const limit = Math.min(
+      Math.max(1, parseInt(limitParam || String(DEFAULT_PAGE_SIZE), 10) || DEFAULT_PAGE_SIZE),
+      MAX_PAGE_SIZE
+    );
+    const offset = Math.max(0, parseInt(offsetParam || "0", 10) || 0);
+
+    // Get total count for pagination info
+    const { count: totalCount, error: countError } = await supabase
+      .from("wildlife_sightings")
+      .select("*", { count: "exact", head: true });
+
+    if (countError) {
+      console.error("Error counting wildlife sightings:", countError);
+    }
+
+    // Fetch paginated sightings
     const { data: sightings, error } = await supabase
       .from("wildlife_sightings")
       .select("*")
       .order("sighted_at", { ascending: false })
-      .limit(50);
+      .range(offset, offset + limit - 1);
 
     if (error) {
       console.error("Error fetching wildlife sightings:", error);
@@ -22,7 +46,18 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ sightings: sightings || [] });
+    const total = totalCount ?? 0;
+    const hasMore = offset + (sightings?.length || 0) < total;
+
+    return NextResponse.json({
+      sightings: sightings || [],
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore,
+      },
+    });
   } catch (error) {
     console.error("Error in GET /api/wildlife:", error);
     return NextResponse.json(

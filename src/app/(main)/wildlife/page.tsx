@@ -84,6 +84,15 @@ interface WildlifeSighting {
   created_at: string;
 }
 
+interface PaginationInfo {
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
+const PAGE_SIZE = 10;
+
 export default function WildlifePage() {
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
@@ -96,7 +105,9 @@ export default function WildlifePage() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [recentSightings, setRecentSightings] = useState<WildlifeSighting[]>([]);
   const [isLoadingSightings, setIsLoadingSightings] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [selectedSighting, setSelectedSighting] = useState<WildlifeSighting | null>(null);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
 
   const {
     register,
@@ -118,18 +129,42 @@ export default function WildlifePage() {
     setValue("longitude", lng, { shouldValidate: true });
   };
 
-  const fetchRecentSightings = async () => {
-    setIsLoadingSightings(true);
+  const fetchRecentSightings = async (reset = true) => {
+    if (reset) {
+      setIsLoadingSightings(true);
+      setRecentSightings([]);
+      setPagination(null);
+    }
     try {
-      const response = await fetch("/api/wildlife");
+      const response = await fetch(`/api/wildlife?limit=${PAGE_SIZE}&offset=0`);
       if (response.ok) {
         const data = await response.json();
         setRecentSightings(data.sightings || []);
+        setPagination(data.pagination || null);
       }
     } catch (error) {
       console.error("Failed to fetch sightings:", error);
     } finally {
       setIsLoadingSightings(false);
+    }
+  };
+
+  const loadMoreSightings = async () => {
+    if (!pagination?.hasMore || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const nextOffset = pagination.offset + pagination.limit;
+      const response = await fetch(`/api/wildlife?limit=${PAGE_SIZE}&offset=${nextOffset}`);
+      if (response.ok) {
+        const data = await response.json();
+        setRecentSightings((prev) => [...prev, ...(data.sightings || [])]);
+        setPagination(data.pagination || null);
+      }
+    } catch (error) {
+      console.error("Failed to load more sightings:", error);
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -565,7 +600,7 @@ export default function WildlifePage() {
                 <div className="text-center p-6">
                   <Fish className="h-16 w-16 mx-auto mb-4 text-primary/40" />
                   <p className="text-muted-foreground">
-                    {recentSightings.length} sighting{recentSightings.length !== 1 ? "s" : ""} reported in BVI waters
+                    {pagination?.total ?? recentSightings.length} sighting{(pagination?.total ?? recentSightings.length) !== 1 ? "s" : ""} reported in BVI waters
                   </p>
                 </div>
               </div>
@@ -583,61 +618,98 @@ export default function WildlifePage() {
                     <p>No sightings reported yet. Be the first!</p>
                   </div>
                 ) : (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {recentSightings.map((sighting) => (
-                      <Card
-                        key={sighting.id}
-                        className="overflow-hidden cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]"
-                        onClick={() => setSelectedSighting(sighting)}
-                      >
-                        {sighting.photo_url && (
-                          <div className="aspect-video bg-muted relative">
-                            <Image
-                              src={sighting.photo_url}
-                              alt={getSpeciesLabel(sighting.species)}
-                              fill
-                              className="object-cover"
-                            />
-                          </div>
-                        )}
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <h4 className="font-medium">
-                                {WILDLIFE_SPECIES.find(s => s.value === sighting.species)?.label || sighting.species}
-                              </h4>
-                              <p className="text-xs text-muted-foreground italic">
-                                {WILDLIFE_SPECIES.find(s => s.value === sighting.species)?.scientific}
-                              </p>
+                  <>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {recentSightings.map((sighting) => (
+                        <Card
+                          key={sighting.id}
+                          className="overflow-hidden cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]"
+                          onClick={() => setSelectedSighting(sighting)}
+                        >
+                          {sighting.photo_url && (
+                            <div className="aspect-video bg-muted relative">
+                              <Image
+                                src={sighting.photo_url}
+                                alt={getSpeciesLabel(sighting.species)}
+                                fill
+                                className="object-cover"
+                                loading="lazy"
+                                sizes="(max-width: 640px) 100vw, 50vw"
+                              />
                             </div>
-                            <span className="text-sm text-muted-foreground">
-                              {sighting.count} individual{sighting.count !== "1" ? "s" : ""}
-                            </span>
-                          </div>
-                          {sighting.location_name && (
-                            <p className="text-sm text-muted-foreground mb-2">
-                              <MapPin className="inline h-3 w-3 mr-1" />
-                              {sighting.location_name}
-                            </p>
                           )}
-                          {sighting.comments && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {sighting.comments}
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <h4 className="font-medium">
+                                  {WILDLIFE_SPECIES.find(s => s.value === sighting.species)?.label || sighting.species}
+                                </h4>
+                                <p className="text-xs text-muted-foreground italic">
+                                  {WILDLIFE_SPECIES.find(s => s.value === sighting.species)?.scientific}
+                                </p>
+                              </div>
+                              <span className="text-sm text-muted-foreground">
+                                {sighting.count} individual{sighting.count !== "1" ? "s" : ""}
+                              </span>
+                            </div>
+                            {sighting.location_name && (
+                              <p className="text-sm text-muted-foreground mb-2">
+                                <MapPin className="inline h-3 w-3 mr-1" />
+                                {sighting.location_name}
+                              </p>
+                            )}
+                            {sighting.comments && (
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {sighting.comments}
+                              </p>
+                            )}
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {new Date(sighting.sighted_at).toLocaleDateString("en-US", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+
+                    {/* Load More Button */}
+                    {pagination?.hasMore && (
+                      <div className="flex justify-center pt-4">
+                        <Button
+                          variant="outline"
+                          onClick={loadMoreSightings}
+                          disabled={isLoadingMore}
+                          className="rounded-full px-8"
+                        >
+                          {isLoadingMore ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              Load More
+                              <span className="ml-2 text-muted-foreground">
+                                ({recentSightings.length} of {pagination.total})
+                              </span>
+                            </>
                           )}
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {new Date(sighting.sighted_at).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* All loaded indicator */}
+                    {pagination && !pagination.hasMore && recentSightings.length > 0 && (
+                      <p className="text-center text-sm text-muted-foreground pt-4">
+                        Showing all {pagination.total} sighting{pagination.total !== 1 ? "s" : ""}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             </CardContent>
@@ -667,6 +739,8 @@ export default function WildlifePage() {
                     alt={getSpeciesLabel(selectedSighting.species)}
                     fill
                     className="object-cover"
+                    loading="lazy"
+                    sizes="(max-width: 768px) 100vw, 500px"
                   />
                 </div>
               )}

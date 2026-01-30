@@ -1,4 +1,5 @@
 import { createClient } from "./client";
+import { compressImage, isCompressibleImage } from "@/lib/image-utils";
 
 // Storage bucket names (must match exactly what's in Supabase - case sensitive)
 export const STORAGE_BUCKETS = {
@@ -62,6 +63,7 @@ export function validateUploadFile(file: File): { valid: boolean; error?: string
 
 /**
  * Upload a file to Supabase Storage with progress tracking
+ * Images are automatically compressed before upload (max 1200px, 80% quality)
  */
 export async function uploadToStorage(
   file: File,
@@ -74,8 +76,22 @@ export async function uploadToStorage(
     return { success: false, error: validation.error! };
   }
 
+  // Compress images before upload (max 1200px width/height, 80% quality)
+  let fileToUpload = file;
+  if (isCompressibleImage(file)) {
+    try {
+      fileToUpload = await compressImage(file, {
+        maxWidth: 1200,
+        maxHeight: 1200,
+        quality: 0.8,
+      });
+    } catch (error) {
+      console.warn("Image compression failed, uploading original:", error);
+    }
+  }
+
   const supabase = createClient();
-  const filename = generateStorageFilename(file.name, file.type);
+  const filename = generateStorageFilename(fileToUpload.name, fileToUpload.type);
 
   try {
     // Start progress simulation since Supabase JS doesn't support upload progress natively
@@ -84,7 +100,7 @@ export async function uploadToStorage(
 
     if (onProgress) {
       // Simulate progress based on file size
-      const estimatedTime = Math.max(1000, Math.min(5000, file.size / 10000));
+      const estimatedTime = Math.max(1000, Math.min(5000, fileToUpload.size / 10000));
       const stepTime = estimatedTime / 90; // Get to 90% during upload
 
       progressInterval = setInterval(() => {
@@ -93,10 +109,10 @@ export async function uploadToStorage(
       }, stepTime);
     }
 
-    // Upload the file
+    // Upload the file (compressed if it was an image)
     const { data, error } = await supabase.storage
       .from(bucket)
-      .upload(filename, file, {
+      .upload(filename, fileToUpload, {
         cacheControl: "3600",
         upsert: false,
       });

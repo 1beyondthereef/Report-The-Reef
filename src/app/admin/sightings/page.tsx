@@ -185,6 +185,8 @@ export default function AdminSightingsPage() {
                                 alt={getSpeciesLabel(sighting.species)}
                                 fill
                                 className="object-cover"
+                                loading="lazy"
+                                sizes="40px"
                               />
                             </div>
                           ) : (
@@ -243,6 +245,8 @@ export default function AdminSightingsPage() {
                                     alt={getSpeciesLabel(sighting.species)}
                                     fill
                                     className="object-cover"
+                                    loading="lazy"
+                                    sizes="(max-width: 768px) 100vw, 400px"
                                   />
                                 </div>
                               )}
