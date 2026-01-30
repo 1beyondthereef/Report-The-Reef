@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Download, Loader2, AlertTriangle, MapPin, Calendar, User, ChevronDown, ChevronUp, Film, ImageIcon } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
+import { Download, Loader2, AlertTriangle, MapPin, Calendar, User, ChevronDown, ChevronUp, Film, ImageIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -19,6 +24,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ACTIVITY_TYPES } from "@/lib/constants";
+import { STORAGE_BUCKETS } from "@/lib/supabase/storage";
 
 interface Incident {
   id: string;
@@ -46,6 +52,9 @@ export default function AdminIncidentsPage() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const [loadingUrls, setLoadingUrls] = useState<Set<string>>(new Set());
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchIncidents();
@@ -65,6 +74,57 @@ export default function AdminIncidentsPage() {
       setIsLoading(false);
     }
   };
+
+  // Fetch signed URLs for an incident's photos
+  const fetchSignedUrls = useCallback(async (paths: string[]) => {
+    // Filter out paths we already have URLs for or are loading
+    const pathsToFetch = paths.filter(
+      (path) => !signedUrls[path] && !loadingUrls.has(path)
+    );
+
+    if (pathsToFetch.length === 0) return;
+
+    // Mark paths as loading
+    setLoadingUrls((prev) => {
+      const next = new Set(prev);
+      pathsToFetch.forEach((p) => next.add(p));
+      return next;
+    });
+
+    try {
+      const response = await fetch("/api/storage/signed-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paths: pathsToFetch,
+          bucket: STORAGE_BUCKETS.INCIDENT_REPORTS,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSignedUrls((prev) => ({ ...prev, ...data.signedUrls }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch signed URLs:", error);
+    } finally {
+      setLoadingUrls((prev) => {
+        const next = new Set(prev);
+        pathsToFetch.forEach((p) => next.delete(p));
+        return next;
+      });
+    }
+  }, [signedUrls, loadingUrls]);
+
+  // Fetch signed URLs when an incident is expanded
+  useEffect(() => {
+    if (expandedId) {
+      const incident = incidents.find((i) => i.id === expandedId);
+      if (incident?.photo_urls && incident.photo_urls.length > 0) {
+        fetchSignedUrls(incident.photo_urls);
+      }
+    }
+  }, [expandedId, incidents, fetchSignedUrls]);
 
   const getActivityTypeLabel = (value: string) => {
     const activityType = ACTIVITY_TYPES.find(t => t.value === value);
@@ -242,29 +302,56 @@ export default function AdminIncidentsPage() {
                                     Attached Media ({incident.photo_urls.length})
                                   </p>
                                   <div className="grid grid-cols-2 gap-2">
-                                    {incident.photo_urls.map((path, index) => (
-                                      <div
-                                        key={index}
-                                        className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted"
-                                      >
-                                        {isVideo(path) ? (
-                                          <div className="h-full w-full flex items-center justify-center">
-                                            <Film className="h-8 w-8 text-muted-foreground" />
-                                            <p className="ml-2 text-sm text-muted-foreground">Video</p>
-                                          </div>
-                                        ) : (
-                                          <div className="h-full w-full flex items-center justify-center bg-muted">
-                                            <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                                            <p className="ml-2 text-xs text-muted-foreground truncate max-w-[100px]">
-                                              {path.split("/").pop()}
-                                            </p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
+                                    {incident.photo_urls.map((path, index) => {
+                                      const url = signedUrls[path];
+                                      const isLoadingUrl = loadingUrls.has(path);
+                                      const isVideoFile = isVideo(path);
+
+                                      return (
+                                        <div
+                                          key={index}
+                                          className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+                                          onClick={() => {
+                                            if (url && !isVideoFile) {
+                                              setSelectedImage(url);
+                                            }
+                                          }}
+                                        >
+                                          {isVideoFile ? (
+                                            // Video placeholder
+                                            <div className="h-full w-full flex items-center justify-center">
+                                              <Film className="h-8 w-8 text-muted-foreground" />
+                                              <p className="ml-2 text-sm text-muted-foreground">Video</p>
+                                            </div>
+                                          ) : isLoadingUrl ? (
+                                            // Loading state
+                                            <div className="h-full w-full flex items-center justify-center">
+                                              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                            </div>
+                                          ) : url ? (
+                                            // Image thumbnail
+                                            <Image
+                                              src={url}
+                                              alt={`Incident photo ${index + 1}`}
+                                              fill
+                                              className="object-cover"
+                                              sizes="200px"
+                                            />
+                                          ) : (
+                                            // Fallback if no URL
+                                            <div className="h-full w-full flex items-center justify-center bg-muted">
+                                              <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                                              <p className="ml-2 text-xs text-muted-foreground truncate max-w-[100px]">
+                                                {path.split("/").pop()}
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
                                   <p className="text-xs text-muted-foreground">
-                                    Files stored in private bucket. Access via Supabase dashboard.
+                                    Click on an image to view full size
                                   </p>
                                 </div>
                               )}
@@ -325,6 +412,31 @@ export default function AdminIncidentsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Full-size Image Modal */}
+      <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+          <div className="relative w-full h-full min-h-[50vh]">
+            {selectedImage && (
+              <Image
+                src={selectedImage}
+                alt="Full size incident photo"
+                fill
+                className="object-contain"
+                sizes="(max-width: 1200px) 100vw, 1200px"
+              />
+            )}
+            <Button
+              variant="secondary"
+              size="icon"
+              className="absolute top-2 right-2 rounded-full"
+              onClick={() => setSelectedImage(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
