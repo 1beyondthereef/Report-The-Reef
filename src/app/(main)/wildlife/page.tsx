@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Fish, Loader2, CheckCircle, ArrowLeft, Mail, User, Locate, MapPin, Eye, Plus } from "lucide-react";
+import { Fish, Loader2, CheckCircle, ArrowLeft, Mail, User, Locate, MapPin, Eye, Plus, Check } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -95,13 +95,18 @@ export default function WildlifePage() {
     handleSubmit,
     setValue,
     reset,
-    formState: { errors },
+    watch,
+    formState: { errors, isValid },
   } = useForm<CreateWildlifeSightingInput>({
     resolver: zodResolver(createWildlifeSightingSchema),
     defaultValues: {
       sightedAt: getCurrentDateTimeAST(),
     },
+    mode: "onChange", // Validate on change to show errors immediately
   });
+
+  // Debug: watch all form values
+  const formValues = watch();
 
   const handleLocationSelect = (lat: number, lng: number) => {
     setSelectedLocation({ lat, lng });
@@ -130,7 +135,30 @@ export default function WildlifePage() {
     }
   }, [activeTab]);
 
+  // Handle form validation errors
+  const onFormError = (formErrors: typeof errors) => {
+    console.error("Form validation errors:", formErrors);
+
+    // Build a user-friendly error message
+    const errorMessages: string[] = [];
+    if (formErrors.species) errorMessages.push("Please select a species");
+    if (formErrors.latitude || formErrors.longitude) errorMessages.push("Please select a location on the map");
+    if (formErrors.sightedAt) errorMessages.push("Please enter a valid date and time");
+    if (formErrors.count) errorMessages.push("Please select the number of individuals");
+    if (formErrors.comments) errorMessages.push(formErrors.comments.message || "Invalid comments");
+    if (formErrors.reporterEmail) errorMessages.push(formErrors.reporterEmail.message || "Invalid email");
+
+    if (errorMessages.length > 0) {
+      setServerError(errorMessages.join(". "));
+    } else {
+      setServerError("Please fill in all required fields");
+    }
+  };
+
   const onSubmit = async (data: CreateWildlifeSightingInput) => {
+    console.log("Form submitted with data:", data);
+    console.log("Selected location:", selectedLocation);
+
     if (!selectedLocation) {
       setServerError("Please select a location on the map");
       return;
@@ -147,6 +175,12 @@ export default function WildlifePage() {
       // Convert datetime-local to ISO string (treating input as AST/UTC-4)
       const sightedAtISO = convertToISOString(data.sightedAt);
 
+      console.log("Sending to API:", {
+        ...data,
+        sightedAt: sightedAtISO,
+        photoUrl,
+      });
+
       const response = await fetch("/api/wildlife", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -157,13 +191,16 @@ export default function WildlifePage() {
         }),
       });
 
+      const result = await response.json();
+      console.log("API response:", result);
+
       if (response.ok) {
         setIsSuccess(true);
       } else {
-        const result = await response.json();
         setServerError(result.error || "Failed to submit sighting");
       }
-    } catch {
+    } catch (error) {
+      console.error("Network error:", error);
       setServerError("Network error. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -247,10 +284,24 @@ export default function WildlifePage() {
 
         {/* Report Tab */}
         <TabsContent value="report">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={handleSubmit(onSubmit, onFormError)} className="space-y-8">
             {serverError && (
               <div className="rounded-2xl bg-destructive/10 p-4 text-sm text-destructive">
                 {serverError}
+              </div>
+            )}
+
+            {/* Debug: Show form state (remove in production) */}
+            {process.env.NODE_ENV === 'development' && Object.keys(errors).length > 0 && (
+              <div className="rounded-2xl bg-amber-100 dark:bg-amber-900/30 p-4 text-sm">
+                <p className="font-medium text-amber-800 dark:text-amber-200 mb-2">Form Validation Issues:</p>
+                <ul className="list-disc list-inside text-amber-700 dark:text-amber-300">
+                  {errors.species && <li>Species: {errors.species.message || "Required"}</li>}
+                  {errors.latitude && <li>Latitude: {errors.latitude.message || "Required"}</li>}
+                  {errors.longitude && <li>Longitude: {errors.longitude.message || "Required"}</li>}
+                  {errors.sightedAt && <li>Date/Time: {errors.sightedAt.message || "Required"}</li>}
+                  {errors.count && <li>Count: {errors.count.message || "Required"}</li>}
+                </ul>
               </div>
             )}
 
@@ -350,9 +401,19 @@ export default function WildlifePage() {
                   </div>
                 </div>
 
-                {(errors.latitude || errors.longitude) && (
+                {/* Location status message */}
+                {selectedLocation ? (
+                  <p className="text-sm text-green-600 dark:text-green-400 flex items-center gap-1">
+                    <Check className="h-4 w-4" />
+                    Location selected
+                  </p>
+                ) : (errors.latitude || errors.longitude) ? (
                   <p className="text-sm text-destructive">
                     Please select a location on the map
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Click on the map to drop a pin
                   </p>
                 )}
 
