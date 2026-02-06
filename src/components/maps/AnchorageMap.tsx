@@ -9,6 +9,7 @@ import { BVI_BOUNDS, MAPBOX_STYLE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { DiveSite } from "@/lib/constants/dive-sites";
 import type { RestrictedArea } from "@/lib/constants/restricted-areas";
+import type { ProtectedArea } from "@/lib/constants/protected-areas";
 
 interface BaseAnchorage {
   id: string;
@@ -27,15 +28,20 @@ interface AnchorageMapProps<T extends BaseAnchorage> {
   anchorages: T[];
   diveSites?: DiveSite[];
   restrictedAreas?: RestrictedArea[];
+  protectedAreas?: ProtectedArea[];
   selectedId?: string;
   selectedDiveSiteId?: string;
   selectedRestrictedAreaId?: string;
+  selectedProtectedAreaId?: string;
   onSelect: (anchorage: T) => void;
   onSelectDiveSite?: (diveSite: DiveSite) => void;
   onSelectRestrictedArea?: (area: RestrictedArea) => void;
+  onSelectProtectedArea?: (area: ProtectedArea) => void;
   showDiveSites?: boolean;
   showAnchorages?: boolean;
   showRestrictedAreas?: boolean;
+  showProtectedAreas?: boolean;
+  protectedAreaFilter?: 'all' | 'bird-sanctuaries' | 'fisheries' | 'parks' | 'proposed';
   className?: string;
 }
 
@@ -43,15 +49,20 @@ export function AnchorageMap<T extends BaseAnchorage>({
   anchorages,
   diveSites = [],
   restrictedAreas = [],
+  protectedAreas = [],
   selectedId,
   selectedDiveSiteId,
   selectedRestrictedAreaId,
+  selectedProtectedAreaId,
   onSelect,
   onSelectDiveSite,
   onSelectRestrictedArea,
+  onSelectProtectedArea,
   showDiveSites = true,
   showAnchorages = true,
   showRestrictedAreas = true,
+  showProtectedAreas = true,
+  protectedAreaFilter = 'all',
   className
 }: AnchorageMapProps<T>) {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -59,6 +70,7 @@ export function AnchorageMap<T extends BaseAnchorage>({
   const markers = useRef<mapboxgl.Marker[]>([]);
   const diveSiteMarkers = useRef<mapboxgl.Marker[]>([]);
   const restrictedAreaMarkers = useRef<mapboxgl.Marker[]>([]);
+  const protectedAreaMarkers = useRef<mapboxgl.Marker[]>([]);
 
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -99,6 +111,8 @@ export function AnchorageMap<T extends BaseAnchorage>({
       diveSiteMarkers.current = [];
       restrictedAreaMarkers.current.forEach((m) => m.remove());
       restrictedAreaMarkers.current = [];
+      protectedAreaMarkers.current.forEach((m) => m.remove());
+      protectedAreaMarkers.current = [];
       if (map.current) {
         map.current.remove();
         map.current = null;
@@ -244,38 +258,58 @@ export function AnchorageMap<T extends BaseAnchorage>({
     restrictedAreas.forEach((area) => {
       const isSelected = area.id === selectedRestrictedAreaId;
       const isNoEntry = area.restrictions.noEntry;
+      const isPriorityArea = area.type === 'fisheries_priority';
 
       const el = document.createElement("div");
       el.className = "restricted-area-marker cursor-pointer";
-      el.innerHTML = `
-        <div class="relative group">
-          <div class="${cn(
-            "flex items-center justify-center rounded-full shadow-lg transition-transform border-2",
-            isSelected
-              ? "h-12 w-12 bg-red-600 border-white scale-110"
-              : isNoEntry
-                ? "h-9 w-9 bg-red-700 border-red-300 hover:scale-110"
-                : "h-9 w-9 bg-red-600 border-white hover:scale-110"
-          )}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="${isSelected ? 26 : 20}" height="${isSelected ? 26 : 20}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-            </svg>
+
+      // Different markers for protected (red) vs priority (blue) areas
+      if (isPriorityArea) {
+        el.innerHTML = `
+          <div class="relative group">
+            <div class="${cn(
+              "flex items-center justify-center rounded-full shadow-lg transition-transform border-2",
+              isSelected
+                ? "h-12 w-12 bg-blue-600 border-white scale-110"
+                : "h-9 w-9 bg-blue-600 border-white hover:scale-110"
+            )}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="${isSelected ? 26 : 20}" height="${isSelected ? 26 : 20}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
           </div>
-          ${
-            area.seasonalRestrictions
-              ? `<div class="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-amber-500 border-2 border-white flex items-center justify-center shadow-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                </div>`
-              : ""
-          }
-        </div>
-      `;
+        `;
+      } else {
+        el.innerHTML = `
+          <div class="relative group">
+            <div class="${cn(
+              "flex items-center justify-center rounded-full shadow-lg transition-transform border-2",
+              isSelected
+                ? "h-12 w-12 bg-red-600 border-white scale-110"
+                : isNoEntry
+                  ? "h-9 w-9 bg-red-700 border-red-300 hover:scale-110"
+                  : "h-9 w-9 bg-red-600 border-white hover:scale-110"
+            )}">
+              <svg xmlns="http://www.w3.org/2000/svg" width="${isSelected ? 26 : 20}" height="${isSelected ? 26 : 20}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+              </svg>
+            </div>
+            ${
+              area.seasonalRestrictions
+                ? `<div class="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-amber-500 border-2 border-white flex items-center justify-center shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                      <line x1="16" y1="2" x2="16" y2="6"/>
+                      <line x1="8" y1="2" x2="8" y2="6"/>
+                      <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                  </div>`
+                : ""
+            }
+          </div>
+        `;
+      }
 
       el.addEventListener("click", () => {
         onSelectRestrictedArea(area);
@@ -288,6 +322,112 @@ export function AnchorageMap<T extends BaseAnchorage>({
       restrictedAreaMarkers.current.push(marker);
     });
   }, [restrictedAreas, selectedRestrictedAreaId, isLoaded, onSelectRestrictedArea, showRestrictedAreas]);
+
+  // Update protected area markers when protectedAreas change
+  useEffect(() => {
+    if (!map.current || !isLoaded) return;
+
+    // Remove existing protected area markers
+    protectedAreaMarkers.current.forEach((m) => m.remove());
+    protectedAreaMarkers.current = [];
+
+    // Only add markers if showProtectedAreas is true
+    if (!showProtectedAreas || !onSelectProtectedArea) return;
+
+    // Filter protected areas based on filter
+    const filteredAreas = protectedAreas.filter((area) => {
+      if (protectedAreaFilter === 'all') return true;
+      if (protectedAreaFilter === 'bird-sanctuaries') {
+        return area.protectionType === 'Bird Sanctuary';
+      }
+      if (protectedAreaFilter === 'fisheries') {
+        return area.protectionType === 'Fisheries Protected Area' ||
+               area.protectionType === 'Fisheries Priority Area' ||
+               area.existingStatus === 'Fisheries Protected Area' ||
+               area.existingStatus === 'Fisheries Priority Area';
+      }
+      if (protectedAreaFilter === 'parks') {
+        return area.existingStatus === 'National Park' ||
+               area.existingStatus === 'Marine Park' ||
+               area.managementDescription === 'National Park' ||
+               area.managementDescription === 'Marine Park';
+      }
+      if (protectedAreaFilter === 'proposed') {
+        return area.protectionType.includes('Proposed') || area.existingStatus === 'none';
+      }
+      return true;
+    });
+
+    // Add protected area markers
+    filteredAreas.forEach((area) => {
+      const isSelected = area.id === selectedProtectedAreaId;
+
+      // Determine marker style based on type
+      let bgColor = 'bg-slate-600';
+      let iconSvg = '';
+
+      if (area.protectionType === 'Bird Sanctuary' || area.existingStatus === 'Bird Sanctuary') {
+        bgColor = 'bg-green-600';
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${isSelected ? 26 : 18}" height="${isSelected ? 26 : 18}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 7h.01"/><path d="M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20"/><path d="m20 7 2 .5-2 .5"/><path d="M10 18v3"/><path d="M14 17.75V21"/><path d="M7 18a6 6 0 0 0 3.84-10.61"/></svg>`;
+      } else if (area.protectionType === 'Fisheries Protected Area' || area.existingStatus === 'Fisheries Protected Area') {
+        bgColor = 'bg-blue-600';
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${isSelected ? 26 : 18}" height="${isSelected ? 26 : 18}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 12c.94-3.46 4.94-6 8.5-6 3.56 0 6.06 2.54 7 6-.94 3.47-3.44 6-7 6s-7.56-2.53-8.5-6Z"/><path d="M18 12v.5"/><path d="M16 17.93a9.77 9.77 0 0 1-10 0"/><path d="M8 6a9.77 9.77 0 0 1 10 0"/><path d="M2 12h2"/><path d="m2 12 4 4"/><path d="m2 12 4-4"/></svg>`;
+      } else if (area.protectionType === 'Fisheries Priority Area' || area.existingStatus === 'Fisheries Priority Area') {
+        bgColor = 'bg-yellow-500';
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${isSelected ? 26 : 18}" height="${isSelected ? 26 : 18}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+      } else if (area.existingStatus === 'National Park' || area.managementDescription === 'National Park') {
+        bgColor = 'bg-emerald-700';
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${isSelected ? 26 : 18}" height="${isSelected ? 26 : 18}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>`;
+      } else if (area.existingStatus === 'Marine Park' || area.managementDescription === 'Marine Park') {
+        bgColor = 'bg-teal-600';
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${isSelected ? 26 : 18}" height="${isSelected ? 26 : 18}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>`;
+      } else if (area.protectionType.includes('Proposed')) {
+        bgColor = 'bg-orange-500';
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${isSelected ? 26 : 18}" height="${isSelected ? 26 : 18}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+      } else {
+        iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${isSelected ? 26 : 18}" height="${isSelected ? 26 : 18}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+      }
+
+      const el = document.createElement("div");
+      el.className = "protected-area-marker cursor-pointer";
+      el.innerHTML = `
+        <div class="relative group">
+          <div class="${cn(
+            "flex items-center justify-center rounded-full shadow-lg transition-transform border-2",
+            isSelected
+              ? `h-12 w-12 ${bgColor} border-white scale-110`
+              : `h-8 w-8 ${bgColor} border-white hover:scale-110`
+          )}">
+            ${iconSvg}
+          </div>
+        </div>
+      `;
+
+      el.addEventListener("click", () => {
+        onSelectProtectedArea(area);
+      });
+
+      const marker = new mapboxgl.Marker({ element: el })
+        .setLngLat([area.coordinates.lng, area.coordinates.lat])
+        .addTo(map.current!);
+
+      protectedAreaMarkers.current.push(marker);
+    });
+  }, [protectedAreas, selectedProtectedAreaId, isLoaded, onSelectProtectedArea, showProtectedAreas, protectedAreaFilter]);
+
+  // Fly to selected protected area
+  useEffect(() => {
+    if (!map.current || !selectedProtectedAreaId) return;
+
+    const area = protectedAreas.find((a) => a.id === selectedProtectedAreaId);
+    if (area) {
+      map.current.flyTo({
+        center: [area.coordinates.lng, area.coordinates.lat],
+        zoom: 13,
+        duration: 1000,
+      });
+    }
+  }, [selectedProtectedAreaId, protectedAreas]);
 
   // Fly to selected anchorage
   useEffect(() => {
@@ -474,19 +614,35 @@ export function AnchorageMap<T extends BaseAnchorage>({
                     <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
                   </svg>
                 </div>
-                <span>Protected Area</span>
+                <span>Restricted Area</span>
+              </div>
+            </>
+          )}
+          {showProtectedAreas && (
+            <>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-full bg-green-600 border-2 border-white shadow-sm" />
+                <span>Bird Sanctuary</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="relative h-4 w-4">
-                  <div className="h-4 w-4 rounded-full bg-red-600 border border-white flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="12" r="10"/>
-                      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-                    </svg>
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 border border-white" />
-                </div>
-                <span>Seasonal Restrictions</span>
+                <div className="h-4 w-4 rounded-full bg-blue-600 border-2 border-white shadow-sm" />
+                <span>Fisheries Protected</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-full bg-yellow-500 border-2 border-white shadow-sm" />
+                <span>Fisheries Priority</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-full bg-emerald-700 border-2 border-white shadow-sm" />
+                <span>National Park</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-full bg-teal-600 border-2 border-white shadow-sm" />
+                <span>Marine Park</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded-full bg-orange-500 border-2 border-white shadow-sm" />
+                <span>Proposed MPA</span>
               </div>
             </>
           )}

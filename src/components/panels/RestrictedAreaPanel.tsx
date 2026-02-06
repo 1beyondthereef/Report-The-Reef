@@ -16,6 +16,7 @@ interface RestrictedAreaPanelProps {
 const typeLabels: Record<RestrictedArea['type'], string> = {
   marine_park: 'Marine National Park',
   fisheries_protected: 'Fisheries Protected Area',
+  fisheries_priority: 'Fishery Priority Area',
   coral_restoration: 'Coral Restoration Site',
   seagrass_protection: 'Seagrass Protection Zone',
   bird_sanctuary: 'Bird Sanctuary',
@@ -25,6 +26,7 @@ const typeLabels: Record<RestrictedArea['type'], string> = {
 const typeColors: Record<RestrictedArea['type'], string> = {
   marine_park: 'bg-red-600',
   fisheries_protected: 'bg-orange-600',
+  fisheries_priority: 'bg-blue-600',
   coral_restoration: 'bg-pink-600',
   seagrass_protection: 'bg-emerald-600',
   bird_sanctuary: 'bg-amber-600',
@@ -79,10 +81,19 @@ export function RestrictedAreaPanel({ area, onClose, className }: RestrictedArea
         }}
       >
         {/* Header with Warning Icon */}
-        <div className="relative h-40 w-full overflow-hidden md:h-48 bg-gradient-to-br from-red-600 to-red-800">
+        <div className={cn(
+          "relative h-40 w-full overflow-hidden md:h-48",
+          area.type === 'fisheries_priority'
+            ? "bg-gradient-to-br from-blue-600 to-blue-800"
+            : "bg-gradient-to-br from-red-600 to-red-800"
+        )}>
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
             <div className="h-16 w-16 mb-2 bg-white/20 rounded-full flex items-center justify-center">
-              <Ban className="h-10 w-10" />
+              {area.type === 'fisheries_priority' ? (
+                <Shield className="h-10 w-10" />
+              ) : (
+                <Ban className="h-10 w-10" />
+              )}
             </div>
             <Badge className={cn("mt-2", typeColors[area.type])}>
               {typeLabels[area.type]}
@@ -109,22 +120,40 @@ export function RestrictedAreaPanel({ area, onClose, className }: RestrictedArea
             </div>
           </div>
 
-          {/* Warning Banner */}
-          <div className="rounded-xl border-2 border-red-500 bg-red-50 dark:bg-red-950/30 p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 mt-0.5">
-                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-red-800 dark:text-red-200">
-                  Protected Area - Restrictions Apply
-                </p>
-                <p className="text-sm text-red-700 dark:text-red-300">
-                  {area.reason}
-                </p>
+          {/* Warning/Info Banner */}
+          {area.type === 'fisheries_priority' ? (
+            <div className="rounded-xl border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/30 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <Shield className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                    Priority Management Area
+                  </p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    {area.reason}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="rounded-xl border-2 border-red-500 bg-red-50 dark:bg-red-950/30 p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 mt-0.5">
+                  <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-red-800 dark:text-red-200">
+                    Protected Area - Restrictions Apply
+                  </p>
+                  <p className="text-sm text-red-700 dark:text-red-300">
+                    {area.reason}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Key Restrictions */}
           <div>

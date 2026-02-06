@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Filter, X, Anchor, Loader2, Waves, Ban } from "lucide-react";
+import { Search, Filter, X, Anchor, Loader2, Waves, Ban, Fish, Shield, Bird } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,9 +15,12 @@ import { AnchorageMap } from "@/components/maps/AnchorageMap";
 import { AnchoragePanel } from "@/components/panels/AnchoragePanel";
 import { DiveSitePanel } from "@/components/panels/DiveSitePanel";
 import { RestrictedAreaPanel } from "@/components/panels/RestrictedAreaPanel";
+import { ProtectedAreaPanel } from "@/components/panels/ProtectedAreaPanel";
+import { RegulationsPanel } from "@/components/panels/RegulationsPanel";
 import { BVI_ISLANDS } from "@/lib/constants";
 import { BVI_DIVE_SITES, type DiveSite } from "@/lib/constants/dive-sites";
 import { BVI_RESTRICTED_AREAS, type RestrictedArea } from "@/lib/constants/restricted-areas";
+import { ALL_PROTECTED_AREAS, type ProtectedArea } from "@/lib/constants/protected-areas";
 import { cn } from "@/lib/utils";
 
 interface Anchorage {
@@ -41,7 +44,8 @@ interface Anchorage {
   _count?: { reviews: number; moorings: number };
 }
 
-type MarkerFilter = "all" | "anchorages" | "dive-sites" | "protected-areas";
+type MarkerFilter = "all" | "anchorages" | "dive-sites" | "restricted-areas" | "protected-areas";
+type ProtectedAreaFilterType = "all" | "bird-sanctuaries" | "fisheries" | "parks" | "proposed";
 
 export default function AnchoragesPage() {
   const [anchorages, setAnchorages] = useState<Anchorage[]>([]);
@@ -49,10 +53,13 @@ export default function AnchoragesPage() {
   const [selectedAnchorage, setSelectedAnchorage] = useState<Anchorage | null>(null);
   const [selectedDiveSite, setSelectedDiveSite] = useState<DiveSite | null>(null);
   const [selectedRestrictedArea, setSelectedRestrictedArea] = useState<RestrictedArea | null>(null);
+  const [selectedProtectedArea, setSelectedProtectedArea] = useState<ProtectedArea | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [showRegulations, setShowRegulations] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIsland, setSelectedIsland] = useState<string>("");
   const [markerFilter, setMarkerFilter] = useState<MarkerFilter>("all");
+  const [protectedAreaFilter, setProtectedAreaFilter] = useState<ProtectedAreaFilterType>("all");
   const [view, setView] = useState<"map" | "list">("map");
 
   // Filter dive sites based on search
@@ -77,26 +84,55 @@ export default function AnchoragesPage() {
     );
   });
 
+  // Filter protected areas based on search
+  const filteredProtectedAreas = ALL_PROTECTED_AREAS.filter((area) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      area.name.toLowerCase().includes(query) ||
+      area.region.toLowerCase().includes(query) ||
+      area.protectionType.toLowerCase().includes(query)
+    );
+  });
+
   const showAnchorages = markerFilter === "all" || markerFilter === "anchorages";
   const showDiveSites = markerFilter === "all" || markerFilter === "dive-sites";
-  const showRestrictedAreas = markerFilter === "all" || markerFilter === "protected-areas";
+  const showRestrictedAreas = markerFilter === "all" || markerFilter === "restricted-areas";
+  const showProtectedAreas = markerFilter === "all" || markerFilter === "protected-areas";
+
+  // Filter restricted areas based on marker filter
+  const displayedRestrictedAreas = showRestrictedAreas ? filteredRestrictedAreas : [];
 
   const handleSelectAnchorage = (anchorage: Anchorage) => {
     setSelectedDiveSite(null);
     setSelectedRestrictedArea(null);
+    setSelectedProtectedArea(null);
+    setShowRegulations(false);
     setSelectedAnchorage(anchorage);
   };
 
   const handleSelectDiveSite = (diveSite: DiveSite) => {
     setSelectedAnchorage(null);
     setSelectedRestrictedArea(null);
+    setSelectedProtectedArea(null);
+    setShowRegulations(false);
     setSelectedDiveSite(diveSite);
   };
 
   const handleSelectRestrictedArea = (area: RestrictedArea) => {
     setSelectedAnchorage(null);
     setSelectedDiveSite(null);
+    setSelectedProtectedArea(null);
+    setShowRegulations(false);
     setSelectedRestrictedArea(area);
+  };
+
+  const handleSelectProtectedArea = (area: ProtectedArea) => {
+    setSelectedAnchorage(null);
+    setSelectedDiveSite(null);
+    setSelectedRestrictedArea(null);
+    setShowRegulations(false);
+    setSelectedProtectedArea(area);
   };
 
   const fetchAnchorages = useCallback(async () => {
@@ -131,9 +167,10 @@ export default function AnchoragesPage() {
     setSearchQuery("");
     setSelectedIsland("");
     setMarkerFilter("all");
+    setProtectedAreaFilter("all");
   };
 
-  const hasActiveFilters = searchQuery || selectedIsland || markerFilter !== "all";
+  const hasActiveFilters = searchQuery || selectedIsland || markerFilter !== "all" || protectedAreaFilter !== "all";
 
   return (
     <div className="relative h-[calc(100vh-4rem-4rem)] md:h-[calc(100vh-4rem)]">
@@ -157,6 +194,21 @@ export default function AnchoragesPage() {
             className={cn(showFilters && "bg-primary text-primary-foreground")}
           >
             <Filter className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setSelectedAnchorage(null);
+              setSelectedDiveSite(null);
+              setSelectedRestrictedArea(null);
+              setSelectedProtectedArea(null);
+              setShowRegulations(true);
+            }}
+            className="hidden sm:flex items-center gap-2"
+          >
+            <Fish className="h-4 w-4" />
+            Regulations
           </Button>
           <div className="hidden sm:flex sm:gap-2">
             <Button
@@ -203,14 +255,61 @@ export default function AnchoragesPage() {
                     Dive Sites Only
                   </span>
                 </SelectItem>
-                <SelectItem value="protected-areas">
+                <SelectItem value="restricted-areas">
                   <span className="flex items-center gap-2">
                     <Ban className="h-4 w-4 text-red-500" />
+                    Restricted Areas
+                  </span>
+                </SelectItem>
+                <SelectItem value="protected-areas">
+                  <span className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-blue-500" />
                     Protected Areas
                   </span>
                 </SelectItem>
               </SelectContent>
             </Select>
+
+            {/* Protected Area Type Filter - shown when protected areas are visible */}
+            {showProtectedAreas && (
+              <Select value={protectedAreaFilter} onValueChange={(v) => setProtectedAreaFilter(v as ProtectedAreaFilterType)}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="All Protected Areas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    <span className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      All Protected Areas
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="bird-sanctuaries">
+                    <span className="flex items-center gap-2">
+                      <Bird className="h-4 w-4 text-green-600" />
+                      Bird Sanctuaries
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="fisheries">
+                    <span className="flex items-center gap-2">
+                      <Fish className="h-4 w-4 text-blue-600" />
+                      Fisheries Areas
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="parks">
+                    <span className="flex items-center gap-2">
+                      <Anchor className="h-4 w-4 text-emerald-600" />
+                      National/Marine Parks
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="proposed">
+                    <span className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-orange-500" />
+                      Proposed Areas
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
             <Select value={selectedIsland} onValueChange={setSelectedIsland}>
               <SelectTrigger className="w-[180px]">
@@ -241,20 +340,25 @@ export default function AnchoragesPage() {
         <AnchorageMap
           anchorages={anchorages}
           diveSites={filteredDiveSites}
-          restrictedAreas={filteredRestrictedAreas}
+          restrictedAreas={displayedRestrictedAreas}
+          protectedAreas={filteredProtectedAreas}
           selectedId={selectedAnchorage?.id}
           selectedDiveSiteId={selectedDiveSite?.id}
           selectedRestrictedAreaId={selectedRestrictedArea?.id}
+          selectedProtectedAreaId={selectedProtectedArea?.id}
           onSelect={handleSelectAnchorage}
           onSelectDiveSite={handleSelectDiveSite}
           onSelectRestrictedArea={handleSelectRestrictedArea}
+          onSelectProtectedArea={handleSelectProtectedArea}
           showAnchorages={showAnchorages}
           showDiveSites={showDiveSites}
           showRestrictedAreas={showRestrictedAreas}
+          showProtectedAreas={showProtectedAreas}
+          protectedAreaFilter={protectedAreaFilter}
           className={cn(
             "h-full pt-16",
             showFilters && "pt-28",
-            (selectedAnchorage || selectedDiveSite || selectedRestrictedArea) && "md:pr-96"
+            (selectedAnchorage || selectedDiveSite || selectedRestrictedArea || selectedProtectedArea || showRegulations) && "md:pr-96"
           )}
         />
       )}
@@ -376,6 +480,35 @@ export default function AnchoragesPage() {
         area={selectedRestrictedArea}
         onClose={() => setSelectedRestrictedArea(null)}
       />
+
+      {/* Protected Area Panel */}
+      <ProtectedAreaPanel
+        area={selectedProtectedArea}
+        onClose={() => setSelectedProtectedArea(null)}
+      />
+
+      {/* Regulations Panel */}
+      <RegulationsPanel
+        isOpen={showRegulations}
+        onClose={() => setShowRegulations(false)}
+      />
+
+      {/* Mobile Regulations Button */}
+      <div className="fixed bottom-20 right-4 z-40 sm:hidden">
+        <Button
+          onClick={() => {
+            setSelectedAnchorage(null);
+            setSelectedDiveSite(null);
+            setSelectedRestrictedArea(null);
+            setSelectedProtectedArea(null);
+            setShowRegulations(true);
+          }}
+          className="h-12 w-12 rounded-full shadow-lg bg-ocean-600 hover:bg-ocean-700"
+          size="icon"
+        >
+          <Fish className="h-6 w-6" />
+        </Button>
+      </div>
     </div>
   );
 }

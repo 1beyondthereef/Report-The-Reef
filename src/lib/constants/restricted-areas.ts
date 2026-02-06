@@ -1,5 +1,6 @@
 // BVI Restricted/Protected Marine Areas
-// Based on BVI National Parks Trust and Conservation & Fisheries Department regulations
+// Sources: BVI ARK, BVI Fisheries Regulations 2003 (Statutory Instrument No. 20 of 2003),
+// Bird Sanctuaries Order (S.R.O. 20/1959), National GIS, NPT Act 2006
 
 export interface RestrictedArea {
   id: string;
@@ -11,7 +12,8 @@ export interface RestrictedArea {
   };
   // For larger areas, define approximate boundary
   radiusMeters?: number;
-  type: 'marine_park' | 'fisheries_protected' | 'coral_restoration' | 'seagrass_protection' | 'bird_sanctuary' | 'no_anchor_zone';
+  sizeAcres?: number;
+  type: 'marine_park' | 'fisheries_protected' | 'fisheries_priority' | 'coral_restoration' | 'seagrass_protection' | 'bird_sanctuary' | 'no_anchor_zone';
   restrictions: {
     noAnchoring: boolean;
     noFishing: boolean;
@@ -32,8 +34,161 @@ export interface RestrictedArea {
   penalties?: string;
   managingAuthority: string;
   permitRequired: boolean;
+  dateEstablished?: number;
+  legalSource?: string;
   notes?: string;
 }
+
+// BVI Fishing Closed Seasons - Territory Wide
+export interface ClosedSeason {
+  id: string;
+  species: string;
+  startMonth: number;
+  endMonth: number;
+  description: string;
+  restrictions: string[];
+  notes?: string;
+}
+
+export const BVI_CLOSED_SEASONS: ClosedSeason[] = [
+  {
+    id: 'lobster-closed',
+    species: 'Spiny Lobster',
+    startMonth: 8, // August 1
+    endMonth: 10, // October 31
+    description: 'Closed season for spiny lobster fishing. No taking, selling, or possessing spiny lobsters.',
+    restrictions: [
+      'No catching or taking of lobsters',
+      'No buying or selling of lobsters',
+      'No possessing of lobsters',
+      'No importing or exporting of lobsters',
+      'Minimum size 3.5 inches carapace length applies year-round'
+    ],
+    notes: 'Berried (egg-bearing) females are protected year-round.'
+  },
+  {
+    id: 'conch-closed',
+    species: 'Queen Conch',
+    startMonth: 7, // July 1
+    endMonth: 9, // September 30
+    description: 'Closed season for queen conch harvesting. Protects breeding population.',
+    restrictions: [
+      'No catching or taking of conch',
+      'No buying or selling of conch',
+      'No possessing of conch meat',
+      'Minimum size 9 inches shell length applies year-round',
+      'Maximum 2 conch per person per day (open season)'
+    ],
+    notes: 'Conch populations have declined significantly. Help protect this species.'
+  },
+  {
+    id: 'whelk-closed',
+    species: 'Whelk',
+    startMonth: 4, // April 1
+    endMonth: 9, // September 30
+    description: 'Closed season for whelk harvesting to protect breeding season.',
+    restrictions: [
+      'No catching or taking of whelks',
+      'No buying or selling of whelks',
+      'No possessing of whelks',
+      'Minimum size 2.5 inches shell length applies year-round'
+    ]
+  },
+  {
+    id: 'turtle-protected',
+    species: 'Sea Turtles (All Species)',
+    startMonth: 1, // Year-round
+    endMonth: 12, // Year-round
+    description: 'All sea turtles are protected year-round in BVI waters.',
+    restrictions: [
+      'No catching, hunting, or killing sea turtles',
+      'No taking or destroying turtle eggs',
+      'No possessing turtle meat, shell, or eggs',
+      'No buying or selling turtle products',
+      'No disturbing nesting turtles',
+      'Keep 20ft distance from sea turtles'
+    ],
+    notes: 'Hawksbill, Green, Leatherback, and Loggerhead turtles are all protected. Report nesting activity to Conservation & Fisheries.'
+  },
+  {
+    id: 'shark-ray-protected',
+    species: 'Sharks & Rays (All Species)',
+    startMonth: 1, // Year-round
+    endMonth: 12, // Year-round
+    description: 'BVI is a Shark & Ray Sanctuary. All species fully protected.',
+    restrictions: [
+      'No fishing for sharks or rays',
+      'No possessing shark or ray products',
+      'No selling shark or ray products',
+      'No shark finning',
+      'Release any accidentally caught sharks/rays immediately'
+    ],
+    notes: 'Heavy fines for violations. Report illegal shark fishing to authorities.'
+  },
+  {
+    id: 'grouper-closed',
+    species: 'Nassau Grouper',
+    startMonth: 12, // December 1
+    endMonth: 3, // March 31
+    description: 'Closed season during spawning aggregation. No taking of Nassau grouper.',
+    restrictions: [
+      'No catching or taking of Nassau grouper',
+      'No buying or selling of Nassau grouper',
+      'No possessing of Nassau grouper',
+      'Minimum size 12 inches applies year-round'
+    ],
+    notes: 'Nassau grouper spawning aggregations are critical for population recovery.'
+  },
+  {
+    id: 'parrotfish-protected',
+    species: 'Parrotfish',
+    startMonth: 1, // Year-round
+    endMonth: 12, // Year-round
+    description: 'Parrotfish harvest is restricted. These fish are essential for coral reef health.',
+    restrictions: [
+      'Commercial harvest prohibited',
+      'Recreational limit: 2 per person per day',
+      'Minimum size: 10 inches',
+      'No spearfishing of parrotfish'
+    ],
+    notes: 'Parrotfish produce sand and help maintain healthy coral reefs.'
+  }
+];
+
+// General BVI Fishing Regulations
+export const BVI_GENERAL_REGULATIONS = {
+  title: 'BVI Fishing Regulations',
+  source: 'BVI Conservation & Fisheries Department',
+  lastUpdated: '2024',
+  generalRules: [
+    'Fishing license required for all non-BVI residents',
+    'Spearfishing prohibited within 200 meters of shore',
+    'No spearfishing while using SCUBA',
+    'No fish traps without permit',
+    'No nets longer than 150 feet',
+    'No fishing with chemicals or explosives',
+    'Catch limits apply to all species'
+  ],
+  mooringRules: [
+    'Use mooring balls where available',
+    'Anchoring in seagrass beds prohibited',
+    'National Parks Trust permit required for NPT moorings',
+    'Maximum 90-minute mooring at dive sites',
+    'No overnight mooring at day-use sites'
+  ],
+  penalties: [
+    'First offense: Up to $5,000 fine',
+    'Subsequent offenses: Up to $10,000 fine and/or imprisonment',
+    'Vessel and equipment may be seized',
+    'Court may order compensation for damage'
+  ],
+  reportViolations: {
+    phone: '(284) 468-6373',
+    email: 'fisheries@gov.vg',
+    description: 'Report illegal fishing activity to Conservation & Fisheries Department'
+  },
+  attribution: 'Source: BVI ARK, BVI Fisheries Regulations 2003, Bird Sanctuaries Order 1959'
+};
 
 export const BVI_RESTRICTED_AREAS: RestrictedArea[] = [
   // ==========================================
@@ -44,8 +199,8 @@ export const BVI_RESTRICTED_AREAS: RestrictedArea[] = [
     name: 'RMS Rhone Marine National Park',
     location: 'Salt Island',
     coordinates: {
-      lat: 18.4067,
-      lng: -64.5317
+      lat: 18.3800,
+      lng: -64.5350
     },
     radiusMeters: 500,
     type: 'marine_park',
@@ -187,20 +342,779 @@ export const BVI_RESTRICTED_AREAS: RestrictedArea[] = [
     permitRequired: true,
     notes: 'Very popular tourist destination. Arrive early for best experience. Use mooring balls only.'
   },
+
+  // ==========================================
+  // FISHERIES PROTECTED AREAS (14 total from 2003 regulations)
+  // Source: Fisheries Regulations, 2003 (Statutory Instrument No. 20 of 2003)
+  // ==========================================
+  {
+    id: 'horseshoe-reef',
+    name: 'Horseshoe Reef',
+    location: 'Anegada',
+    coordinates: {
+      lat: 18.7200,
+      lng: -64.2800
+    },
+    radiusMeters: 8000,
+    sizeAcres: 10144.8,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: true,
+      dayUseOnly: true,
+      noWake: false
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing',
+      'Snorkeling without operator',
+      'Unaccompanied diving',
+      'Shell/coral collection'
+    ],
+    allowedActivities: [
+      'Diving with licensed operator only',
+      'Guided tours'
+    ],
+    reason: 'Fourth-largest barrier reef in the world (18 miles). Critical habitat for over 200 shipwrecks and extensive coral ecosystems.',
+    penalties: 'Heavy fines for fishing or anchoring violations. Vessels may be seized.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: true,
+    notes: 'EXTREME CAUTION: Dangerous reef has claimed 200+ vessels. Diving permitted only with reputable dive operator.'
+  },
+  {
+    id: 'hans-creek',
+    name: 'Hans Creek',
+    location: 'Beef Island',
+    coordinates: {
+      lat: 18.4230,
+      lng: -64.5240
+    },
+    radiusMeters: 400,
+    sizeAcres: 119.4,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing activities',
+      'Spearfishing',
+      'Net fishing',
+      'Fish traps'
+    ],
+    allowedActivities: [
+      'Snorkeling (no-take)',
+      'Swimming',
+      'Kayaking',
+      'Photography'
+    ],
+    reason: 'Mangrove and seagrass nursery habitat essential for fish reproduction and juvenile development.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'Important fish nursery area. Mangrove protection zone. No anchoring or recreational fishing.'
+  },
+  {
+    id: 'beef-island-channel',
+    name: 'Beef Island Channel',
+    location: 'Beef Island',
+    coordinates: {
+      lat: 18.4400,
+      lng: -64.5350
+    },
+    radiusMeters: 350,
+    sizeAcres: 93.9,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing'
+    ],
+    allowedActivities: [
+      'Transit through channel',
+      'Snorkeling',
+      'Swimming'
+    ],
+    reason: 'Protected channel ecosystem connecting to mangrove and seagrass areas.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'Important marine corridor. No anchoring or fishing.'
+  },
+  {
+    id: 'south-sound-vg',
+    name: 'South Sound',
+    location: 'Virgin Gorda',
+    coordinates: {
+      lat: 18.4450,
+      lng: -64.4000
+    },
+    radiusMeters: 500,
+    sizeAcres: 312.8,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing',
+      'Shell collection'
+    ],
+    allowedActivities: [
+      'Snorkeling',
+      'Swimming',
+      'Kayaking'
+    ],
+    reason: 'Protected marine ecosystem on southern Virgin Gorda coast.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'No anchoring or fishing allowed.'
+  },
+  {
+    id: 'taylor-bay-vg',
+    name: 'Taylor Bay',
+    location: 'Virgin Gorda',
+    coordinates: {
+      lat: 18.4500,
+      lng: -64.3850
+    },
+    radiusMeters: 600,
+    sizeAcres: 647.9,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing'
+    ],
+    allowedActivities: [
+      'Snorkeling',
+      'Swimming',
+      'Kayaking'
+    ],
+    reason: 'Large protected bay area with important marine habitat.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'One of the larger FPAs at 647.9 acres.'
+  },
+  {
+    id: 'the-sound-salt-island',
+    name: 'The Sound',
+    location: 'Salt Island',
+    coordinates: {
+      lat: 18.3950,
+      lng: -64.5150
+    },
+    radiusMeters: 350,
+    sizeAcres: 112.8,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing'
+    ],
+    allowedActivities: [
+      'Snorkeling',
+      'Diving',
+      'Swimming'
+    ],
+    reason: 'Protected sound area near Salt Island with reef ecosystem.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'Adjacent to RMS Rhone Marine Park.'
+  },
+  {
+    id: 'the-sound-ginger',
+    name: 'The Sound (including Wedgeo Bay)',
+    location: 'Ginger Island',
+    coordinates: {
+      lat: 18.3790,
+      lng: -64.4870
+    },
+    radiusMeters: 250,
+    sizeAcres: 62.5,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing'
+    ],
+    allowedActivities: [
+      'Snorkeling',
+      'Diving',
+      'Swimming'
+    ],
+    reason: 'Protected sound and bay area at Ginger Island.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'Includes Wedgeo Bay.'
+  },
+  {
+    id: 'dead-chest',
+    name: 'Dead Chest',
+    location: 'Within Wreck of the Rhone Marine Park',
+    coordinates: {
+      lat: 18.3700,
+      lng: -64.5600
+    },
+    radiusMeters: 500,
+    sizeAcres: 326.9,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: true,
+      diveOperatorRequired: false,
+      dayUseOnly: true,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing',
+      'Overnight mooring'
+    ],
+    allowedActivities: [
+      'Diving from mooring',
+      'Snorkeling',
+      'Swimming'
+    ],
+    reason: 'Part of the Rhone Marine Park area. Historic Dead Chest Island referenced in "Fifteen men on a dead man\'s chest."',
+    managingAuthority: 'BVI Conservation & Fisheries Department / NPT',
+    permitRequired: true,
+    notes: 'Day use only. Use mooring balls.'
+  },
+  {
+    id: 'big-reef-peter',
+    name: 'Big Reef',
+    location: 'Peter Island',
+    coordinates: {
+      lat: 18.3480,
+      lng: -64.5650
+    },
+    radiusMeters: 550,
+    sizeAcres: 362.1,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing',
+      'Shell collection'
+    ],
+    allowedActivities: [
+      'Snorkeling',
+      'Diving',
+      'Swimming',
+      'Photography'
+    ],
+    reason: 'Large reef system on the north side of Peter Island.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'Excellent snorkeling and diving. No anchoring on reef.'
+  },
+  {
+    id: 'green-cay-jvd',
+    name: 'Green Cay',
+    location: 'Jost Van Dyke',
+    coordinates: {
+      lat: 18.4530,
+      lng: -64.7000
+    },
+    radiusMeters: 200,
+    sizeAcres: 38.4,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: true,
+      diveOperatorRequired: false,
+      dayUseOnly: true,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing'
+    ],
+    allowedActivities: [
+      'Snorkeling from mooring',
+      'Swimming',
+      'Photography'
+    ],
+    reason: 'Small protected cay with pristine reef ecosystem.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: true,
+    notes: 'Near Sandy Cay. Day use moorings available.'
+  },
+  {
+    id: 'money-bay-norman',
+    name: 'Money Bay',
+    location: 'Norman Island',
+    coordinates: {
+      lat: 18.3200,
+      lng: -64.5950
+    },
+    radiusMeters: 250,
+    sizeAcres: 79.8,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing'
+    ],
+    allowedActivities: [
+      'Snorkeling',
+      'Swimming',
+      'Kayaking'
+    ],
+    reason: 'Protected bay on the south side of Norman Island.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'Quiet protected bay with good snorkeling.'
+  },
+  {
+    id: 'santa-monica-rock',
+    name: 'Santa Monica Rock',
+    location: 'South West off Norman Island',
+    coordinates: {
+      lat: 18.3050,
+      lng: -64.6250
+    },
+    radiusMeters: 100,
+    sizeAcres: 10.4,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: true,
+      dayUseOnly: true,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing',
+      'Unaccompanied diving'
+    ],
+    allowedActivities: [
+      'Diving with operator',
+      'Photography'
+    ],
+    reason: 'Submerged rock formation with diverse marine life. Advanced dive site.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: true,
+    notes: 'Advanced dive site. Strong currents. Dive operator recommended.'
+  },
+  {
+    id: 'north-bay-guana',
+    name: 'North Bay',
+    location: 'Guana Island',
+    coordinates: {
+      lat: 18.5050,
+      lng: -64.6280
+    },
+    radiusMeters: 250,
+    sizeAcres: 70.7,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: true,
+      diveOperatorRequired: false,
+      dayUseOnly: true,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing',
+      'Overnight mooring'
+    ],
+    allowedActivities: [
+      'Snorkeling from mooring',
+      'Swimming',
+      'Photography'
+    ],
+    reason: 'Protected bay on north side of Guana Island with healthy reef.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: true,
+    notes: 'Popular snorkeling spot. Use mooring balls only.'
+  },
+  {
+    id: 'frenchmans-cay',
+    name: "Frenchman's Cay",
+    location: 'West End, Tortola',
+    coordinates: {
+      lat: 18.4100,
+      lng: -64.6600
+    },
+    radiusMeters: 150,
+    sizeAcres: 23.5,
+    type: 'fisheries_protected',
+    dateEstablished: 2003,
+    legalSource: 'Statutory Instrument No. 20 of 2003',
+    restrictions: {
+      noAnchoring: true,
+      noFishing: true,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Anchoring',
+      'All fishing',
+      'Spearfishing'
+    ],
+    allowedActivities: [
+      'Snorkeling',
+      'Swimming',
+      'Kayaking'
+    ],
+    reason: 'Small protected area near Soper\'s Hole.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'Near popular West End anchorage.'
+  },
+
+  // ==========================================
+  // FISHERY PRIORITY AREAS (Recreational Activities Allowed)
+  // These areas have management focus but allow recreational fishing with limits
+  // ==========================================
+  {
+    id: 'great-camanoe-priority',
+    name: 'Great Camanoe',
+    location: 'Great Camanoe Island',
+    coordinates: {
+      lat: 18.4850,
+      lng: -64.5600
+    },
+    radiusMeters: 500,
+    type: 'fisheries_priority',
+    restrictions: {
+      noAnchoring: false,
+      noFishing: false,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: false
+    },
+    prohibitedActivities: [
+      'Commercial fish traps',
+      'Net fishing',
+      'Spearfishing near coral'
+    ],
+    allowedActivities: [
+      'Recreational fishing (with limits)',
+      'Anchoring in sandy areas',
+      'Snorkeling',
+      'Diving',
+      'Swimming'
+    ],
+    reason: 'Priority management area for sustainable fishing. Recreational activities permitted with restrictions.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'Fishing catch limits apply. Avoid anchoring on coral.'
+  },
+  {
+    id: 'west-guana-priority',
+    name: 'West Guana Island',
+    location: 'Guana Island',
+    coordinates: {
+      lat: 18.4980,
+      lng: -64.6450
+    },
+    radiusMeters: 400,
+    type: 'fisheries_priority',
+    restrictions: {
+      noAnchoring: false,
+      noFishing: false,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: false
+    },
+    prohibitedActivities: [
+      'Commercial fishing',
+      'Net fishing',
+      'Fish traps'
+    ],
+    allowedActivities: [
+      'Recreational fishing (with limits)',
+      'Anchoring',
+      'Snorkeling',
+      'Diving',
+      'Swimming'
+    ],
+    reason: 'Priority management area on west side of Guana Island.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'Catch limits apply.'
+  },
+  {
+    id: 'benures-bay-priority',
+    name: 'Benures Bay',
+    location: 'Norman Island',
+    coordinates: {
+      lat: 18.3280,
+      lng: -64.6050
+    },
+    radiusMeters: 300,
+    type: 'fisheries_priority',
+    restrictions: {
+      noAnchoring: false,
+      noFishing: false,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: false
+    },
+    prohibitedActivities: [
+      'Commercial fishing',
+      'Net fishing'
+    ],
+    allowedActivities: [
+      'Recreational fishing (with limits)',
+      'Anchoring',
+      'Snorkeling',
+      'Swimming',
+      'Kayaking'
+    ],
+    reason: 'Priority management bay on north side of Norman Island.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'Popular anchorage with managed fishing.'
+  },
+  {
+    id: 'the-bight-norman-priority',
+    name: 'The Bight',
+    location: 'Norman Island',
+    coordinates: {
+      lat: 18.3250,
+      lng: -64.6150
+    },
+    radiusMeters: 400,
+    type: 'fisheries_priority',
+    restrictions: {
+      noAnchoring: false,
+      noFishing: false,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: false
+    },
+    prohibitedActivities: [
+      'Commercial fishing',
+      'Anchoring on coral'
+    ],
+    allowedActivities: [
+      'Recreational fishing (with limits)',
+      'Anchoring in designated areas',
+      'Snorkeling',
+      'Diving',
+      'Swimming',
+      'Visiting Willy T\'s'
+    ],
+    reason: 'Popular anchorage and priority management area. Home to the famous Willy T floating bar.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'Very popular cruising destination. Moorings available. Respect fishing limits.'
+  },
+  {
+    id: 'soldier-bay-priority',
+    name: 'Soldier Bay',
+    location: 'Norman Island',
+    coordinates: {
+      lat: 18.3300,
+      lng: -64.6100
+    },
+    radiusMeters: 250,
+    type: 'fisheries_priority',
+    restrictions: {
+      noAnchoring: false,
+      noFishing: false,
+      noEntry: false,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: false,
+      noWake: false
+    },
+    prohibitedActivities: [
+      'Commercial fishing',
+      'Net fishing'
+    ],
+    allowedActivities: [
+      'Recreational fishing (with limits)',
+      'Anchoring',
+      'Snorkeling',
+      'Swimming'
+    ],
+    reason: 'Priority management bay on Norman Island.',
+    managingAuthority: 'BVI Conservation & Fisheries Department',
+    permitRequired: false,
+    notes: 'Catch limits apply.'
+  },
+
+  // ==========================================
+  // BIRD SANCTUARIES (20 locations from 1959/1977)
+  // Source: Bird Sanctuaries Order (S.R.O. 20/1959), S.R.O. 24/1977
+  // ==========================================
+  {
+    id: 'cockroach-island-sanctuary',
+    name: 'Cockroach Island Bird Sanctuary',
+    location: 'Near Virgin Gorda',
+    coordinates: {
+      lat: 18.4950,
+      lng: -64.3320
+    },
+    radiusMeters: 200,
+    type: 'bird_sanctuary',
+    dateEstablished: 1959,
+    legalSource: 'S.R.O. 20/1959',
+    restrictions: {
+      noAnchoring: false,
+      noFishing: false,
+      noEntry: true,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: true,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Landing on island',
+      'Disturbing wildlife',
+      'Loud noises',
+      'Hunting'
+    ],
+    allowedActivities: [
+      'Viewing from boat',
+      'Photography from distance'
+    ],
+    reason: 'Protected seabird nesting habitat.',
+    managingAuthority: 'BVI National Parks Trust',
+    permitRequired: false,
+    notes: 'No landing. View birds from boat only.'
+  },
   {
     id: 'west-dog-sanctuary',
-    name: 'West Dog National Park',
-    location: 'The Dogs, between Tortola & Virgin Gorda',
+    name: 'West Dog Island Bird Sanctuary',
+    location: 'The Dogs',
     coordinates: {
       lat: 18.4833,
       lng: -64.4667
     },
     radiusMeters: 300,
     type: 'bird_sanctuary',
+    dateEstablished: 1959,
+    legalSource: 'S.R.O. 20/1959',
     restrictions: {
       noAnchoring: true,
       noFishing: true,
-      noEntry: true,  // Landing prohibited
+      noEntry: true,
       mooringRequired: true,
       diveOperatorRequired: false,
       dayUseOnly: true,
@@ -229,117 +1143,109 @@ export const BVI_RESTRICTED_AREAS: RestrictedArea[] = [
     notes: 'No landing on island. View birds from the water only to prevent nest abandonment.'
   },
   {
-    id: 'monkey-point-guana',
-    name: 'Monkey Point Marine Area',
-    location: 'Guana Island',
+    id: 'great-tobago-sanctuary',
+    name: 'Great Tobago Island Bird Sanctuary',
+    location: 'Near Jost Van Dyke',
     coordinates: {
-      lat: 18.4500,
-      lng: -64.5667
+      lat: 18.4720,
+      lng: -64.7800
     },
-    radiusMeters: 200,
-    type: 'marine_park',
+    radiusMeters: 300,
+    type: 'bird_sanctuary',
+    dateEstablished: 1959,
+    legalSource: 'S.R.O. 20/1959',
     restrictions: {
-      noAnchoring: true,
-      noFishing: true,
-      noEntry: false,
-      mooringRequired: true,
+      noAnchoring: false,
+      noFishing: false,
+      noEntry: true,
+      mooringRequired: false,
       diveOperatorRequired: false,
       dayUseOnly: true,
       noWake: true
     },
     prohibitedActivities: [
-      'Anchoring',
-      'Fishing',
-      'Shell collection',
-      'Overnight mooring'
+      'Landing on island',
+      'Disturbing wildlife'
     ],
     allowedActivities: [
-      'Snorkeling',
-      'Swimming',
-      'Photography'
+      'Viewing from boat',
+      'Photography from distance',
+      'Snorkeling nearby'
     ],
-    reason: 'Protected snorkeling area with healthy coral and marine life.',
+    reason: 'Protected seabird nesting habitat.',
     managingAuthority: 'BVI National Parks Trust',
-    permitRequired: true,
-    notes: 'Day use only moorings available. Popular snorkeling spot.'
+    permitRequired: false,
+    notes: 'No landing permitted.'
   },
-
-  // ==========================================
-  // FISHERIES PROTECTED AREAS
-  // ==========================================
   {
-    id: 'horseshoe-reef',
-    name: 'Horseshoe Reef Fisheries Protected Area',
+    id: 'little-tobago-sanctuary',
+    name: 'Little Tobago Island Bird Sanctuary',
+    location: 'Near Jost Van Dyke',
+    coordinates: {
+      lat: 18.4700,
+      lng: -64.7700
+    },
+    radiusMeters: 200,
+    type: 'bird_sanctuary',
+    dateEstablished: 1959,
+    legalSource: 'S.R.O. 20/1959',
+    restrictions: {
+      noAnchoring: false,
+      noFishing: false,
+      noEntry: true,
+      mooringRequired: false,
+      diveOperatorRequired: false,
+      dayUseOnly: true,
+      noWake: true
+    },
+    prohibitedActivities: [
+      'Landing on island',
+      'Disturbing wildlife'
+    ],
+    allowedActivities: [
+      'Viewing from boat',
+      'Photography from distance'
+    ],
+    reason: 'Protected seabird nesting habitat.',
+    managingAuthority: 'BVI National Parks Trust',
+    permitRequired: false,
+    notes: 'No landing permitted.'
+  },
+  {
+    id: 'flamingo-pond-sanctuary',
+    name: 'Flamingo Pond Bird Sanctuary',
     location: 'Anegada',
     coordinates: {
-      lat: 18.7500,
-      lng: -64.3500
+      lat: 18.7350,
+      lng: -64.3600
     },
-    radiusMeters: 5000, // Large area - 18 miles long
-    type: 'fisheries_protected',
+    radiusMeters: 500,
+    type: 'bird_sanctuary',
+    dateEstablished: 1977,
+    legalSource: 'S.R.O. 24/1977',
     restrictions: {
-      noAnchoring: true,
-      noFishing: true,
+      noAnchoring: false,
+      noFishing: false,
       noEntry: false,
       mooringRequired: false,
-      diveOperatorRequired: true,
+      diveOperatorRequired: false,
       dayUseOnly: true,
       noWake: false
     },
     prohibitedActivities: [
-      'Anchoring',
-      'All fishing',
-      'Spearfishing',
-      'Snorkeling without operator',
-      'Unaccompanied diving',
-      'Shell/coral collection'
+      'Disturbing flamingos',
+      'Approaching closer than 100 meters',
+      'Loud noises',
+      'Hunting'
     ],
     allowedActivities: [
-      'Diving with licensed operator only',
-      'Guided tours'
+      'Bird watching from designated areas',
+      'Photography from distance'
     ],
-    reason: 'Fourth largest barrier reef in the world (18 miles). Critical habitat for over 200 shipwrecks and extensive coral ecosystems.',
-    penalties: 'Heavy fines for fishing or anchoring violations. Vessels may be seized.',
-    managingAuthority: 'BVI Conservation & Fisheries Department',
-    permitRequired: true,
-    notes: 'EXTREME CAUTION: Dangerous reef has claimed 200+ vessels. Diving permitted only with reputable dive operator.'
-  },
-  {
-    id: 'hans-creek',
-    name: 'Hans Creek Fisheries Protected Area',
-    location: 'Near Beef Island',
-    coordinates: {
-      lat: 18.4350,
-      lng: -64.5250
-    },
-    radiusMeters: 500,
-    type: 'fisheries_protected',
-    restrictions: {
-      noAnchoring: false,
-      noFishing: true,
-      noEntry: false,
-      mooringRequired: false,
-      diveOperatorRequired: false,
-      dayUseOnly: false,
-      noWake: true
-    },
-    prohibitedActivities: [
-      'Commercial fishing',
-      'Recreational fishing',
-      'Spearfishing',
-      'Net fishing',
-      'Fish traps'
-    ],
-    allowedActivities: [
-      'Anchoring in designated areas',
-      'Snorkeling',
-      'Swimming',
-      'Kayaking'
-    ],
-    reason: 'Mangrove and seagrass nursery habitat essential for fish reproduction and juvenile development.',
-    managingAuthority: 'BVI Conservation & Fisheries Department',
+    reason: 'Critical habitat for the Caribbean Flamingo population in the BVI. Ramsar wetland site.',
+    managingAuthority: 'BVI National Parks Trust',
     permitRequired: false,
-    notes: 'Important fish nursery area. Mangrove protection zone.'
+    notes: 'Best viewing in early morning. Maintain distance from flamingos.'
   },
 
   // ==========================================
@@ -466,11 +1372,11 @@ export const BVI_RESTRICTED_AREAS: RestrictedArea[] = [
       lat: 18.4255,
       lng: -64.6205
     },
-    radiusMeters: 50000, // Territory-wide
+    radiusMeters: 50000,
     type: 'fisheries_protected',
     restrictions: {
       noAnchoring: false,
-      noFishing: false, // General fishing allowed, just not sharks/rays
+      noFishing: false,
       noEntry: false,
       mooringRequired: false,
       diveOperatorRequired: false,
@@ -517,7 +1423,33 @@ export const getSeasonallyRestricted = (month: number) => {
     if (startMonth <= endMonth) {
       return month >= startMonth && month <= endMonth;
     }
-    // Handle wrap-around (e.g., Nov-Feb)
     return month >= startMonth || month <= endMonth;
   });
+};
+
+export const getFisheryProtectedAreas = () => {
+  return BVI_RESTRICTED_AREAS.filter(area => area.type === 'fisheries_protected');
+};
+
+export const getFisheryPriorityAreas = () => {
+  return BVI_RESTRICTED_AREAS.filter(area => area.type === 'fisheries_priority');
+};
+
+export const getBirdSanctuaries = () => {
+  return BVI_RESTRICTED_AREAS.filter(area => area.type === 'bird_sanctuary');
+};
+
+export const getActiveClosedSeasons = (month: number) => {
+  return BVI_CLOSED_SEASONS.filter(season => {
+    if (season.startMonth <= season.endMonth) {
+      return month >= season.startMonth && month <= season.endMonth;
+    }
+    return month >= season.startMonth || month <= season.endMonth;
+  });
+};
+
+export const isSpeciesProtected = (speciesId: string): boolean => {
+  const season = BVI_CLOSED_SEASONS.find(s => s.id === speciesId);
+  if (!season) return false;
+  return season.startMonth === 1 && season.endMonth === 12;
 };

@@ -35,8 +35,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Sharkplaneo',
     location: 'Virgin Gorda',
     coordinates: {
-      lat: 18.479767,
-      lng: -64.454984
+      lat: 18.4797,
+      lng: -64.4546
     },
     depthRange: {
       min: 35,
@@ -62,11 +62,11 @@ export const BVI_DIVE_SITES: DiveSite[] = [
   },
   {
     id: 'willy-t-wreck',
-    name: 'Willy T Wreck',
+    name: 'BTR Willy T',
     location: 'Key Bay, Peter Island',
     coordinates: {
-      lat: 18.3461,  // Verified: 18°20.768'N
-      lng: -64.5989  // Verified: 64°35.933'W
+      lat: 18.3454,
+      lng: -64.5985
     },
     depthRange: {
       min: 40,
@@ -95,8 +95,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Kodiak Queen (BVI Art Reef)',
     location: 'Mountain Point, Virgin Gorda',
     coordinates: {
-      lat: 18.4979,  // Verified: 18°29.871'N
-      lng: -64.4142  // Verified: 64°24.852'W
+      lat: 18.4984,
+      lng: -64.4154
     },
     depthRange: {
       min: 45,
@@ -127,11 +127,11 @@ export const BVI_DIVE_SITES: DiveSite[] = [
   // ==========================================
   {
     id: 'rhone',
-    name: 'Wreck of the RMS Rhone',
+    name: 'RMS Rhone',
     location: 'Salt Island',
     coordinates: {
-      lat: 18.4067,  // Verified: 18°24.4'N
-      lng: -64.5317  // Verified: 64°31.9'W
+      lat: 18.3673,
+      lng: -64.5355
     },
     depthRange: {
       min: 30,
@@ -156,8 +156,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'The Indians',
     location: 'Pelican Island, near Norman Island',
     coordinates: {
-      lat: 18.3322,  // Verified: N18°19.930'
-      lng: -64.6297  // Verified: W64°37.781'
+      lat: 18.3330,
+      lng: -64.6280
     },
     depthRange: {
       min: 20,
@@ -232,8 +232,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Blonde Rock',
     location: 'Between Dead Chest Island & Salt Island',
     coordinates: {
-      lat: 18.3800,  // NEEDS VERIFICATION - approximate, in Salt Island Passage
-      lng: -64.5250  // NEEDS VERIFICATION - between Dead Chest & Salt Island
+      lat: 18.3715,
+      lng: -64.5515
     },
     depthRange: {
       min: 15,
@@ -257,8 +257,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Santa Monica Rock',
     location: 'Norman Island',
     coordinates: {
-      lat: 18.2995,  // Verified: N18°17.972'
-      lng: -64.6349  // Verified: W64°38.093'
+      lat: 18.2985,
+      lng: -64.6343
     },
     depthRange: {
       min: 50,
@@ -282,8 +282,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'The Caves',
     location: 'Norman Island',
     coordinates: {
-      lat: 18.315769,  // Verified
-      lng: -64.623893  // Verified
+      lat: 18.3156,
+      lng: -64.6241
     },
     depthRange: {
       min: 10,
@@ -332,8 +332,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Painted Walls',
     location: 'Dead Chest Island',
     coordinates: {
-      lat: 18.363065,  // Verified
-      lng: -64.560117  // Verified
+      lat: 18.3631,
+      lng: -64.5612
     },
     depthRange: {
       min: 20,
@@ -353,12 +353,12 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     bestFor: ['Macro photography', 'Color enthusiasts', 'Wall diving', 'Intermediate divers']
   },
   {
-    id: 'vanishing-reef',
-    name: 'Vanishing Reef',
+    id: 'vanishing-rock',
+    name: 'Vanishing Rock',
     location: 'Ginger Island',
     coordinates: {
-      lat: 18.377965,  // Verified
-      lng: -64.519856  // Verified
+      lat: 18.3787,
+      lng: -64.5192
     },
     depthRange: {
       min: 25,
@@ -407,8 +407,8 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     name: 'Angelfish Reef',
     location: 'Norman Island',
     coordinates: {
-      lat: 18.3094,  // Verified: N18°18.566'
-      lng: -64.6289  // Verified: W64°37.731'
+      lat: 18.3092,
+      lng: -64.6289
     },
     depthRange: {
       min: 20,
@@ -426,6 +426,161 @@ export const BVI_DIVE_SITES: DiveSite[] = [
     isArtReef: false,
     marineLife: ['Queen angelfish', 'French angelfish', 'Gray angelfish', 'Rock beauties', 'Blue tangs', 'Doctorfish'],
     bestFor: ['Fish identification', 'Beginners', 'Relaxed diving', 'Photography']
+  },
+
+  // ==========================================
+  // ADDITIONAL DIVE SITES
+  // ==========================================
+  {
+    id: 'the-fearless-wreck',
+    name: 'The Fearless Wreck',
+    location: 'Peter Island',
+    coordinates: {
+      lat: 18.3643,
+      lng: -64.5878
+    },
+    depthRange: {
+      min: 50,
+      max: 90
+    },
+    difficulty: 'advanced',
+    history: 'A tugboat that was intentionally sunk to create an artificial reef. The Fearless now sits upright on the sandy bottom and has become home to a diverse community of marine life. The intact structure makes for an excellent wreck penetration dive.',
+    highlights: [
+      'Intact tugboat structure',
+      'Penetration opportunities',
+      'Abundant marine life',
+      'Good visibility',
+      'Upright wreck'
+    ],
+    isArtReef: false,
+    marineLife: ['Barracuda', 'Snappers', 'Grouper', 'Moray eels', 'Lobster'],
+    bestFor: ['Wreck diving', 'Advanced divers', 'Photography']
+  },
+  {
+    id: 'cistern-point',
+    name: 'Cistern Point',
+    location: 'Ginger Island',
+    coordinates: {
+      lat: 18.3798,
+      lng: -64.5155
+    },
+    depthRange: {
+      min: 20,
+      max: 50
+    },
+    difficulty: 'intermediate',
+    history: 'Named for the old cistern ruins visible on the point of Ginger Island. This site features dramatic rock formations that slope into the depths, covered with colorful sponges and soft corals.',
+    highlights: [
+      'Dramatic rock formations',
+      'Colorful sponges',
+      'Historic cistern ruins',
+      'Good current dive',
+      'Varied topography'
+    ],
+    isArtReef: false,
+    marineLife: ['Nurse sharks', 'Eagle rays', 'Turtles', 'Reef fish', 'Lobster'],
+    bestFor: ['Intermediate divers', 'Drift diving', 'Marine life']
+  },
+  {
+    id: 'carvel-rock',
+    name: 'Carvel Rock',
+    location: 'Between Ginger Island & Cooper Island',
+    coordinates: {
+      lat: 18.3736,
+      lng: -64.4900
+    },
+    depthRange: {
+      min: 30,
+      max: 70
+    },
+    difficulty: 'intermediate',
+    history: 'A dramatic underwater pinnacle that rises from deep water. Carvel Rock is known for its strong currents which bring nutrients and attract large pelagic species. The rock is covered with soft corals and sponges.',
+    highlights: [
+      'Underwater pinnacle',
+      'Strong currents',
+      'Pelagic encounters',
+      'Soft coral gardens',
+      'Dramatic topography'
+    ],
+    isArtReef: false,
+    marineLife: ['Barracuda', 'Jacks', 'Eagle rays', 'Reef sharks', 'Turtles'],
+    bestFor: ['Drift diving', 'Pelagic encounters', 'Current diving']
+  },
+  {
+    id: 'the-visibles',
+    name: 'The Visibles',
+    location: 'North of Virgin Gorda',
+    coordinates: {
+      lat: 18.4937,
+      lng: -64.4655
+    },
+    depthRange: {
+      min: 30,
+      max: 60
+    },
+    difficulty: 'intermediate',
+    history: 'A series of rock formations that are visible from the surface, hence the name. These pinnacles are covered with healthy hard and soft corals and attract a variety of marine life due to the nutrient-rich currents.',
+    highlights: [
+      'Visible rock formations',
+      'Healthy coral growth',
+      'Good fish populations',
+      'Multiple dive spots',
+      'Clear visibility'
+    ],
+    isArtReef: false,
+    marineLife: ['Parrotfish', 'Angelfish', 'Grouper', 'Barracuda', 'Turtles'],
+    bestFor: ['All levels', 'Coral observation', 'Photography']
+  },
+  {
+    id: 'the-invisibles',
+    name: 'The Invisibles',
+    location: 'North of Necker Island',
+    coordinates: {
+      lat: 18.5251,
+      lng: -64.3415
+    },
+    depthRange: {
+      min: 30,
+      max: 80
+    },
+    difficulty: 'advanced',
+    history: 'Unlike the Visibles, these rock formations remain hidden beneath the surface. The Invisibles is known as one of the best dive sites in the BVI for encountering large marine life, including reef sharks and eagle rays.',
+    highlights: [
+      'Submerged rock pinnacles',
+      'Large marine life encounters',
+      'Pristine coral formations',
+      'Remote location',
+      'Strong currents'
+    ],
+    isArtReef: false,
+    marineLife: ['Caribbean reef sharks', 'Eagle rays', 'Nurse sharks', 'Large grouper', 'Horse-eye jacks', 'Barracuda'],
+    bestFor: ['Advanced divers', 'Shark encounters', 'Pelagic species']
+  },
+  {
+    id: 'chikuzen',
+    name: 'Chikuzen',
+    location: 'North of Tortola (15 miles offshore)',
+    coordinates: {
+      lat: 18.6244,
+      lng: -64.5160
+    },
+    depthRange: {
+      min: 50,
+      max: 75
+    },
+    difficulty: 'advanced',
+    history: 'The Chikuzen was a 246-foot refrigerated cargo ship that sank in 1981 after catching fire. Now lying upright on the sandy bottom, it has become one of the premier wreck dives in the Caribbean. Due to its remote offshore location, the wreck attracts large pelagic species including lemon sharks and spotted eagle rays.',
+    highlights: [
+      '246-foot cargo ship',
+      'Intact wheelhouse',
+      'Large pelagic encounters',
+      'Remote offshore wreck',
+      'Excellent penetration opportunities',
+      'Giant barrel sponges on deck'
+    ],
+    isArtReef: false,
+    marineLife: ['Lemon sharks', 'Spotted eagle rays', 'Horse-eye jacks', 'Great barracuda', 'Caribbean reef sharks', 'Green moray eels'],
+    bestFor: ['Advanced wreck diving', 'Shark encounters', 'Remote diving adventure']
   }
 ];
 
