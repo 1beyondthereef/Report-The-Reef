@@ -424,17 +424,22 @@ function ConnectContent() {
         fetchCheckins();
       } else {
         const data = await response.json();
+        console.error("Check-in failed:", JSON.stringify(data, null, 2));
         toast({
           title: "Check-in Failed",
           description: data.error || "Could not complete check-in",
           variant: "destructive",
         });
+        // Also show details in console for debugging
+        if (data.details) {
+          console.error("Error details:", data.details);
+        }
       }
     } catch (error) {
       console.error("Check-in error:", error);
       toast({
         title: "Error",
-        description: "Failed to check in. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to check in. Please try again.",
         variant: "destructive",
       });
     } finally {

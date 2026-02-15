@@ -199,9 +199,9 @@ export async function GET(request: NextRequest) {
       .eq("profiles.is_visible", true);
 
     if (error) {
-      console.error("Error fetching checkins:", error);
+      console.error("Error fetching checkins:", JSON.stringify(error, null, 2));
       return NextResponse.json(
-        { error: "Failed to fetch check-ins" },
+        { error: `Failed to fetch check-ins: ${error.message || error.code}`, details: error },
         { status: 500 }
       );
     }
@@ -358,9 +358,21 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error("Error creating checkin:", error);
+      console.error("Error creating checkin:", JSON.stringify(error, null, 2));
+      console.error("Check-in data attempted:", {
+        user_id: user.id,
+        location_name: locationData.name,
+        location_lat: locationData.lat,
+        location_lng: locationData.lng,
+        anchorage_id: locationData.anchorageId,
+        is_custom_location: locationData.isCustom,
+        actual_gps_lat: gpsLat,
+        actual_gps_lng: gpsLng,
+        note: note || null,
+        visibility,
+      });
       return NextResponse.json(
-        { error: "Failed to check in" },
+        { error: `Failed to check in: ${error.message || error.code || 'Unknown error'}`, details: error },
         { status: 500 }
       );
     }
