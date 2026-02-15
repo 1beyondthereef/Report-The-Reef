@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useMemo, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,7 +26,53 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const error = searchParams.get("error");
-  const supabase = createClient();
+
+  // Create supabase client once and memoize it
+  const supabase = useMemo(() => {
+    console.log("[Login] Creating Supabase client...");
+    console.log("[Login] ENV CHECK - NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "SET ✓" : "MISSING ✗");
+    console.log("[Login] ENV CHECK - NEXT_PUBLIC_SUPABASE_ANON_KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "SET ✓" : "MISSING ✗");
+
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error("[Login] CRITICAL: Supabase environment variables are missing!");
+    }
+
+    const client = createClient();
+    console.log("[Login] Supabase client created successfully");
+    return client;
+  }, []);
+
+  // Track if component is mounted to prevent state updates after unmount
+  const isMounted = useRef(true);
+  useEffect(() => {
+    console.log("[Login] Component mounted");
+
+    // Test Supabase connection on mount
+    const testConnection = async () => {
+      try {
+        console.log("[Login] Testing Supabase connection...");
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error("[Login] Supabase connection error:", error);
+        } else {
+          console.log("[Login] Supabase connection OK, existing session:", data.session ? "YES" : "NO");
+          // If already logged in, redirect to connect page
+          if (data.session) {
+            console.log("[Login] User already logged in, redirecting...");
+            router.push("/connect");
+          }
+        }
+      } catch (err) {
+        console.error("[Login] Failed to test Supabase connection:", err);
+      }
+    };
+    testConnection();
+
+    return () => {
+      console.log("[Login] Component unmounting");
+      isMounted.current = false;
+    };
+  }, [supabase, router]);
 
   const [mode, setMode] = useState<AuthMode>("signin");
   const [isLoading, setIsLoading] = useState(false);
@@ -40,18 +86,23 @@ function LoginForm() {
 
   // Handle Google Sign In
   const handleGoogleSignIn = async () => {
+    console.log("[Google] 1. Sign in button clicked");
     setIsGoogleLoading(true);
     setServerError(null);
 
     // Set a timeout to reset loading state if redirect doesn't happen
     const timeout = setTimeout(() => {
-      console.log("Google sign-in timeout - resetting loading state");
-      setIsGoogleLoading(false);
-      setServerError("Sign-in is taking too long. Please try again.");
-    }, 10000);
+      console.log("[Google] TIMEOUT - Redirect didn't happen within 15 seconds");
+      if (isMounted.current) {
+        setIsGoogleLoading(false);
+        setServerError("Sign-in is taking too long. Please try again.");
+      }
+    }, 15000);
 
     try {
-      console.log("Starting Google OAuth sign-in...");
+      console.log("[Google] 2. Getting redirect URL:", `${window.location.origin}/auth/callback`);
+      console.log("[Google] 3. Calling supabase.auth.signInWithOAuth...");
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -59,22 +110,28 @@ function LoginForm() {
         },
       });
 
+      console.log("[Google] 4. Response received:", { data, error });
+
       if (error) {
-        console.error("Google sign-in error:", error);
+        console.error("[Google] ERROR:", error.message, error);
         clearTimeout(timeout);
-        setServerError(error.message);
-        setIsGoogleLoading(false);
+        if (isMounted.current) {
+          setServerError(error.message);
+          setIsGoogleLoading(false);
+        }
         return;
       }
 
-      console.log("OAuth initiated, redirecting...", data);
+      console.log("[Google] 5. OAuth initiated successfully, browser should redirect to:", data?.url);
       // If successful, user will be redirected to Google
       // Don't clear timeout here - let it run if redirect fails
     } catch (err) {
-      console.error("Unexpected Google sign-in error:", err);
+      console.error("[Google] UNEXPECTED ERROR:", err);
       clearTimeout(timeout);
-      setServerError("Failed to connect to Google. Please try again.");
-      setIsGoogleLoading(false);
+      if (isMounted.current) {
+        setServerError("Failed to connect to Google. Please try again.");
+        setIsGoogleLoading(false);
+      }
     }
   };
 
@@ -98,81 +155,170 @@ function LoginForm() {
 
   // Handle Sign In
   const onSignIn = async (data: LoginInput) => {
+    console.log("[Email] 1. Sign in button clicked");
     setIsLoading(true);
     setServerError(null);
 
+    // Set a timeout to reset loading state if something hangs
+    const timeout = setTimeout(() => {
+      console.log("[Email] TIMEOUT - Sign-in didn't complete within 15 seconds");
+      if (isMounted.current) {
+        setIsLoading(false);
+        setServerError("Sign-in is taking too long. Please try again.");
+      }
+    }, 15000);
+
     try {
-      console.log("Starting email/password sign-in...");
+      console.log("[Email] 2. Calling supabase.auth.signInWithPassword...");
+      console.log("[Email] 3. Email:", data.email);
+
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
+      console.log("[Email] 4. Response received:", { user: authData?.user?.email, error });
+
       if (error) {
-        console.error("Sign-in error:", error);
-        setServerError(error.message);
-        setIsLoading(false);
+        console.error("[Email] ERROR:", error.message, error);
+        clearTimeout(timeout);
+        if (isMounted.current) {
+          setServerError(error.message);
+          setIsLoading(false);
+        }
         return;
       }
 
-      console.log("Sign-in successful:", authData.user?.email);
+      console.log("[Email] 5. Sign-in successful for:", authData.user?.email);
+      console.log("[Email] 6. Redirecting to /connect...");
+
+      clearTimeout(timeout);
+
+      // Reset loading before navigation in case navigation fails
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
+
       router.push("/connect");
+      console.log("[Email] 7. router.push called");
     } catch (err) {
-      console.error("Unexpected sign-in error:", err);
-      setServerError("Network error. Please try again.");
-      setIsLoading(false);
+      console.error("[Email] UNEXPECTED ERROR:", err);
+      clearTimeout(timeout);
+      if (isMounted.current) {
+        setServerError("Network error. Please try again.");
+        setIsLoading(false);
+      }
     }
   };
 
   // Handle Sign Up
   const onSignUp = async (data: SignUpInput) => {
+    console.log("[SignUp] 1. Sign up button clicked");
     setIsLoading(true);
     setServerError(null);
 
+    // Set a timeout to reset loading state if something hangs
+    const timeout = setTimeout(() => {
+      console.log("[SignUp] TIMEOUT - Sign-up didn't complete within 15 seconds");
+      if (isMounted.current) {
+        setIsLoading(false);
+        setServerError("Sign-up is taking too long. Please try again.");
+      }
+    }, 15000);
+
     try {
+      console.log("[SignUp] 2. Calling supabase.auth.signUp...");
+
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
       });
 
+      console.log("[SignUp] 3. Response received:", { user: authData?.user?.email, error });
+      clearTimeout(timeout);
+
       if (error) {
-        setServerError(error.message);
+        console.error("[SignUp] ERROR:", error.message);
+        if (isMounted.current) {
+          setServerError(error.message);
+        }
       } else if (authData.user) {
         // Check if email confirmation is required
         if (authData.user.identities?.length === 0) {
-          setServerError("An account with this email already exists. Please sign in instead.");
+          console.log("[SignUp] Account already exists");
+          if (isMounted.current) {
+            setServerError("An account with this email already exists. Please sign in instead.");
+          }
         } else {
-          // Redirect to profile setup
+          console.log("[SignUp] 4. Success! Redirecting to profile setup...");
+          // Reset loading before navigation
+          if (isMounted.current) {
+            setIsLoading(false);
+          }
           router.push("/profile/setup");
+          return;
         }
       }
-    } catch {
-      setServerError("Network error. Please try again.");
+    } catch (err) {
+      console.error("[SignUp] UNEXPECTED ERROR:", err);
+      clearTimeout(timeout);
+      if (isMounted.current) {
+        setServerError("Network error. Please try again.");
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
   // Handle Forgot Password
   const onForgotPassword = async (data: ForgotPasswordInput) => {
+    console.log("[ForgotPassword] 1. Reset password clicked");
     setIsLoading(true);
     setServerError(null);
 
+    // Set a timeout to reset loading state if something hangs
+    const timeout = setTimeout(() => {
+      console.log("[ForgotPassword] TIMEOUT - Reset didn't complete within 15 seconds");
+      if (isMounted.current) {
+        setIsLoading(false);
+        setServerError("Request is taking too long. Please try again.");
+      }
+    }, 15000);
+
     try {
+      console.log("[ForgotPassword] 2. Calling supabase.auth.resetPasswordForEmail...");
+
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
         redirectTo: `${window.location.origin}/auth/callback?next=/profile`,
       });
 
+      console.log("[ForgotPassword] 3. Response received:", { error });
+      clearTimeout(timeout);
+
       if (error) {
-        setServerError(error.message);
+        console.error("[ForgotPassword] ERROR:", error.message);
+        if (isMounted.current) {
+          setServerError(error.message);
+        }
       } else {
-        setResetEmail(data.email);
-        setMode("check-email");
+        console.log("[ForgotPassword] 4. Success! Check your email");
+        if (isMounted.current) {
+          setResetEmail(data.email);
+          setMode("check-email");
+        }
       }
-    } catch {
-      setServerError("Network error. Please try again.");
+    } catch (err) {
+      console.error("[ForgotPassword] UNEXPECTED ERROR:", err);
+      clearTimeout(timeout);
+      if (isMounted.current) {
+        setServerError("Network error. Please try again.");
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
