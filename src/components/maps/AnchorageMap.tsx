@@ -35,6 +35,8 @@ interface AnchorageMapProps<T extends BaseAnchorage> {
   onSelectDiveSite?: (diveSite: DiveSite) => void;
   onSelectProtectedArea?: (area: ProtectedArea) => void;
   layers: LayerVisibility;
+  flyToLocation?: { lng: number; lat: number; zoom: number } | null;
+  onFlyToComplete?: () => void;
   className?: string;
 }
 
@@ -49,6 +51,8 @@ export function AnchorageMap<T extends BaseAnchorage>({
   onSelectDiveSite,
   onSelectProtectedArea,
   layers,
+  flyToLocation,
+  onFlyToComplete,
   className
 }: AnchorageMapProps<T>) {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -59,8 +63,8 @@ export function AnchorageMap<T extends BaseAnchorage>({
 
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Categorize protected areas
-  const categorizeProtectedArea = useCallback((area: ProtectedArea) => {
+  // Categorize protected areas (returns null for types we don't display)
+  const categorizeProtectedArea = useCallback((area: ProtectedArea): keyof LayerVisibility | null => {
     if (area.protectionType === 'Bird Sanctuary' || area.existingStatus === 'Bird Sanctuary') {
       return 'birdSanctuaries';
     }
@@ -76,10 +80,8 @@ export function AnchorageMap<T extends BaseAnchorage>({
     if (area.protectionType === 'Fisheries Priority Area' || area.existingStatus === 'Fisheries Priority Area') {
       return 'fisheriesPriority';
     }
-    if (area.protectionType.includes('Proposed')) {
-      return 'proposedMPAs';
-    }
-    return 'proposedMPAs'; // Default for other types
+    // Don't display Proposed MPAs or other types
+    return null;
   }, []);
 
   useEffect(() => {
@@ -225,15 +227,17 @@ export function AnchorageMap<T extends BaseAnchorage>({
 
     if (!onSelectProtectedArea) return;
 
-    // Filter based on layer visibility
+    // Filter based on layer visibility (exclude null categories like Proposed MPAs)
     const visibleAreas = protectedAreas.filter((area) => {
       const category = categorizeProtectedArea(area);
-      return layers[category as keyof LayerVisibility];
+      if (!category) return false;
+      return layers[category];
     });
 
     visibleAreas.forEach((area) => {
       const isSelected = area.id === selectedProtectedAreaId;
       const category = categorizeProtectedArea(area);
+      if (!category) return; // Skip if category is null (shouldn't happen due to filter)
 
       // Determine marker style
       let bgColor = 'bg-slate-600';
@@ -260,10 +264,6 @@ export function AnchorageMap<T extends BaseAnchorage>({
         case 'fisheriesPriority':
           bgColor = 'bg-yellow-500';
           iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/></svg>`;
-          break;
-        case 'proposedMPAs':
-          bgColor = 'bg-orange-500';
-          iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
           break;
       }
 
@@ -316,6 +316,17 @@ export function AnchorageMap<T extends BaseAnchorage>({
       map.current.flyTo({ center: [diveSite.coordinates.lng, diveSite.coordinates.lat], zoom: 13, duration: 1000 });
     }
   }, [selectedDiveSiteId, diveSites]);
+
+  // Handle flyToLocation from search
+  useEffect(() => {
+    if (!map.current || !flyToLocation) return;
+    map.current.flyTo({
+      center: [flyToLocation.lng, flyToLocation.lat],
+      zoom: flyToLocation.zoom,
+      duration: 1000
+    });
+    onFlyToComplete?.();
+  }, [flyToLocation, onFlyToComplete]);
 
   const handleLocateMe = () => {
     if (!navigator.geolocation) return;

@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import {
   Search, X, ChevronLeft, Layers,
-  Anchor, Bird, Fish, Shield, AlertTriangle, Eye, EyeOff
+  Anchor, Bird, Fish, AlertTriangle, Eye, EyeOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,6 @@ export interface LayerVisibility {
   birdSanctuaries: boolean;
   fisheriesProtected: boolean;
   fisheriesPriority: boolean;
-  proposedMPAs: boolean;
 }
 
 interface MapSidebarProps<T extends BaseAnchorage> {
@@ -55,7 +54,6 @@ const layerConfig: { key: keyof LayerVisibility; label: string; icon: React.Reac
   { key: 'birdSanctuaries', label: 'Bird Sanctuaries', icon: <Bird className="h-4 w-4" />, color: 'text-green-600' },
   { key: 'fisheriesProtected', label: 'Fisheries Protected', icon: <Fish className="h-4 w-4" />, color: 'text-blue-600' },
   { key: 'fisheriesPriority', label: 'Fisheries Priority', icon: <AlertTriangle className="h-4 w-4" />, color: 'text-yellow-600' },
-  { key: 'proposedMPAs', label: 'Proposed MPAs', icon: <Shield className="h-4 w-4" />, color: 'text-orange-500' },
 ];
 
 export function MapSidebar<T extends BaseAnchorage>({
@@ -113,11 +111,6 @@ export function MapSidebar<T extends BaseAnchorage>({
       (p.name.toLowerCase().includes(query) || p.region.toLowerCase().includes(query))
     );
 
-    const proposedMPAs = protectedAreas.filter(p =>
-      p.protectionType.includes('Proposed') &&
-      (p.name.toLowerCase().includes(query) || p.region.toLowerCase().includes(query))
-    );
-
     return {
       anchorages: filteredAnchorages,
       diveSites: filteredDiveSites,
@@ -126,7 +119,6 @@ export function MapSidebar<T extends BaseAnchorage>({
       birdSanctuaries,
       fisheriesProtected,
       fisheriesPriority,
-      proposedMPAs
     };
   }, [searchQuery, anchorages, diveSites, protectedAreas]);
 
@@ -139,7 +131,6 @@ export function MapSidebar<T extends BaseAnchorage>({
     birdSanctuaries: layers.birdSanctuaries ? filteredItems.birdSanctuaries.length : 0,
     fisheriesProtected: layers.fisheriesProtected ? filteredItems.fisheriesProtected.length : 0,
     fisheriesPriority: layers.fisheriesPriority ? filteredItems.fisheriesPriority.length : 0,
-    proposedMPAs: layers.proposedMPAs ? filteredItems.proposedMPAs.length : 0,
   }), [layers, filteredItems]);
 
   const totalVisible = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -380,28 +371,6 @@ export function MapSidebar<T extends BaseAnchorage>({
                 </h3>
                 <div className="space-y-1">
                   {filteredItems.fisheriesPriority.map((area) => (
-                    <button
-                      key={area.id}
-                      onClick={() => onSelectProtectedArea(area)}
-                      className="w-full text-left px-3 py-2 rounded-lg hover:bg-muted transition-colors text-sm"
-                    >
-                      <div className="font-medium truncate">{area.name}</div>
-                      <div className="text-xs text-muted-foreground truncate">{area.region}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Proposed MPAs */}
-            {layers.proposedMPAs && filteredItems.proposedMPAs.length > 0 && (
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-orange-500" />
-                  Proposed MPAs ({filteredItems.proposedMPAs.length})
-                </h3>
-                <div className="space-y-1">
-                  {filteredItems.proposedMPAs.map((area) => (
                     <button
                       key={area.id}
                       onClick={() => onSelectProtectedArea(area)}
