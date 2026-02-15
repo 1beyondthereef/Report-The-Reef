@@ -191,6 +191,14 @@ function ConnectContent() {
   const [selectedAnchoragePanel, setSelectedAnchoragePanel] = useState<Anchorage | null>(null);
   const [usersAtSelectedAnchorage, setUsersAtSelectedAnchorage] = useState<CheckedInUser[]>([]);
 
+  // Quick check-in dialog state
+  const [showQuickCheckinDialog, setShowQuickCheckinDialog] = useState(false);
+  const [quickCheckinAnchorage, setQuickCheckinAnchorage] = useState<Anchorage | null>(null);
+  const [quickCheckinNote, setQuickCheckinNote] = useState("");
+
+  // Checkout confirmation state
+  const [showCheckoutConfirm, setShowCheckoutConfirm] = useState(false);
+
   // Profile edit state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editDisplayName, setEditDisplayName] = useState("");
@@ -458,8 +466,11 @@ function ConnectContent() {
 
   // Check out
   const checkout = useCallback(async () => {
+    console.log("[Checkout] Starting checkout...");
     try {
       const response = await fetch("/api/connect/checkins", { method: "DELETE" });
+      const data = await response.json();
+      console.log("[Checkout] Response:", response.status, data);
 
       if (response.ok) {
         setMyCheckin(null);
@@ -468,16 +479,37 @@ function ConnectContent() {
           description: "You have been checked out.",
         });
         fetchCheckins();
+      } else {
+        console.error("[Checkout] Failed:", data);
+        toast({
+          title: "Check-out Failed",
+          description: data.error || "Could not check out",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error("Checkout error:", error);
+      console.error("[Checkout] Error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to check out. Please try again.",
+        variant: "destructive",
+      });
     }
   }, [toast, fetchCheckins]);
 
-  // Quick check-in to a specific anchorage (from map tap)
-  const quickCheckinToAnchorage = useCallback(async (anchorage: Anchorage) => {
-    setIsCheckingIn(true);
+  // Open quick check-in dialog (from map tap)
+  const openQuickCheckinDialog = useCallback((anchorage: Anchorage) => {
+    setQuickCheckinAnchorage(anchorage);
+    setQuickCheckinNote("");
+    setShowQuickCheckinDialog(true);
     setSelectedAnchoragePanel(null);
+  }, []);
+
+  // Confirm quick check-in with note
+  const confirmQuickCheckin = useCallback(async () => {
+    if (!quickCheckinAnchorage) return;
+
+    setIsCheckingIn(true);
 
     try {
       // Get current GPS location
@@ -487,9 +519,10 @@ function ConnectContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          anchorageId: anchorage.id,
+          anchorageId: quickCheckinAnchorage.id,
           gpsLat: location.lat,
           gpsLng: location.lng,
+          note: quickCheckinNote.trim() || null,
           visibility: "public",
         }),
       });
@@ -497,9 +530,12 @@ function ConnectContent() {
       if (response.ok) {
         const data = await response.json();
         setMyCheckin(data.checkin);
+        setShowQuickCheckinDialog(false);
+        setQuickCheckinAnchorage(null);
+        setQuickCheckinNote("");
         toast({
           title: "Checked In!",
-          description: `You are now checked in at ${anchorage.name}, ${anchorage.island}`,
+          description: `You are now checked in at ${quickCheckinAnchorage.name}, ${quickCheckinAnchorage.island}`,
         });
         fetchCheckins();
       } else {
@@ -520,7 +556,13 @@ function ConnectContent() {
     } finally {
       setIsCheckingIn(false);
     }
-  }, [getCurrentLocation, toast, fetchCheckins]);
+  }, [quickCheckinAnchorage, quickCheckinNote, getCurrentLocation, toast, fetchCheckins]);
+
+  // Confirm checkout
+  const confirmCheckout = useCallback(async () => {
+    setShowCheckoutConfirm(false);
+    await checkout();
+  }, [checkout]);
 
   // Update profile
   const saveProfile = useCallback(async () => {
@@ -1025,7 +1067,7 @@ function ConnectContent() {
                         <p className="text-muted-foreground italic">&quot;{myCheckin.note}&quot;</p>
                       )}
                     </div>
-                    <Button variant="outline" size="sm" onClick={checkout} className="w-full">
+                    <Button variant="outline" size="sm" onClick={() => setShowCheckoutConfirm(true)} className="w-full">
                       <LogOut className="mr-2 h-4 w-4" />
                       Check Out
                     </Button>
@@ -1079,7 +1121,7 @@ function ConnectContent() {
                   </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={checkout}>
+              <Button variant="outline" size="sm" onClick={() => setShowCheckoutConfirm(true)}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Check Out
               </Button>
@@ -1169,6 +1211,9 @@ function ConnectContent() {
                               {user.profiles.boat_name && (
                                 <p className="text-xs text-muted-foreground truncate">{user.profiles.boat_name}</p>
                               )}
+                              {user.note && (
+                                <p className="text-xs text-muted-foreground italic truncate mt-0.5">&quot;{user.note}&quot;</p>
+                              )}
                             </div>
                           </button>
                         ))}
@@ -1179,7 +1224,7 @@ function ConnectContent() {
                     {!myCheckin && (
                       <Button
                         className="w-full mt-3"
-                        onClick={() => quickCheckinToAnchorage(selectedAnchoragePanel)}
+                        onClick={() => openQuickCheckinDialog(selectedAnchoragePanel)}
                         disabled={isCheckingIn}
                       >
                         {isCheckingIn ? (
@@ -1230,6 +1275,11 @@ function ConnectContent() {
                         <p className="text-xs text-muted-foreground mt-1">
                           Checked in {formatRelativeTime(selectedMapUser.checked_in_at)}
                         </p>
+                        {selectedMapUser.note && (
+                          <p className="text-sm text-muted-foreground italic mt-2 border-l-2 border-muted pl-2">
+                            &quot;{selectedMapUser.note}&quot;
+                          </p>
+                        )}
                       </div>
                       <Button
                         variant="ghost"
@@ -1565,6 +1615,89 @@ function ConnectContent() {
                 Check In
               </Button>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Check-in Dialog (from map tap) */}
+      <Dialog open={showQuickCheckinDialog} onOpenChange={setShowQuickCheckinDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Check In</DialogTitle>
+            <DialogDescription>
+              {quickCheckinAnchorage && `${quickCheckinAnchorage.name}, ${quickCheckinAnchorage.island}`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="rounded-lg border bg-muted/50 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <Anchor className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold">{quickCheckinAnchorage?.name}</p>
+                  <p className="text-sm text-muted-foreground">{quickCheckinAnchorage?.island}</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="quick-checkin-note" className="mb-2 block">
+                Add a note (optional)
+              </Label>
+              <Textarea
+                id="quick-checkin-note"
+                placeholder="e.g., Here for 2 nights, Taking on water..."
+                value={quickCheckinNote}
+                onChange={(e) => setQuickCheckinNote(e.target.value.slice(0, 150))}
+                rows={2}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground mt-1 text-right">
+                {quickCheckinNote.length}/150
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowQuickCheckinDialog(false);
+                setQuickCheckinAnchorage(null);
+                setQuickCheckinNote("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={confirmQuickCheckin} disabled={isCheckingIn}>
+              {isCheckingIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Confirm Check-In
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Checkout Confirmation Dialog */}
+      <Dialog open={showCheckoutConfirm} onOpenChange={setShowCheckoutConfirm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Check Out?</DialogTitle>
+            <DialogDescription>
+              {myCheckin && `Are you sure you want to check out of ${myCheckin.location_name}?`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setShowCheckoutConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmCheckout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Check Out
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
