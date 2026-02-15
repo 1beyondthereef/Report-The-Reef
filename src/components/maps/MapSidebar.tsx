@@ -8,7 +8,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { DiveSite } from "@/lib/constants/dive-sites";
 import type { ProtectedArea } from "@/lib/constants/protected-areas";
@@ -238,7 +237,7 @@ export function MapSidebar({
         </div>
 
         {/* Site List */}
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-y-auto">
           <div className="p-4 space-y-4">
             {/* Anchorages */}
             {layers.anchorages && filteredItems.anchorages.length > 0 && (
@@ -425,7 +424,7 @@ export function MapSidebar({
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Mobile overlay backdrop */}
