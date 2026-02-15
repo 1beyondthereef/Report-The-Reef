@@ -4,24 +4,27 @@ import { BVI_CHECKIN_BOUNDS, BVI_ANCHORAGES, CHECKIN_CONFIG } from "@/lib/consta
 
 export const dynamic = 'force-dynamic';
 
-// Default dev mode location (The Bight, Norman Island)
-const DEV_MODE_LOCATION = {
+// TODO: Re-enable BVI location restriction after testing phase - March 2026
+// For now, location restriction is DISABLED to allow global testing
+const LOCATION_RESTRICTION_ENABLED = false;
+
+// Default location for users outside BVI (The Bight, Norman Island)
+const DEFAULT_BVI_LOCATION = {
   lat: 18.3186,
   lng: -64.6189,
 };
 
 /**
- * Check if dev mode is enabled (only works in development or with explicit flag)
- */
-function isDevModeEnabled(request: NextRequest): boolean {
-  const devParam = request.nextUrl.searchParams.get("devMode");
-  return devParam === "true";
-}
-
-/**
  * Check if coordinates are within BVI waters
+ * TODO: Re-enable BVI location restriction after testing phase - March 2026
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function isWithinBVI(lat: number, lng: number): boolean {
+  // Location restriction temporarily disabled for global testing
+  if (!LOCATION_RESTRICTION_ENABLED) {
+    return true;
+  }
+
   return (
     lat >= BVI_CHECKIN_BOUNDS.minLat &&
     lat <= BVI_CHECKIN_BOUNDS.maxLat &&
@@ -47,12 +50,33 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 
 /**
  * Get nearest anchorages to a GPS position
+ * For users outside BVI, returns anchorages sorted by distance from default BVI location
  */
 function getNearestAnchorages(lat: number, lng: number, count: number = 3) {
+  // TODO: Re-enable BVI location restriction after testing phase - March 2026
+  // If user is outside BVI and restriction is disabled, use default BVI location for suggestions
+  let searchLat = lat;
+  let searchLng = lng;
+
+  if (!LOCATION_RESTRICTION_ENABLED) {
+    const actuallyInBVI = (
+      lat >= BVI_CHECKIN_BOUNDS.minLat &&
+      lat <= BVI_CHECKIN_BOUNDS.maxLat &&
+      lng >= BVI_CHECKIN_BOUNDS.minLng &&
+      lng <= BVI_CHECKIN_BOUNDS.maxLng
+    );
+
+    if (!actuallyInBVI) {
+      // User is outside BVI, show all anchorages sorted by default location
+      searchLat = DEFAULT_BVI_LOCATION.lat;
+      searchLng = DEFAULT_BVI_LOCATION.lng;
+    }
+  }
+
   return BVI_ANCHORAGES
     .map((anchorage) => ({
       ...anchorage,
-      distance: calculateDistance(lat, lng, anchorage.lat, anchorage.lng),
+      distance: calculateDistance(searchLat, searchLng, anchorage.lat, anchorage.lng),
     }))
     .sort((a, b) => a.distance - b.distance)
     .slice(0, count);
@@ -68,29 +92,23 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const getSuggestions = searchParams.get("suggestions") === "true";
-    const devMode = isDevModeEnabled(request);
 
-    // Use dev mode location if enabled and not within BVI
-    let lat = parseFloat(searchParams.get("lat") || "0");
-    let lng = parseFloat(searchParams.get("lng") || "0");
-
-    // If dev mode is enabled and location is outside BVI, use default dev location
-    if (devMode && !isWithinBVI(lat, lng)) {
-      lat = DEV_MODE_LOCATION.lat;
-      lng = DEV_MODE_LOCATION.lng;
-    }
+    const lat = parseFloat(searchParams.get("lat") || "0");
+    const lng = parseFloat(searchParams.get("lng") || "0");
 
     // If requesting anchorage suggestions
     if (getSuggestions && lat && lng) {
-      if (!devMode && !isWithinBVI(lat, lng)) {
-        return NextResponse.json(
-          { error: "Check-in is only available within BVI waters" },
-          { status: 400 }
-        );
-      }
+      // TODO: Re-enable BVI location restriction after testing phase - March 2026
+      // Location check bypassed - allowing check-in from anywhere
+      // if (LOCATION_RESTRICTION_ENABLED && !isWithinBVI(lat, lng)) {
+      //   return NextResponse.json(
+      //     { error: "Check-in is only available within BVI waters" },
+      //     { status: 400 }
+      //   );
+      // }
 
-      const suggestions = getNearestAnchorages(lat, lng, 3);
-      return NextResponse.json({ suggestions, devMode });
+      const suggestions = getNearestAnchorages(lat, lng, 5); // Return more suggestions for global users
+      return NextResponse.json({ suggestions, locationRestrictionDisabled: !LOCATION_RESTRICTION_ENABLED });
     }
 
     // Expire old check-ins first
@@ -175,7 +193,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { anchorageId, gpsLat, gpsLng, devMode } = body;
+    const { anchorageId, gpsLat, gpsLng } = body;
 
     // Validate GPS coordinates
     if (typeof gpsLat !== "number" || typeof gpsLng !== "number") {
@@ -185,21 +203,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use dev mode location if enabled and not within BVI
-    let finalLat = gpsLat;
-    let finalLng = gpsLng;
-    if (devMode && !isWithinBVI(gpsLat, gpsLng)) {
-      finalLat = DEV_MODE_LOCATION.lat;
-      finalLng = DEV_MODE_LOCATION.lng;
-    }
+    // TODO: Re-enable BVI location restriction after testing phase - March 2026
+    // Location check bypassed - allowing check-in from anywhere
+    // For users outside BVI, we still record their actual GPS but allow the check-in
+    const finalLat = gpsLat;
+    const finalLng = gpsLng;
 
-    // Verify within BVI waters (unless dev mode)
-    if (!devMode && !isWithinBVI(finalLat, finalLng)) {
-      return NextResponse.json(
-        { error: "Check-in is only available within BVI waters" },
-        { status: 400 }
-      );
-    }
+    // if (LOCATION_RESTRICTION_ENABLED && !isWithinBVI(finalLat, finalLng)) {
+    //   return NextResponse.json(
+    //     { error: "Check-in is only available within BVI waters" },
+    //     { status: 400 }
+    //   );
+    // }
 
     // Validate anchorage
     const anchorage = BVI_ANCHORAGES.find((a) => a.id === anchorageId);
