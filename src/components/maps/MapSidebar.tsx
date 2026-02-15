@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import type { DiveSite } from "@/lib/constants/dive-sites";
 import type { ProtectedArea } from "@/lib/constants/protected-areas";
 
-interface Anchorage {
+interface BaseAnchorage {
   id: string;
   name: string;
   latitude: number;
@@ -31,17 +31,17 @@ export interface LayerVisibility {
   proposedMPAs: boolean;
 }
 
-interface MapSidebarProps {
+interface MapSidebarProps<T extends BaseAnchorage> {
   isOpen: boolean;
   onToggle: () => void;
   layers: LayerVisibility;
   onLayerChange: (layer: keyof LayerVisibility, value: boolean) => void;
   onShowAll: () => void;
   onHideAll: () => void;
-  anchorages: Anchorage[];
+  anchorages: T[];
   diveSites: DiveSite[];
   protectedAreas: ProtectedArea[];
-  onSelectAnchorage: (anchorage: Anchorage) => void;
+  onSelectAnchorage: (anchorage: T) => void;
   onSelectDiveSite: (diveSite: DiveSite) => void;
   onSelectProtectedArea: (area: ProtectedArea) => void;
   className?: string;
@@ -58,7 +58,7 @@ const layerConfig: { key: keyof LayerVisibility; label: string; icon: React.Reac
   { key: 'proposedMPAs', label: 'Proposed MPAs', icon: <Shield className="h-4 w-4" />, color: 'text-orange-500' },
 ];
 
-export function MapSidebar({
+export function MapSidebar<T extends BaseAnchorage>({
   isOpen,
   onToggle,
   layers,
@@ -72,7 +72,7 @@ export function MapSidebar({
   onSelectDiveSite,
   onSelectProtectedArea,
   className
-}: MapSidebarProps) {
+}: MapSidebarProps<T>) {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Filter and categorize items based on search

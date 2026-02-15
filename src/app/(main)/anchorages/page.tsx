@@ -80,15 +80,6 @@ export default function AnchoragesPage() {
     setSidebarOpen(false);
   };
 
-  const handleSelectRestrictedArea = (area: RestrictedArea) => {
-    setSelectedAnchorage(null);
-    setSelectedDiveSite(null);
-    setSelectedProtectedArea(null);
-    setShowRegulations(false);
-    setSelectedRestrictedArea(area);
-    setSidebarOpen(false);
-  };
-
   const handleSelectProtectedArea = (area: ProtectedArea) => {
     setSelectedAnchorage(null);
     setSelectedDiveSite(null);
