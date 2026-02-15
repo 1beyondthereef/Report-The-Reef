@@ -19,7 +19,7 @@ interface AuthContextType {
   profile: Profile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, redirectTo?: string) => Promise<{ success: boolean; message: string }>;
+  login: (email: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<{ success: boolean; error?: string }>;
@@ -112,19 +112,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [supabase, refreshUser]);
 
-  const login = async (email: string, redirectTo?: string): Promise<{ success: boolean; message: string }> => {
+  const login = async (email: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const callbackUrl = new URL("/auth/callback", window.location.origin);
-      if (redirectTo) {
-        callbackUrl.searchParams.set("next", redirectTo);
-      } else {
-        callbackUrl.searchParams.set("next", "/connect");
-      }
-
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: callbackUrl.toString(),
+          shouldCreateUser: true,
         },
       });
 
@@ -132,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, message: error.message };
       }
 
-      return { success: true, message: "Check your email for a magic link to sign in." };
+      return { success: true, message: "Check your email for a 6-digit verification code." };
     } catch {
       return { success: false, message: "Network error. Please try again." };
     }
