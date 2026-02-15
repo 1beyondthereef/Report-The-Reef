@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Loader2, Anchor, Fish } from "lucide-react";
+import { Search, Loader2, Fish } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AnchorageMap } from "@/components/maps/AnchorageMap";
@@ -12,7 +12,7 @@ import { RestrictedAreaPanel } from "@/components/panels/RestrictedAreaPanel";
 import { ProtectedAreaPanel } from "@/components/panels/ProtectedAreaPanel";
 import { RegulationsPanel } from "@/components/panels/RegulationsPanel";
 import { BVI_DIVE_SITES, type DiveSite } from "@/lib/constants/dive-sites";
-import { BVI_RESTRICTED_AREAS, type RestrictedArea } from "@/lib/constants/restricted-areas";
+import type { RestrictedArea } from "@/lib/constants/restricted-areas";
 import { ALL_PROTECTED_AREAS, type ProtectedArea } from "@/lib/constants/protected-areas";
 import { cn } from "@/lib/utils";
 
@@ -60,7 +60,6 @@ export default function AnchoragesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [layers, setLayers] = useState<LayerVisibility>(DEFAULT_LAYERS);
-  const [currentZoom, setCurrentZoom] = useState(10);
 
   // Handler functions
   const handleSelectAnchorage = (anchorage: Anchorage) => {
@@ -212,18 +211,14 @@ export default function AnchoragesPage() {
       <AnchorageMap
         anchorages={anchorages}
         diveSites={BVI_DIVE_SITES}
-        restrictedAreas={BVI_RESTRICTED_AREAS}
         protectedAreas={ALL_PROTECTED_AREAS}
         selectedId={selectedAnchorage?.id}
         selectedDiveSiteId={selectedDiveSite?.id}
-        selectedRestrictedAreaId={selectedRestrictedArea?.id}
         selectedProtectedAreaId={selectedProtectedArea?.id}
         onSelect={handleSelectAnchorage}
         onSelectDiveSite={handleSelectDiveSite}
-        onSelectRestrictedArea={handleSelectRestrictedArea}
         onSelectProtectedArea={handleSelectProtectedArea}
         layers={layers}
-        onZoomChange={setCurrentZoom}
         className={cn(
           "h-full pt-14",
           sidebarOpen && "md:pl-80",

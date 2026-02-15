@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import {
-  Search, X, ChevronLeft, ChevronRight, Layers,
+  Search, X, ChevronLeft, Layers,
   Anchor, Bird, Fish, Shield, AlertTriangle, Eye, EyeOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { BVI_BOUNDS, MAPBOX_STYLE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { DiveSite } from "@/lib/constants/dive-sites";
-import type { RestrictedArea } from "@/lib/constants/restricted-areas";
 import type { ProtectedArea } from "@/lib/constants/protected-areas";
 import type { LayerVisibility } from "./MapSidebar";
 
@@ -28,62 +27,37 @@ interface BaseAnchorage {
 interface AnchorageMapProps<T extends BaseAnchorage> {
   anchorages: T[];
   diveSites?: DiveSite[];
-  restrictedAreas?: RestrictedArea[];
   protectedAreas?: ProtectedArea[];
   selectedId?: string;
   selectedDiveSiteId?: string;
-  selectedRestrictedAreaId?: string;
   selectedProtectedAreaId?: string;
   onSelect: (anchorage: T) => void;
   onSelectDiveSite?: (diveSite: DiveSite) => void;
-  onSelectRestrictedArea?: (area: RestrictedArea) => void;
   onSelectProtectedArea?: (area: ProtectedArea) => void;
   layers: LayerVisibility;
-  onZoomChange?: (zoom: number) => void;
   className?: string;
 }
-
-// Zoom level thresholds
-const ZOOM_LEVELS = {
-  ZOOMED_OUT: 10,    // Only anchorages
-  MEDIUM: 12,        // + dive sites, parks
-  ZOOMED_IN: 13,     // Everything
-};
 
 export function AnchorageMap<T extends BaseAnchorage>({
   anchorages,
   diveSites = [],
-  restrictedAreas = [],
   protectedAreas = [],
   selectedId,
   selectedDiveSiteId,
-  selectedRestrictedAreaId,
   selectedProtectedAreaId,
   onSelect,
   onSelectDiveSite,
-  onSelectRestrictedArea,
   onSelectProtectedArea,
   layers,
-  onZoomChange,
   className
 }: AnchorageMapProps<T>) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
   const diveSiteMarkers = useRef<mapboxgl.Marker[]>([]);
-  const restrictedAreaMarkers = useRef<mapboxgl.Marker[]>([]);
   const protectedAreaMarkers = useRef<mapboxgl.Marker[]>([]);
 
   const [isLoaded, setIsLoaded] = useState(false);
-  const [currentZoom, setCurrentZoom] = useState(BVI_BOUNDS.zoom);
-
-  // Check if a layer should be visible based on zoom and user toggle
-  const shouldShowLayer = useCallback((layerKey: keyof LayerVisibility, zoomThreshold: number) => {
-    // If user explicitly toggled it on, always show
-    if (layers[layerKey]) return true;
-    // Otherwise, don't show (user has it off)
-    return false;
-  }, [layers]);
 
   // Categorize protected areas
   const categorizeProtectedArea = useCallback((area: ProtectedArea) => {
@@ -134,12 +108,6 @@ export function AnchorageMap<T extends BaseAnchorage>({
       setIsLoaded(true);
     });
 
-    map.current.on("zoom", () => {
-      const zoom = map.current?.getZoom() || BVI_BOUNDS.zoom;
-      setCurrentZoom(zoom);
-      onZoomChange?.(zoom);
-    });
-
     // Disable rotation
     map.current.dragRotate.disable();
     map.current.touchZoomRotate.disableRotation();
@@ -149,8 +117,6 @@ export function AnchorageMap<T extends BaseAnchorage>({
       markers.current = [];
       diveSiteMarkers.current.forEach((m) => m.remove());
       diveSiteMarkers.current = [];
-      restrictedAreaMarkers.current.forEach((m) => m.remove());
-      restrictedAreaMarkers.current = [];
       protectedAreaMarkers.current.forEach((m) => m.remove());
       protectedAreaMarkers.current = [];
       if (map.current) {
@@ -158,7 +124,7 @@ export function AnchorageMap<T extends BaseAnchorage>({
         map.current = null;
       }
     };
-  }, [onZoomChange]);
+  }, []);
 
   // Update anchorage markers
   useEffect(() => {
@@ -426,11 +392,6 @@ export function AnchorageMap<T extends BaseAnchorage>({
         >
           <RotateCcw className="h-4 w-4" />
         </Button>
-      </div>
-
-      {/* Zoom indicator */}
-      <div className="absolute bottom-4 right-4 bg-background/90 backdrop-blur-sm rounded-lg px-3 py-1.5 text-xs text-muted-foreground shadow-lg border">
-        Zoom: {currentZoom.toFixed(1)}
       </div>
     </div>
   );
