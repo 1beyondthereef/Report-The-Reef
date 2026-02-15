@@ -43,8 +43,16 @@ function LoginForm() {
     setIsGoogleLoading(true);
     setServerError(null);
 
+    // Set a timeout to reset loading state if redirect doesn't happen
+    const timeout = setTimeout(() => {
+      console.log("Google sign-in timeout - resetting loading state");
+      setIsGoogleLoading(false);
+      setServerError("Sign-in is taking too long. Please try again.");
+    }, 10000);
+
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log("Starting Google OAuth sign-in...");
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -52,11 +60,19 @@ function LoginForm() {
       });
 
       if (error) {
+        console.error("Google sign-in error:", error);
+        clearTimeout(timeout);
         setServerError(error.message);
         setIsGoogleLoading(false);
+        return;
       }
+
+      console.log("OAuth initiated, redirecting...", data);
       // If successful, user will be redirected to Google
-    } catch {
+      // Don't clear timeout here - let it run if redirect fails
+    } catch (err) {
+      console.error("Unexpected Google sign-in error:", err);
+      clearTimeout(timeout);
       setServerError("Failed to connect to Google. Please try again.");
       setIsGoogleLoading(false);
     }
@@ -86,19 +102,24 @@ function LoginForm() {
     setServerError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Starting email/password sign-in...");
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
       if (error) {
+        console.error("Sign-in error:", error);
         setServerError(error.message);
-      } else {
-        router.push("/connect");
+        setIsLoading(false);
+        return;
       }
-    } catch {
+
+      console.log("Sign-in successful:", authData.user?.email);
+      router.push("/connect");
+    } catch (err) {
+      console.error("Unexpected sign-in error:", err);
       setServerError("Network error. Please try again.");
-    } finally {
       setIsLoading(false);
     }
   };

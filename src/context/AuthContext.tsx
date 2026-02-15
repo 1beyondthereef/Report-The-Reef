@@ -121,16 +121,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase, fetchProfile]);
 
   useEffect(() => {
+    console.log("AuthContext: Initial auth check");
     refreshUser();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("AuthContext: Auth state changed", event, session?.user?.email);
+
         if (event === "SIGNED_IN" && session?.user) {
+          console.log("AuthContext: User signed in, refreshing...");
           await refreshUser();
         } else if (event === "SIGNED_OUT") {
+          console.log("AuthContext: User signed out");
           setUser(null);
           setProfile(null);
+          setIsLoading(false);
+        } else if (event === "TOKEN_REFRESHED") {
+          console.log("AuthContext: Token refreshed");
+          // Optionally refresh user data
+        } else if (event === "USER_UPDATED") {
+          console.log("AuthContext: User updated, refreshing...");
+          await refreshUser();
         }
       }
     );

@@ -1,4 +1,4 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const error = searchParams.get("error");
   const error_description = searchParams.get("error_description");
 
-  // Handle error from Supabase
+  // Handle error from Supabase OAuth
   if (error) {
     console.error("Auth error:", error, error_description);
     return NextResponse.redirect(
@@ -25,17 +25,21 @@ export async function GET(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return cookieStore.getAll();
+          get(name: string) {
+            return cookieStore.get(name)?.value;
           },
-          setAll(cookiesToSet) {
+          set(name: string, value: string, options: CookieOptions) {
             try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
+              cookieStore.set({ name, value, ...options });
             } catch (error) {
-              // The `setAll` method was called from a Server Component.
               console.error("Cookie set error:", error);
+            }
+          },
+          remove(name: string, options: CookieOptions) {
+            try {
+              cookieStore.set({ name, value: "", ...options });
+            } catch (error) {
+              console.error("Cookie remove error:", error);
             }
           },
         },
