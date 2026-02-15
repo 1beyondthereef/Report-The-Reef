@@ -4,6 +4,20 @@ import { BVI_CHECKIN_BOUNDS, BVI_ANCHORAGES, CHECKIN_CONFIG } from "@/lib/consta
 
 export const dynamic = 'force-dynamic';
 
+// Default dev mode location (The Bight, Norman Island)
+const DEV_MODE_LOCATION = {
+  lat: 18.3186,
+  lng: -64.6189,
+};
+
+/**
+ * Check if dev mode is enabled (only works in development or with explicit flag)
+ */
+function isDevModeEnabled(request: NextRequest): boolean {
+  const devParam = request.nextUrl.searchParams.get("devMode");
+  return devParam === "true";
+}
+
 /**
  * Check if coordinates are within BVI waters
  */
@@ -54,12 +68,21 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const getSuggestions = searchParams.get("suggestions") === "true";
-    const lat = parseFloat(searchParams.get("lat") || "0");
-    const lng = parseFloat(searchParams.get("lng") || "0");
+    const devMode = isDevModeEnabled(request);
+
+    // Use dev mode location if enabled and not within BVI
+    let lat = parseFloat(searchParams.get("lat") || "0");
+    let lng = parseFloat(searchParams.get("lng") || "0");
+
+    // If dev mode is enabled and location is outside BVI, use default dev location
+    if (devMode && !isWithinBVI(lat, lng)) {
+      lat = DEV_MODE_LOCATION.lat;
+      lng = DEV_MODE_LOCATION.lng;
+    }
 
     // If requesting anchorage suggestions
     if (getSuggestions && lat && lng) {
-      if (!isWithinBVI(lat, lng)) {
+      if (!devMode && !isWithinBVI(lat, lng)) {
         return NextResponse.json(
           { error: "Check-in is only available within BVI waters" },
           { status: 400 }
@@ -67,7 +90,7 @@ export async function GET(request: NextRequest) {
       }
 
       const suggestions = getNearestAnchorages(lat, lng, 3);
-      return NextResponse.json({ suggestions });
+      return NextResponse.json({ suggestions, devMode });
     }
 
     // Expire old check-ins first
@@ -152,7 +175,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { anchorageId, gpsLat, gpsLng } = body;
+    const { anchorageId, gpsLat, gpsLng, devMode } = body;
 
     // Validate GPS coordinates
     if (typeof gpsLat !== "number" || typeof gpsLng !== "number") {
@@ -162,8 +185,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify within BVI waters
-    if (!isWithinBVI(gpsLat, gpsLng)) {
+    // Use dev mode location if enabled and not within BVI
+    let finalLat = gpsLat;
+    let finalLng = gpsLng;
+    if (devMode && !isWithinBVI(gpsLat, gpsLng)) {
+      finalLat = DEV_MODE_LOCATION.lat;
+      finalLng = DEV_MODE_LOCATION.lng;
+    }
+
+    // Verify within BVI waters (unless dev mode)
+    if (!devMode && !isWithinBVI(finalLat, finalLng)) {
       return NextResponse.json(
         { error: "Check-in is only available within BVI waters" },
         { status: 400 }
@@ -198,8 +229,8 @@ export async function POST(request: NextRequest) {
         location_name: anchorage.name,
         location_lat: anchorage.lat,
         location_lng: anchorage.lng,
-        actual_gps_lat: gpsLat,
-        actual_gps_lng: gpsLng,
+        actual_gps_lat: finalLat,
+        actual_gps_lng: finalLng,
         expires_at: expiresAt.toISOString(),
         last_verified_at: new Date().toISOString(),
       })

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   MessageCircle,
@@ -19,6 +20,7 @@ import {
   Anchor,
   CheckCircle,
   AlertCircle,
+  Code,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,9 +131,10 @@ interface Message {
 // GPS verification interval (every 2 hours)
 const VERIFICATION_INTERVAL = CHECKIN_CONFIG.VERIFICATION_INTERVAL_HOURS * 60 * 60 * 1000;
 
-export default function ConnectPage() {
+function ConnectContent() {
   const { user: currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
 
   const [activeTab, setActiveTab] = useState<"map" | "messages">("map");
   const [checkins, setCheckins] = useState<CheckedInUser[]>([]);
@@ -139,6 +142,19 @@ export default function ConnectPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Developer mode - bypasses BVI location check
+  const [devMode, setDevMode] = useState(false);
+  const [showDevToggle, setShowDevToggle] = useState(false);
+
+  // Check if dev mode is available (localhost or ?dev=true)
+  useEffect(() => {
+    const isLocalhost = typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+       window.location.hostname === "127.0.0.1");
+    const hasDevParam = searchParams.get("dev") === "true";
+    setShowDevToggle(isLocalhost || hasDevParam);
+  }, [searchParams]);
 
   // Check-in state
   const [isCheckingIn, setIsCheckingIn] = useState(false);
@@ -276,9 +292,10 @@ export default function ConnectPage() {
       const location = await getCurrentLocation();
       setUserLocation(location);
 
-      // Get anchorage suggestions
+      // Get anchorage suggestions (pass devMode to bypass location check)
+      const devModeParam = devMode ? "&devMode=true" : "";
       const response = await fetch(
-        `/api/connect/checkins?suggestions=true&lat=${location.lat}&lng=${location.lng}`
+        `/api/connect/checkins?suggestions=true&lat=${location.lat}&lng=${location.lng}${devModeParam}`
       );
 
       if (!response.ok) {
@@ -297,7 +314,7 @@ export default function ConnectPage() {
     } finally {
       setIsCheckingIn(false);
     }
-  }, [getCurrentLocation]);
+  }, [getCurrentLocation, devMode]);
 
   // Complete check-in
   const completeCheckin = useCallback(async () => {
@@ -313,6 +330,7 @@ export default function ConnectPage() {
           anchorageId: selectedAnchorage.id,
           gpsLat: userLocation.lat,
           gpsLng: userLocation.lng,
+          devMode: devMode,
         }),
       });
 
@@ -344,7 +362,7 @@ export default function ConnectPage() {
     } finally {
       setIsCheckingIn(false);
     }
-  }, [selectedAnchorage, userLocation, toast, fetchCheckins]);
+  }, [selectedAnchorage, userLocation, toast, fetchCheckins, devMode]);
 
   // Check out
   const checkout = useCallback(async () => {
@@ -862,6 +880,35 @@ export default function ConnectPage() {
                     </Button>
                   </div>
                 )}
+
+                {/* Developer Mode Toggle */}
+                {showDevToggle && (
+                  <div className="rounded-lg border border-dashed border-orange-500/50 bg-orange-50 dark:bg-orange-950/20 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Code className="h-5 w-5 text-orange-500" />
+                        <div>
+                          <p className="font-medium text-orange-700 dark:text-orange-400">
+                            Developer Mode
+                          </p>
+                          <p className="text-xs text-orange-600/70 dark:text-orange-400/70">
+                            Bypass BVI location check for testing
+                          </p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={devMode}
+                        onCheckedChange={setDevMode}
+                        className="data-[state=checked]:bg-orange-500"
+                      />
+                    </div>
+                    {devMode && (
+                      <p className="mt-2 text-xs text-orange-600 dark:text-orange-400">
+                        Using simulated location: Norman Island
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </SheetContent>
           </Sheet>
@@ -869,14 +916,20 @@ export default function ConnectPage() {
 
         {/* Check-in Banner */}
         {!myCheckin && (
-          <div className="mb-4 rounded-lg bg-primary/10 p-4">
+          <div className={cn(
+            "mb-4 rounded-lg p-4",
+            devMode ? "bg-orange-100 dark:bg-orange-950/30 border border-orange-500/30" : "bg-primary/10"
+          )}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Anchor className="h-5 w-5 text-primary" />
+                <Anchor className={cn("h-5 w-5", devMode ? "text-orange-500" : "text-primary")} />
                 <div>
-                  <p className="font-medium">Check in to connect</p>
+                  <p className="font-medium">
+                    Check in to connect
+                    {devMode && <span className="ml-2 text-xs text-orange-500">(DEV MODE)</span>}
+                  </p>
                   <p className="text-sm text-muted-foreground">
-                    GPS verified for BVI waters only
+                    {devMode ? "Location check bypassed" : "GPS verified for BVI waters only"}
                   </p>
                 </div>
               </div>
@@ -1156,5 +1209,21 @@ export default function ConnectPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function ConnectFallback() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
+}
+
+export default function ConnectPage() {
+  return (
+    <Suspense fallback={<ConnectFallback />}>
+      <ConnectContent />
+    </Suspense>
   );
 }
