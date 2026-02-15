@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { X, Anchor, Star, MapPin, Compass, Ship, Check, ChevronRight, AlertTriangle, Leaf, ChevronLeft } from "lucide-react";
+// Note: useState removed - will be needed again when we add proper photos back
+import { X, Anchor, Star, MapPin, Compass, Ship, Check, AlertTriangle, Leaf } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,9 +39,9 @@ interface AnchoragePanelProps {
 }
 
 export function AnchoragePanel({ anchorage, isLoading, onClose, className }: AnchoragePanelProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const amenities = anchorage ? parseJsonArray(anchorage.amenities) : [];
-  const images = anchorage ? parseJsonArray(anchorage.images) : [];
+  // Note: images data kept in interface but not rendered until we have proper photos
+  // const images = anchorage ? parseJsonArray(anchorage.images) : [];
 
   // Lock body scroll when panel is open (mobile)
   useBodyScrollLock(!!anchorage || !!isLoading);
@@ -50,14 +49,6 @@ export function AnchoragePanel({ anchorage, isLoading, onClose, className }: Anc
   const averageRating = anchorage?.reviews?.length
     ? anchorage.reviews.reduce((sum, r) => sum + r.rating, 0) / anchorage.reviews.length
     : null;
-
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
 
   const hasSensitiveHabitat = anchorage?.hasReef || anchorage?.hasSeagrass;
   const mooringCount = anchorage?._count?.moorings || anchorage?.moorings?.length || 0;
@@ -112,58 +103,10 @@ export function AnchoragePanel({ anchorage, isLoading, onClose, className }: Anc
           </div>
         ) : anchorage ? (
           <>
-            {/* Image Gallery */}
-            {images.length > 0 ? (
-              <div className="relative h-52 w-full overflow-hidden md:h-64">
-                <Image
-                  src={images[currentImageIndex] || "/images/anchorages/placeholder.jpg"}
-                  alt={`${anchorage.name} - Photo ${currentImageIndex + 1}`}
-                  fill
-                  className="object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = "/images/anchorages/placeholder.jpg";
-                  }}
-                />
-                {/* Navigation arrows */}
-                {images.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevImage}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
-                      aria-label="Previous image"
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
-                      aria-label="Next image"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                    {/* Dots indicator */}
-                    <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
-                      {images.map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setCurrentImageIndex(idx)}
-                          className={cn(
-                            "h-2 w-2 rounded-full transition-all",
-                            idx === currentImageIndex ? "bg-white w-4" : "bg-white/50 hover:bg-white/70"
-                          )}
-                          aria-label={`Go to image ${idx + 1}`}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <div className="flex h-52 w-full items-center justify-center bg-gradient-to-br from-ocean-100 to-ocean-200 dark:from-ocean-900 dark:to-ocean-800 md:h-64">
-                <Anchor className="h-20 w-20 text-ocean-400/50" />
-              </div>
-            )}
+            {/* Header Image - temporarily hidden until we have proper photos */}
+            <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-ocean-100 to-ocean-200 dark:from-ocean-900 dark:to-ocean-800 md:h-48">
+              <Anchor className="h-16 w-16 text-ocean-400/50" />
+            </div>
 
             {/* Details */}
             <div className="p-4 space-y-4">
