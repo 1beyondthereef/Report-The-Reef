@@ -121,8 +121,8 @@ function LoginForm() {
         if (authData.user.identities?.length === 0) {
           setServerError("An account with this email already exists. Please sign in instead.");
         } else {
-          // Redirect to profile completion
-          router.push("/profile?setup=true");
+          // Redirect to profile setup
+          router.push("/profile/setup");
         }
       }
     } catch {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -14,6 +14,8 @@ import {
   AlertTriangle,
   Camera,
   CheckCircle,
+  Edit,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -25,7 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
-import { updateProfileSchema, completeProfileSchema, type UpdateProfileInput, type CompleteProfileInput } from "@/lib/validation";
+import { completeProfileSchema, type CompleteProfileInput } from "@/lib/validation";
 import { getInitials, formatDate, formatCurrency } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
@@ -54,50 +56,90 @@ interface Incident {
   createdAt: string;
 }
 
+interface ProfileData {
+  display_name: string | null;
+  username: string | null;
+  bio: string | null;
+  boat_name: string | null;
+  home_port: string | null;
+  avatar_url: string | null;
+}
+
 function ProfileContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const isSetupMode = searchParams.get("setup") === "true";
   const { user, isAuthenticated, isLoading: authLoading, logout, refreshUser } = useAuth();
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [setupError, setSetupError] = useState<string | null>(null);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<UpdateProfileInput>({
-    resolver: zodResolver(updateProfileSchema),
-  });
-
-  const setupForm = useForm<CompleteProfileInput>({
+  } = useForm<CompleteProfileInput>({
     resolver: zodResolver(completeProfileSchema),
-    defaultValues: { displayName: "", username: "", bio: "" },
   });
 
+  // Check if user needs to complete profile setup
   useEffect(() => {
-    if (user) {
+    if (isAuthenticated && user?.id) {
+      // Fetch profile data
+      const fetchProfile = async () => {
+        try {
+          const { data, error } = await supabase
+            .from("profiles")
+            .select("display_name, username, bio, boat_name, home_port, avatar_url")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (error) {
+            console.error("Error fetching profile:", error);
+          }
+
+          if (!data || !data.display_name || !data.username) {
+            // Redirect to setup if profile is incomplete
+            router.push("/profile/setup");
+            return;
+          }
+
+          setProfileData(data);
+          setAvatarUrl(data.avatar_url);
+        } catch (error) {
+          console.error("Failed to fetch profile:", error);
+        }
+      };
+
+      fetchProfile();
+    }
+  }, [isAuthenticated, user?.id, supabase, router]);
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (profileData && isEditing) {
       reset({
-        name: user.name || "",
-        boatName: user.boatName || "",
-        homePort: user.homePort || "",
+        displayName: profileData.display_name || "",
+        username: profileData.username || "",
+        bio: profileData.bio || "",
+        boatName: profileData.boat_name || "",
+        homePort: profileData.home_port || "",
       });
     }
-  }, [user, reset]);
+  }, [profileData, isEditing, reset]);
 
+  // Fetch reservations and incidents
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user?.id) return;
 
     const fetchData = async () => {
       setIsLoadingData(true);
@@ -109,13 +151,15 @@ function ProfileContent() {
 
         if (resResponse.ok) {
           const data = await resResponse.json();
-          setReservations(data.reservations);
+          setReservations(data.reservations || []);
         }
 
         if (incResponse.ok) {
           const data = await incResponse.json();
-          // Filter to only user's incidents (would be better to add userId filter to API)
-          setIncidents(data.incidents.filter((i: Incident & { userId?: string }) => i.userId === user?.id));
+          // Filter to only user's incidents
+          setIncidents(
+            (data.incidents || []).filter((i: Incident & { userId?: string }) => i.userId === user.id)
+          );
         }
       } catch (error) {
         console.error("Failed to fetch data:", error);
@@ -127,25 +171,147 @@ function ProfileContent() {
     fetchData();
   }, [isAuthenticated, user?.id]);
 
-  const onSubmit = async (data: UpdateProfileInput) => {
+  // Handle avatar upload
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) {
+      setSaveError("Please select a file and make sure you're logged in.");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setSaveError("Please select an image file (JPG, PNG, etc.)");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setSaveError("Image must be less than 5MB");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    setSaveError(null);
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("profile-photos")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        console.error("Avatar upload error:", uploadError);
+        setSaveError(`Upload failed: ${uploadError.message}`);
+        return;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("profile-photos")
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+
+      // Update profile with new avatar
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq("id", user.id);
+
+      if (updateError) {
+        console.error("Avatar update error:", updateError);
+        setSaveError(`Failed to save avatar: ${updateError.message}`);
+      } else {
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 3000);
+        await refreshUser();
+      }
+    } catch (error: unknown) {
+      console.error("Upload error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      setSaveError(`Failed to upload image: ${errorMessage}`);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  // Handle profile update
+  const onSubmit = async (data: CompleteProfileInput) => {
+    if (!user?.id) {
+      setSaveError("You must be logged in to update your profile.");
+      return;
+    }
+
     setIsSaving(true);
+    setSaveError(null);
     setSaveSuccess(false);
 
     try {
-      const response = await fetch("/api/auth/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+      // Check if username is unique (if changed)
+      if (data.username && data.username !== profileData?.username) {
+        const { data: existingUser, error: checkError } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("username", data.username)
+          .neq("id", user.id)
+          .maybeSingle();
+
+        if (checkError) {
+          console.error("Username check error:", checkError);
+          setSaveError(`Error checking username: ${checkError.message}`);
+          setIsSaving(false);
+          return;
+        }
+
+        if (existingUser) {
+          setSaveError("This username is already taken. Please choose another.");
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          display_name: data.displayName,
+          username: data.username,
+          bio: data.bio || null,
+          boat_name: data.boatName || null,
+          home_port: data.homePort || null,
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+
+      if (updateError) {
+        console.error("Profile update error:", updateError);
+        if (updateError.code === "23505") {
+          setSaveError("This username is already taken. Please choose another.");
+        } else {
+          setSaveError(`Failed to update profile: ${updateError.message}`);
+        }
+        setIsSaving(false);
+        return;
+      }
+
+      // Update local state
+      setProfileData({
+        display_name: data.displayName,
+        username: data.username,
+        bio: data.bio || null,
+        boat_name: data.boatName || null,
+        home_port: data.homePort || null,
+        avatar_url: avatarUrl,
       });
 
-      if (response.ok) {
-        setSaveSuccess(true);
-        setIsEditing(false);
-        refreshUser();
-        setTimeout(() => setSaveSuccess(false), 3000);
-      }
-    } catch (error) {
-      console.error("Failed to update profile:", error);
+      setSaveSuccess(true);
+      setIsEditing(false);
+      await refreshUser();
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error: unknown) {
+      console.error("Update error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      setSaveError(`Failed to update profile: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }
@@ -156,142 +322,7 @@ function ProfileContent() {
     router.push("/");
   };
 
-  // Handle avatar upload
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) {
-      setSetupError("Please select a file and make sure you're logged in.");
-      return;
-    }
-
-    // Validate file type and size
-    if (!file.type.startsWith("image/")) {
-      setSetupError("Please select an image file (JPG, PNG, etc.)");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setSetupError("Image must be less than 5MB");
-      return;
-    }
-
-    setIsUploadingAvatar(true);
-    setSetupError(null);
-
-    try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-
-      console.log("Uploading avatar to:", filePath);
-
-      const { error: uploadError } = await supabase.storage
-        .from("profile-photos")
-        .upload(filePath, file, { upsert: true });
-
-      if (uploadError) {
-        console.error("Avatar upload error:", uploadError);
-        // Check for common errors
-        if (uploadError.message.includes("bucket") || uploadError.message.includes("not found")) {
-          setSetupError("Photo upload is not available. You can skip this for now.");
-        } else if (uploadError.message.includes("policy")) {
-          setSetupError("Permission denied. Please try again or skip photo upload.");
-        } else {
-          setSetupError(`Upload failed: ${uploadError.message}`);
-        }
-        return;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("profile-photos")
-        .getPublicUrl(filePath);
-
-      console.log("Avatar uploaded successfully:", publicUrl);
-      setAvatarUrl(publicUrl);
-    } catch (error: unknown) {
-      console.error("Upload error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      setSetupError(`Failed to upload image: ${errorMessage}`);
-    } finally {
-      setIsUploadingAvatar(false);
-    }
-  };
-
-  // Handle profile setup completion
-  const onCompleteSetup = async (data: CompleteProfileInput) => {
-    if (!user) {
-      setSetupError("You must be logged in to complete profile setup.");
-      return;
-    }
-
-    setIsSaving(true);
-    setSetupError(null);
-
-    try {
-      console.log("Starting profile setup for user:", user.id);
-
-      // Check if username is unique (only if username is provided)
-      if (data.username) {
-        const { data: existingUser, error: checkError } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("username", data.username)
-          .neq("id", user.id)
-          .maybeSingle();
-
-        console.log("Username check result:", { existingUser, checkError });
-
-        if (checkError) {
-          console.error("Username check error:", checkError);
-          setSetupError(`Error checking username: ${checkError.message}`);
-          setIsSaving(false);
-          return;
-        }
-
-        if (existingUser) {
-          setSetupError("This username is already taken. Please choose another.");
-          setIsSaving(false);
-          return;
-        }
-      }
-
-      // Use upsert to handle both new profiles and updates
-      const profileData = {
-        id: user.id,
-        display_name: data.displayName,
-        username: data.username,
-        bio: data.bio || null,
-        avatar_url: avatarUrl,
-        updated_at: new Date().toISOString(),
-      };
-
-      console.log("Upserting profile data:", profileData);
-
-      const { error: upsertError } = await supabase
-        .from("profiles")
-        .upsert(profileData, {
-          onConflict: "id",
-          ignoreDuplicates: false
-        });
-
-      if (upsertError) {
-        console.error("Profile upsert error:", upsertError);
-        setSetupError(`Failed to save profile: ${upsertError.message}`);
-        setIsSaving(false);
-        return;
-      }
-
-      console.log("Profile saved successfully, refreshing user...");
-      await refreshUser();
-      router.push("/connect");
-    } catch (error: unknown) {
-      console.error("Setup error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      setSetupError(`Failed to complete setup: ${errorMessage}`);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
+  // Loading state
   if (authLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -300,6 +331,7 @@ function ProfileContent() {
     );
   }
 
+  // Not authenticated
   if (!isAuthenticated || !user) {
     return (
       <div className="container max-w-lg px-4 py-12">
@@ -321,36 +353,60 @@ function ProfileContent() {
     );
   }
 
-  // Profile Setup Mode for new users
-  if (isSetupMode) {
+  // Loading profile
+  if (!profileData) {
     return (
-      <div className="container max-w-lg px-4 py-8">
-        <Card className="shadow-xl">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
-            </div>
-            <CardTitle>Welcome to Report The Reef!</CardTitle>
-            <CardDescription>
-              Let&apos;s set up your profile so other boaters can connect with you.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {setupError && (
-              <div className="mb-4 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>{setupError}</span>
-              </div>
-            )}
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-            <form onSubmit={setupForm.handleSubmit(onCompleteSetup)} className="space-y-6">
-              {/* Avatar Upload */}
+  return (
+    <div className="container max-w-3xl px-4 py-6">
+      {/* Success/Error Messages */}
+      {saveSuccess && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-green-100 dark:bg-green-900/30 p-3 text-sm text-green-700 dark:text-green-400">
+          <CheckCircle className="h-4 w-4 shrink-0" />
+          <span>Profile updated successfully!</span>
+        </div>
+      )}
+
+      {saveError && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>{saveError}</span>
+        </div>
+      )}
+
+      {/* Profile Header */}
+      <Card className="mb-6">
+        <CardContent className="p-6">
+          {isEditing ? (
+            // Edit Mode
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">Edit Profile</h2>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setSaveError(null);
+                  }}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              {/* Avatar */}
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
                   <Avatar className="h-24 w-24">
                     <AvatarImage src={avatarUrl || undefined} />
-                    <AvatarFallback className="text-2xl bg-primary/10">
-                      {user.email ? user.email[0].toUpperCase() : "?"}
+                    <AvatarFallback className="text-2xl">
+                      {profileData.display_name ? getInitials(profileData.display_name) : "?"}
                     </AvatarFallback>
                   </Avatar>
                   <button
@@ -373,9 +429,6 @@ function ProfileContent() {
                     className="hidden"
                   />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Click the camera to upload a profile photo
-                </p>
               </div>
 
               {/* Display Name */}
@@ -383,14 +436,11 @@ function ProfileContent() {
                 <Label htmlFor="displayName">Display Name *</Label>
                 <Input
                   id="displayName"
-                  placeholder="Captain Jack"
-                  {...setupForm.register("displayName")}
+                  {...register("displayName")}
                   disabled={isSaving}
                 />
-                {setupForm.formState.errors.displayName && (
-                  <p className="text-sm text-destructive">
-                    {setupForm.formState.errors.displayName.message}
-                  </p>
+                {errors.displayName && (
+                  <p className="text-sm text-destructive">{errors.displayName.message}</p>
                 )}
               </div>
 
@@ -398,183 +448,138 @@ function ProfileContent() {
               <div className="space-y-2">
                 <Label htmlFor="username">Username *</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    @
-                  </span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
                   <Input
                     id="username"
-                    placeholder="captainjack"
                     className="pl-8"
-                    {...setupForm.register("username")}
+                    {...register("username")}
                     disabled={isSaving}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Letters, numbers, and underscores only
-                </p>
-                {setupForm.formState.errors.username && (
-                  <p className="text-sm text-destructive">
-                    {setupForm.formState.errors.username.message}
-                  </p>
+                {errors.username && (
+                  <p className="text-sm text-destructive">{errors.username.message}</p>
                 )}
               </div>
 
               {/* Bio */}
               <div className="space-y-2">
-                <Label htmlFor="bio">Bio (optional)</Label>
+                <Label htmlFor="bio">Bio</Label>
                 <Textarea
                   id="bio"
-                  placeholder="Tell us about yourself and your boating adventures..."
                   rows={3}
-                  {...setupForm.register("bio")}
+                  {...register("bio")}
                   disabled={isSaving}
                 />
-                {setupForm.formState.errors.bio && (
-                  <p className="text-sm text-destructive">
-                    {setupForm.formState.errors.bio.message}
-                  </p>
+                {errors.bio && (
+                  <p className="text-sm text-destructive">{errors.bio.message}</p>
                 )}
               </div>
 
-              {/* Submit */}
-              <div className="flex gap-3">
-                <Button type="submit" className="flex-1" disabled={isSaving}>
+              {/* Boat Name */}
+              <div className="space-y-2">
+                <Label htmlFor="boatName">Boat Name</Label>
+                <Input
+                  id="boatName"
+                  {...register("boatName")}
+                  disabled={isSaving}
+                />
+                {errors.boatName && (
+                  <p className="text-sm text-destructive">{errors.boatName.message}</p>
+                )}
+              </div>
+
+              {/* Home Port */}
+              <div className="space-y-2">
+                <Label htmlFor="homePort">Home Port</Label>
+                <Input
+                  id="homePort"
+                  {...register("homePort")}
+                  disabled={isSaving}
+                />
+                {errors.homePort && (
+                  <p className="text-sm text-destructive">{errors.homePort.message}</p>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Button type="submit" disabled={isSaving}>
                   {isSaving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Setting up...
+                      Saving...
                     </>
                   ) : (
-                    "Complete Setup"
+                    "Save Changes"
                   )}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push("/connect")}
+                  onClick={() => {
+                    setIsEditing(false);
+                    setSaveError(null);
+                  }}
                   disabled={isSaving}
                 >
-                  Skip for now
+                  Cancel
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+          ) : (
+            // View Mode
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+              <div className="relative">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={avatarUrl || undefined} />
+                  <AvatarFallback className="text-xl">
+                    {profileData.display_name ? getInitials(profileData.display_name) : "?"}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
 
-  return (
-    <div className="container max-w-3xl px-4 py-6">
-      {/* Profile Header */}
-      <Card className="mb-6">
-        <CardContent className="p-6">
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={user.avatarUrl || undefined} />
-              <AvatarFallback className="text-xl">
-                {user.name ? getInitials(user.name) : (user.email ? user.email[0].toUpperCase() : "?")}
-              </AvatarFallback>
-            </Avatar>
+              <div className="flex-1 text-center sm:text-left">
+                <div className="flex items-center justify-center gap-2 sm:justify-start">
+                  <h1 className="text-2xl font-bold">{profileData.display_name || "Boater"}</h1>
+                </div>
 
-            <div className="flex-1 text-center sm:text-left">
-              {isEditing ? (
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <Label htmlFor="name">Name</Label>
-                      <Input
-                        id="name"
-                        {...register("name")}
-                        className="mt-1"
-                      />
-                      {errors.name && (
-                        <p className="mt-1 text-sm text-destructive">{errors.name.message}</p>
-                      )}
-                    </div>
-                    <div>
-                      <Label htmlFor="boatName">Boat Name</Label>
-                      <Input
-                        id="boatName"
-                        {...register("boatName")}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="homePort">Home Port</Label>
-                      <Input
-                        id="homePort"
-                        {...register("homePort")}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button type="submit" disabled={isSaving}>
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        "Save Changes"
-                      )}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setIsEditing(false);
-                        reset();
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </form>
-              ) : (
-                <>
-                  <div className="flex items-center justify-center gap-2 sm:justify-start">
-                    <h1 className="text-2xl font-bold">{user.name || "Boater"}</h1>
-                  </div>
+                <p className="text-muted-foreground">@{profileData.username}</p>
 
-                  <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                {profileData.bio && (
+                  <p className="mt-2 text-sm text-muted-foreground">{profileData.bio}</p>
+                )}
+
+                <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                  <p className="flex items-center justify-center gap-2 sm:justify-start">
+                    <Mail className="h-4 w-4" />
+                    {user.email}
+                  </p>
+                  {profileData.boat_name && (
                     <p className="flex items-center justify-center gap-2 sm:justify-start">
-                      <Mail className="h-4 w-4" />
-                      {user.email}
-                    </p>
-                    {user.boatName && (
-                      <p className="flex items-center justify-center gap-2 sm:justify-start">
-                        <Ship className="h-4 w-4" />
-                        {user.boatName}
-                      </p>
-                    )}
-                    {user.homePort && (
-                      <p className="flex items-center justify-center gap-2 sm:justify-start">
-                        <MapPin className="h-4 w-4" />
-                        {user.homePort}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
-                    <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                      Edit Profile
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleLogout}>
-                      Sign Out
-                    </Button>
-                  </div>
-
-                  {saveSuccess && (
-                    <p className="mt-2 text-sm text-green-600 dark:text-green-400">
-                      Profile updated successfully!
+                      <Ship className="h-4 w-4" />
+                      {profileData.boat_name}
                     </p>
                   )}
-                </>
-              )}
+                  {profileData.home_port && (
+                    <p className="flex items-center justify-center gap-2 sm:justify-start">
+                      <MapPin className="h-4 w-4" />
+                      {profileData.home_port}
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-4 flex flex-wrap justify-center gap-2 sm:justify-start">
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit Profile
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleLogout}>
+                    Sign Out
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -621,7 +626,7 @@ function ProfileContent() {
                           <Badge
                             variant={
                               reservation.status === "confirmed"
-                                ? "success"
+                                ? "default"
                                 : reservation.status === "cancelled"
                                 ? "destructive"
                                 : "secondary"
@@ -688,10 +693,10 @@ function ProfileContent() {
                           <Badge
                             variant={
                               incident.status === "resolved"
-                                ? "success"
+                                ? "default"
                                 : incident.status === "dismissed"
                                 ? "secondary"
-                                : "warning"
+                                : "outline"
                             }
                           >
                             {incident.status}

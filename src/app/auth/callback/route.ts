@@ -68,7 +68,7 @@ export async function GET(request: Request) {
 
         // If no profile or missing required fields, redirect to profile setup
         if (!profile || !profile.display_name || !profile.username) {
-          return NextResponse.redirect(`${origin}/profile?setup=true`);
+          return NextResponse.redirect(`${origin}/profile/setup`);
         }
       }
     } catch (profileCheckError) {

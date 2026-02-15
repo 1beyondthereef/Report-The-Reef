@@ -27,6 +27,8 @@ export const completeProfileSchema = z.object({
     .max(20, "Username must be at most 20 characters")
     .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
   bio: z.string().max(500, "Bio must be at most 500 characters").optional(),
+  boatName: z.string().max(100, "Boat name must be at most 100 characters").optional(),
+  homePort: z.string().max(100, "Home port must be at most 100 characters").optional(),
 });
 
 // User schemas
