@@ -137,7 +137,7 @@ export function MapSidebar<T extends BaseAnchorage>({
 
   return (
     <>
-      {/* Toggle Button - always visible */}
+      {/* Toggle Button - always visible, positioned below header at each breakpoint */}
       <Button
         variant="secondary"
         size="icon"
@@ -145,7 +145,7 @@ export function MapSidebar<T extends BaseAnchorage>({
         className={cn(
           "fixed z-30 h-10 w-10 shadow-lg transition-all duration-300",
           isOpen ? "left-72 md:left-80" : "left-4",
-          "top-20"
+          "top-[4.5rem] sm:top-[5rem] md:top-[6rem] lg:top-[12rem]"
         )}
         aria-label={isOpen ? "Close sidebar" : "Open layers"}
       >
