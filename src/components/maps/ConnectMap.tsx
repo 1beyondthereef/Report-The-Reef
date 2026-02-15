@@ -5,7 +5,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Locate, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BVI_BOUNDS, MAPBOX_STYLE } from "@/lib/constants";
+import { BVI_BOUNDS, MAPBOX_STYLE, BVI_ANCHORAGES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 interface CheckedInUser {
@@ -14,6 +14,8 @@ interface CheckedInUser {
   location_name: string;
   location_lat: number;
   location_lng: number;
+  anchorage_id?: string;
+  note?: string;
   checked_in_at: string;
   expires_at: string;
   profiles: {
@@ -25,29 +27,54 @@ interface CheckedInUser {
   };
 }
 
+interface AnchorageWithCount {
+  id: string;
+  name: string;
+  island: string;
+  lat: number;
+  lng: number;
+  checkinCount: number;
+}
+
 interface ConnectMapProps {
   checkins: CheckedInUser[];
+  anchorages?: AnchorageWithCount[];
   onUserClick: (checkin: CheckedInUser) => void;
+  onAnchorageClick?: (anchorage: AnchorageWithCount, usersAtAnchorage: CheckedInUser[]) => void;
   selectedUserId?: string;
+  selectedAnchorageId?: string;
   className?: string;
   userLocation?: { lat: number; lng: number } | null;
+  showAnchorageMarkers?: boolean;
+  onMapClick?: (lngLat: { lng: number; lat: number }) => void;
+  allowCustomPin?: boolean;
+  customPinLocation?: { lng: number; lat: number } | null;
 }
 
 export function ConnectMap({
   checkins,
+  anchorages,
   onUserClick,
+  onAnchorageClick,
   selectedUserId,
+  selectedAnchorageId,
   className,
   userLocation,
+  showAnchorageMarkers = true,
+  onMapClick,
+  allowCustomPin = false,
+  customPinLocation,
 }: ConnectMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
-  const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const userMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const anchorageMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const userLocationMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const customPinMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Create marker element for a checked-in user
-  const createMarkerElement = useCallback(
+  const createUserMarkerElement = useCallback(
     (checkin: CheckedInUser, isSelected: boolean) => {
       const el = document.createElement("div");
       el.className = "checkin-marker";
@@ -125,6 +152,84 @@ export function ConnectMap({
     []
   );
 
+  // Create marker element for an anchorage
+  const createAnchorageMarkerElement = useCallback(
+    (anchorage: AnchorageWithCount, isSelected: boolean) => {
+      const el = document.createElement("div");
+      el.className = "anchorage-marker";
+      el.style.cssText = "cursor: pointer;";
+
+      const hasUsers = anchorage.checkinCount > 0;
+      const size = isSelected ? 40 : 32;
+      const bgColor = hasUsers ? "#0d9488" : "#6b7280";
+      const borderColor = isSelected ? "#ffffff" : (hasUsers ? "#0f766e" : "#4b5563");
+
+      el.innerHTML = `
+        <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+          <div style="
+            width: ${size}px;
+            height: ${size}px;
+            border-radius: 50%;
+            background: ${bgColor};
+            border: 3px solid ${borderColor};
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+            ${isSelected ? "transform: scale(1.1);" : ""}
+          ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="${size * 0.5}" height="${size * 0.5}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="5" r="3"/>
+              <line x1="12" y1="22" x2="12" y2="8"/>
+              <path d="M5 12H2a10 10 0 0 0 20 0h-3"/>
+            </svg>
+          </div>
+          ${hasUsers ? `
+            <div style="
+              position: absolute;
+              top: -4px;
+              right: -4px;
+              min-width: 20px;
+              height: 20px;
+              padding: 0 6px;
+              border-radius: 10px;
+              background: #ef4444;
+              border: 2px solid white;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            ">
+              <span style="color: white; font-size: 11px; font-weight: 700;">${anchorage.checkinCount}</span>
+            </div>
+          ` : ""}
+          ${isSelected ? `
+            <div style="
+              margin-top: 4px;
+              background: white;
+              padding: 4px 8px;
+              border-radius: 8px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+              max-width: 160px;
+              text-align: center;
+            ">
+              <p style="font-size: 11px; font-weight: 600; color: #1f2937; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${anchorage.name}
+              </p>
+              <p style="font-size: 9px; color: #6b7280; margin: 0;">
+                ${anchorage.island}
+              </p>
+            </div>
+          ` : ""}
+        </div>
+      `;
+
+      return el;
+    },
+    []
+  );
+
   // Initialize map
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -154,27 +259,112 @@ export function ConnectMap({
       setIsLoaded(true);
     });
 
+    // Handle map clicks for custom pin
+    map.on("click", (e) => {
+      if (allowCustomPin && onMapClick) {
+        onMapClick({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+      }
+    });
+
     map.dragRotate.disable();
     map.touchZoomRotate.disableRotation();
 
-    const markers = markersRef.current;
+    const userMarkers = userMarkersRef.current;
+    const anchorageMarkers = anchorageMarkersRef.current;
+
     return () => {
-      markers.forEach((marker) => marker.remove());
-      markers.clear();
-      if (userMarkerRef.current) {
-        userMarkerRef.current.remove();
+      userMarkers.forEach((marker) => marker.remove());
+      userMarkers.clear();
+      anchorageMarkers.forEach((marker) => marker.remove());
+      anchorageMarkers.clear();
+      if (userLocationMarkerRef.current) {
+        userLocationMarkerRef.current.remove();
+      }
+      if (customPinMarkerRef.current) {
+        customPinMarkerRef.current.remove();
       }
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [allowCustomPin, onMapClick]);
 
-  // Update markers when checkins change
+  // Update anchorage markers
+  useEffect(() => {
+    if (!mapRef.current || !isLoaded || !showAnchorageMarkers) return;
+
+    const map = mapRef.current;
+    const currentMarkers = anchorageMarkersRef.current;
+
+    // Use provided anchorages or fall back to default list
+    const anchorageList: AnchorageWithCount[] = anchorages || BVI_ANCHORAGES.map(a => ({
+      ...a,
+      checkinCount: 0,
+    }));
+
+    // Count checkins per anchorage from checkins data if not provided in anchorages
+    if (!anchorages) {
+      checkins.forEach((c) => {
+        if (c.anchorage_id) {
+          const anchorage = anchorageList.find(a => a.id === c.anchorage_id);
+          if (anchorage) {
+            anchorage.checkinCount++;
+          }
+        }
+      });
+    }
+
+    const anchorageIds = new Set(anchorageList.map((a) => a.id));
+
+    // Remove markers no longer in the list
+    currentMarkers.forEach((marker, id) => {
+      if (!anchorageIds.has(id)) {
+        marker.remove();
+        currentMarkers.delete(id);
+      }
+    });
+
+    // Add or update markers
+    anchorageList.forEach((anchorage) => {
+      const isSelected = anchorage.id === selectedAnchorageId;
+      const existingMarker = currentMarkers.get(anchorage.id);
+
+      if (existingMarker) {
+        // Update element
+        const el = createAnchorageMarkerElement(anchorage, isSelected);
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (onAnchorageClick) {
+            const usersAtAnchorage = checkins.filter(c => c.anchorage_id === anchorage.id);
+            onAnchorageClick(anchorage, usersAtAnchorage);
+          }
+        });
+        existingMarker.getElement().replaceWith(el);
+      } else {
+        // Create new marker
+        const el = createAnchorageMarkerElement(anchorage, isSelected);
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (onAnchorageClick) {
+            const usersAtAnchorage = checkins.filter(c => c.anchorage_id === anchorage.id);
+            onAnchorageClick(anchorage, usersAtAnchorage);
+          }
+        });
+
+        const marker = new mapboxgl.Marker({ element: el })
+          .setLngLat([anchorage.lng, anchorage.lat])
+          .addTo(map);
+
+        currentMarkers.set(anchorage.id, marker);
+      }
+    });
+  }, [anchorages, checkins, selectedAnchorageId, isLoaded, showAnchorageMarkers, createAnchorageMarkerElement, onAnchorageClick]);
+
+  // Update user markers when checkins change
   useEffect(() => {
     if (!mapRef.current || !isLoaded) return;
 
     const map = mapRef.current;
-    const currentMarkers = markersRef.current;
+    const currentMarkers = userMarkersRef.current;
     const checkinIds = new Set(checkins.map((c) => c.id));
 
     // Remove markers for checkins no longer in the list
@@ -191,16 +381,22 @@ export function ConnectMap({
       const existingMarker = currentMarkers.get(checkin.id);
 
       if (existingMarker) {
-        // Update position (use anchorage location for privacy)
+        // Update position
         existingMarker.setLngLat([checkin.location_lng, checkin.location_lat]);
         // Update element
-        const el = createMarkerElement(checkin, isSelected);
-        el.addEventListener("click", () => onUserClick(checkin));
+        const el = createUserMarkerElement(checkin, isSelected);
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          onUserClick(checkin);
+        });
         existingMarker.getElement().replaceWith(el);
       } else {
         // Create new marker
-        const el = createMarkerElement(checkin, isSelected);
-        el.addEventListener("click", () => onUserClick(checkin));
+        const el = createUserMarkerElement(checkin, isSelected);
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          onUserClick(checkin);
+        });
 
         const marker = new mapboxgl.Marker({ element: el })
           .setLngLat([checkin.location_lng, checkin.location_lat])
@@ -209,7 +405,7 @@ export function ConnectMap({
         currentMarkers.set(checkin.id, marker);
       }
     });
-  }, [checkins, selectedUserId, isLoaded, createMarkerElement, onUserClick]);
+  }, [checkins, selectedUserId, isLoaded, createUserMarkerElement, onUserClick]);
 
   // Add/update user location marker
   useEffect(() => {
@@ -217,8 +413,8 @@ export function ConnectMap({
 
     const map = mapRef.current;
 
-    if (userMarkerRef.current) {
-      userMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
+    if (userLocationMarkerRef.current) {
+      userLocationMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
     } else {
       const el = document.createElement("div");
       el.innerHTML = `
@@ -232,11 +428,64 @@ export function ConnectMap({
         "></div>
       `;
 
-      userMarkerRef.current = new mapboxgl.Marker({ element: el })
+      userLocationMarkerRef.current = new mapboxgl.Marker({ element: el })
         .setLngLat([userLocation.lng, userLocation.lat])
         .addTo(map);
     }
   }, [userLocation, isLoaded]);
+
+  // Add/update custom pin marker
+  useEffect(() => {
+    if (!mapRef.current || !isLoaded) return;
+
+    const map = mapRef.current;
+
+    if (customPinLocation) {
+      if (customPinMarkerRef.current) {
+        customPinMarkerRef.current.setLngLat([customPinLocation.lng, customPinLocation.lat]);
+      } else {
+        const el = document.createElement("div");
+        el.innerHTML = `
+          <div style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+          ">
+            <div style="
+              width: 32px;
+              height: 32px;
+              border-radius: 50% 50% 50% 0;
+              background: #f97316;
+              border: 3px solid white;
+              box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+              transform: rotate(-45deg);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            ">
+              <span style="transform: rotate(45deg); color: white; font-size: 14px; font-weight: bold;">+</span>
+            </div>
+            <div style="
+              margin-top: 4px;
+              background: white;
+              padding: 4px 8px;
+              border-radius: 8px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            ">
+              <p style="font-size: 10px; font-weight: 600; color: #f97316; margin: 0;">Custom Location</p>
+            </div>
+          </div>
+        `;
+
+        customPinMarkerRef.current = new mapboxgl.Marker({ element: el })
+          .setLngLat([customPinLocation.lng, customPinLocation.lat])
+          .addTo(map);
+      }
+    } else if (customPinMarkerRef.current) {
+      customPinMarkerRef.current.remove();
+      customPinMarkerRef.current = null;
+    }
+  }, [customPinLocation, isLoaded]);
 
   // Fly to selected user
   useEffect(() => {
@@ -251,6 +500,20 @@ export function ConnectMap({
       });
     }
   }, [selectedUserId, checkins]);
+
+  // Fly to selected anchorage
+  useEffect(() => {
+    if (!mapRef.current || !selectedAnchorageId) return;
+
+    const anchorage = (anchorages || BVI_ANCHORAGES).find((a) => a.id === selectedAnchorageId);
+    if (anchorage) {
+      mapRef.current.flyTo({
+        center: [anchorage.lng, anchorage.lat],
+        zoom: 13,
+        duration: 1000,
+      });
+    }
+  }, [selectedAnchorageId, anchorages]);
 
   const handleLocateMe = useCallback(() => {
     if (!navigator.geolocation) {
@@ -329,21 +592,43 @@ export function ConnectMap({
 
       {/* Legend */}
       <div className="absolute bottom-4 left-4 rounded-xl bg-background/95 p-3 text-xs shadow-lg backdrop-blur-sm border border-border/50">
-        <p className="mb-2 font-semibold text-sm">Checked-In Boaters</p>
+        <p className="mb-2 font-semibold text-sm">BVI Connect</p>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-teal-500" />
+            <span>Anchorage with boaters</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-3 rounded-full bg-gray-500" />
+            <span>Empty anchorage</span>
+          </div>
+          <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-green-500" />
-            <span>Checked in nearby</span>
+            <span>Checked-in boater</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-blue-500" />
             <span>Your location</span>
           </div>
+          {allowCustomPin && (
+            <div className="flex items-center gap-2">
+              <div className="h-3 w-3 rounded-full bg-orange-500" />
+              <span>Custom location</span>
+            </div>
+          )}
         </div>
         <p className="mt-2 text-[10px] text-muted-foreground">
           {checkins.length} boater{checkins.length !== 1 ? "s" : ""} checked in
         </p>
       </div>
+
+      {/* Custom pin instructions */}
+      {allowCustomPin && (
+        <div className="absolute top-4 left-4 rounded-xl bg-orange-500/90 text-white px-4 py-2 text-sm shadow-lg">
+          <p className="font-medium">Tap the map to drop a pin</p>
+          <p className="text-xs opacity-90">Or select an anchorage from the list</p>
+        </div>
+      )}
     </div>
   );
 }

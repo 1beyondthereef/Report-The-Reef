@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "react";
 import Link from "next/link";
 import {
   MessageCircle,
@@ -19,6 +19,14 @@ import {
   Anchor,
   CheckCircle,
   AlertCircle,
+  Navigation,
+  Users,
+  Globe,
+  Lock,
+  List,
+  X,
+  ChevronDown,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +36,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +58,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getInitials, formatRelativeTime, truncate } from "@/lib/utils";
@@ -71,6 +85,8 @@ interface CheckedInUser {
   location_name: string;
   location_lat: number;
   location_lng: number;
+  anchorage_id?: string;
+  note?: string;
   checked_in_at: string;
   expires_at: string;
   profiles: {
@@ -87,6 +103,9 @@ interface MyCheckin {
   location_name: string;
   location_lat: number;
   location_lng: number;
+  anchorage_id?: string;
+  note?: string;
+  visibility?: string;
   checked_in_at: string;
   expires_at: string;
   last_verified_at: string;
@@ -96,9 +115,11 @@ interface MyCheckin {
 interface Anchorage {
   id: string;
   name: string;
+  island: string;
   lat: number;
   lng: number;
-  distance: number;
+  distance?: number;
+  checkinCount?: number;
 }
 
 interface Conversation {
@@ -129,6 +150,18 @@ interface Message {
 // GPS verification interval (every 2 hours)
 const VERIFICATION_INTERVAL = CHECKIN_CONFIG.VERIFICATION_INTERVAL_HOURS * 60 * 60 * 1000;
 
+// Group anchorages by island
+function groupAnchoragesByIsland(anchorages: Anchorage[]) {
+  const groups: Record<string, Anchorage[]> = {};
+  anchorages.forEach(a => {
+    if (!groups[a.island]) {
+      groups[a.island] = [];
+    }
+    groups[a.island].push(a);
+  });
+  return groups;
+}
+
 function ConnectContent() {
   const { user: currentUser, isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -143,10 +176,21 @@ function ConnectContent() {
   // Check-in state
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [showCheckinDialog, setShowCheckinDialog] = useState(false);
+  const [checkinStep, setCheckinStep] = useState<"auto" | "select" | "confirm">("auto");
   const [anchorageSuggestions, setAnchorageSuggestions] = useState<Anchorage[]>([]);
   const [selectedAnchorage, setSelectedAnchorage] = useState<Anchorage | null>(null);
+  const [nearestAnchorage, setNearestAnchorage] = useState<Anchorage | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [checkinNote, setCheckinNote] = useState("");
+  const [checkinVisibility, setCheckinVisibility] = useState<"public" | "friends">("public");
+  const [anchorageSearch, setAnchorageSearch] = useState("");
+  const [expandedIslands, setExpandedIslands] = useState<Set<string>>(new Set());
+  const [customPinLocation, setCustomPinLocation] = useState<{ lng: number; lat: number } | null>(null);
+
+  // Anchorage panel state (for showing users at an anchorage)
+  const [selectedAnchoragePanel, setSelectedAnchoragePanel] = useState<Anchorage | null>(null);
+  const [usersAtSelectedAnchorage, setUsersAtSelectedAnchorage] = useState<CheckedInUser[]>([]);
 
   // Profile edit state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -165,6 +209,17 @@ function ConnectContent() {
 
   // Verification timer
   const verificationTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Filter anchorages by search
+  const filteredAnchorages = useMemo(() => {
+    if (!anchorageSearch.trim()) return anchorageSuggestions;
+    const search = anchorageSearch.toLowerCase();
+    return anchorageSuggestions.filter(
+      a => a.name.toLowerCase().includes(search) || a.island.toLowerCase().includes(search)
+    );
+  }, [anchorageSuggestions, anchorageSearch]);
+
+  const groupedAnchorages = useMemo(() => groupAnchoragesByIsland(filteredAnchorages), [filteredAnchorages]);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -271,12 +326,18 @@ function ConnectContent() {
   const startCheckin = useCallback(async () => {
     setLocationError(null);
     setIsCheckingIn(true);
+    setCheckinStep("auto");
+    setSelectedAnchorage(null);
+    setNearestAnchorage(null);
+    setCheckinNote("");
+    setCheckinVisibility("public");
+    setCustomPinLocation(null);
 
     try {
       const location = await getCurrentLocation();
       setUserLocation(location);
 
-      // Get anchorage suggestions
+      // Get anchorage suggestions and auto-detect
       const response = await fetch(
         `/api/connect/checkins?suggestions=true&lat=${location.lat}&lng=${location.lng}`
       );
@@ -290,6 +351,17 @@ function ConnectContent() {
 
       const data = await response.json();
       setAnchorageSuggestions(data.suggestions || []);
+
+      // Check if there's a nearby anchorage (within 0.5 nautical miles)
+      if (data.nearestWithinRadius) {
+        setNearestAnchorage(data.nearestWithinRadius);
+        setSelectedAnchorage(data.nearestWithinRadius);
+        setCheckinStep("confirm");
+      } else {
+        // No nearby anchorage, show selection
+        setCheckinStep("select");
+      }
+
       setShowCheckinDialog(true);
     } catch (error) {
       console.error("Location error:", error);
@@ -301,19 +373,42 @@ function ConnectContent() {
 
   // Complete check-in
   const completeCheckin = useCallback(async () => {
-    if (!selectedAnchorage || !userLocation) return;
+    if (!userLocation) return;
+
+    // Need either selected anchorage or custom pin
+    if (!selectedAnchorage && !customPinLocation) {
+      toast({
+        title: "Select a Location",
+        description: "Please select an anchorage or drop a custom pin",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsCheckingIn(true);
 
     try {
+      const body: Record<string, unknown> = {
+        gpsLat: userLocation.lat,
+        gpsLng: userLocation.lng,
+        note: checkinNote || null,
+        visibility: checkinVisibility,
+      };
+
+      if (selectedAnchorage) {
+        body.anchorageId = selectedAnchorage.id;
+      } else if (customPinLocation) {
+        body.customLocation = {
+          name: "Custom Location",
+          lat: customPinLocation.lat,
+          lng: customPinLocation.lng,
+        };
+      }
+
       const response = await fetch("/api/connect/checkins", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          anchorageId: selectedAnchorage.id,
-          gpsLat: userLocation.lat,
-          gpsLng: userLocation.lng,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (response.ok) {
@@ -321,6 +416,7 @@ function ConnectContent() {
         setMyCheckin(data.checkin);
         setShowCheckinDialog(false);
         setSelectedAnchorage(null);
+        setCustomPinLocation(null);
         toast({
           title: "Checked In!",
           description: `You are now checked in at ${data.checkin.location_name}`,
@@ -344,7 +440,7 @@ function ConnectContent() {
     } finally {
       setIsCheckingIn(false);
     }
-  }, [selectedAnchorage, userLocation, toast, fetchCheckins]);
+  }, [selectedAnchorage, customPinLocation, userLocation, checkinNote, checkinVisibility, toast, fetchCheckins]);
 
   // Check out
   const checkout = useCallback(async () => {
@@ -471,6 +567,7 @@ function ConnectContent() {
         const data = await response.json();
         setSelectedConversation(data.conversation);
         setSelectedMapUser(null);
+        setSelectedAnchoragePanel(null);
         fetchMessages(data.conversation.id);
         fetchConversations();
       } else {
@@ -509,6 +606,13 @@ function ConnectContent() {
       console.error("Block user error:", error);
     }
   }, [fetchCheckins, fetchConversations, toast]);
+
+  // Handle anchorage click on map
+  const handleAnchorageClick = useCallback((anchorage: Anchorage, usersAtAnchorage: CheckedInUser[]) => {
+    setSelectedAnchoragePanel(anchorage);
+    setUsersAtSelectedAnchorage(usersAtAnchorage);
+    setSelectedMapUser(null);
+  }, []);
 
   // Initial data load
   useEffect(() => {
@@ -855,6 +959,9 @@ function ConnectContent() {
                         <Clock className="h-4 w-4" />
                         Expires {formatRelativeTime(myCheckin.expires_at)}
                       </p>
+                      {myCheckin.note && (
+                        <p className="text-muted-foreground italic">&quot;{myCheckin.note}&quot;</p>
+                      )}
                     </div>
                     <Button variant="outline" size="sm" onClick={checkout} className="w-full">
                       <LogOut className="mr-2 h-4 w-4" />
@@ -884,9 +991,9 @@ function ConnectContent() {
                 {isCheckingIn ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
-                  <MapPin className="mr-2 h-4 w-4" />
+                  <Navigation className="mr-2 h-4 w-4" />
                 )}
-                Check In
+                Check In Here
               </Button>
             </div>
             {locationError && (
@@ -944,10 +1051,78 @@ function ConnectContent() {
             <ConnectMap
               checkins={checkins}
               selectedUserId={selectedMapUser?.user_id}
-              onUserClick={(checkin) => setSelectedMapUser(checkin)}
+              selectedAnchorageId={selectedAnchoragePanel?.id}
+              onUserClick={(checkin) => {
+                setSelectedMapUser(checkin);
+                setSelectedAnchoragePanel(null);
+              }}
+              onAnchorageClick={handleAnchorageClick}
               userLocation={userLocation}
+              showAnchorageMarkers={true}
               className="h-full"
             />
+
+            {/* Selected Anchorage Panel */}
+            {selectedAnchoragePanel && (
+              <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80">
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-semibold">{selectedAnchoragePanel.name}</h3>
+                        <p className="text-sm text-muted-foreground">{selectedAnchoragePanel.island}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSelectedAnchoragePanel(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {usersAtSelectedAnchorage.length === 0 ? (
+                      <p className="text-sm text-muted-foreground py-4 text-center">
+                        No boaters checked in here
+                      </p>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {usersAtSelectedAnchorage.map((user) => (
+                          <button
+                            key={user.id}
+                            onClick={() => {
+                              setSelectedMapUser(user);
+                              setSelectedAnchoragePanel(null);
+                            }}
+                            className="flex w-full items-center gap-3 rounded-lg border p-2 text-left hover:bg-muted transition-colors"
+                          >
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={user.profiles.photo_url || undefined} />
+                              <AvatarFallback className="text-xs">
+                                {user.profiles.display_name ? getInitials(user.profiles.display_name) : "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{user.profiles.display_name}</p>
+                              {user.profiles.boat_name && (
+                                <p className="text-xs text-muted-foreground truncate">{user.profiles.boat_name}</p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {usersAtSelectedAnchorage.length} boater{usersAtSelectedAnchorage.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Selected User Panel */}
             {selectedMapUser && (
@@ -984,7 +1159,7 @@ function ConnectContent() {
                         className="shrink-0"
                         onClick={() => setSelectedMapUser(null)}
                       >
-                        <ArrowLeft className="h-4 w-4" />
+                        <X className="h-4 w-4" />
                       </Button>
                     </div>
                     <div className="mt-4 flex gap-2">
@@ -1103,55 +1278,215 @@ function ConnectContent() {
 
       {/* Check-in Dialog */}
       <Dialog open={showCheckinDialog} onOpenChange={setShowCheckinDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle>Select Anchorage</DialogTitle>
+            <DialogTitle>
+              {checkinStep === "confirm" && nearestAnchorage
+                ? "Check In Here?"
+                : checkinStep === "select"
+                ? "Select Anchorage"
+                : "Check In"}
+            </DialogTitle>
             <DialogDescription>
-              Choose your current anchorage from the suggestions below
+              {checkinStep === "confirm" && nearestAnchorage
+                ? `You appear to be at ${nearestAnchorage.name}`
+                : "Choose an anchorage or drop a pin on the map"}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 mt-4">
-            {anchorageSuggestions.map((anchorage) => (
-              <button
-                key={anchorage.id}
-                onClick={() => setSelectedAnchorage(anchorage)}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-lg border p-4 text-left transition-colors",
-                  selectedAnchorage?.id === anchorage.id
-                    ? "border-primary bg-primary/5"
-                    : "hover:bg-muted"
+          <div className="flex-1 overflow-y-auto space-y-4">
+            {/* Auto-detected location confirmation */}
+            {checkinStep === "confirm" && nearestAnchorage && (
+              <div className="space-y-4">
+                <div className="rounded-lg border-2 border-primary bg-primary/5 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                      <Navigation className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">{nearestAnchorage.name}</p>
+                      <p className="text-sm text-muted-foreground">{nearestAnchorage.island}</p>
+                      {nearestAnchorage.distance !== undefined && (
+                        <p className="text-xs text-primary mt-1">
+                          {(nearestAnchorage.distance * 1000).toFixed(0)}m away
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setCheckinStep("select")}
+                >
+                  <List className="mr-2 h-4 w-4" />
+                  Choose Different Location
+                </Button>
+              </div>
+            )}
+
+            {/* Anchorage selection */}
+            {checkinStep === "select" && (
+              <div className="space-y-4">
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search anchorages..."
+                    value={anchorageSearch}
+                    onChange={(e) => setAnchorageSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
+                {/* Grouped anchorage list */}
+                <ScrollArea className="h-64">
+                  <div className="space-y-2 pr-4">
+                    {Object.entries(groupedAnchorages).map(([island, anchorages]) => (
+                      <Collapsible
+                        key={island}
+                        open={expandedIslands.has(island) || anchorageSearch.length > 0}
+                        onOpenChange={(open) => {
+                          const newExpanded = new Set(expandedIslands);
+                          if (open) {
+                            newExpanded.add(island);
+                          } else {
+                            newExpanded.delete(island);
+                          }
+                          setExpandedIslands(newExpanded);
+                        }}
+                      >
+                        <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg bg-muted px-3 py-2 text-sm font-medium hover:bg-muted/80">
+                          <span>{island}</span>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {anchorages.length}
+                            </Badge>
+                            <ChevronDown className="h-4 w-4 transition-transform ui-open:rotate-180" />
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="mt-1 space-y-1">
+                          {anchorages.map((anchorage) => (
+                            <button
+                              key={anchorage.id}
+                              onClick={() => {
+                                setSelectedAnchorage(anchorage);
+                                setCustomPinLocation(null);
+                                setCheckinStep("confirm");
+                              }}
+                              className={cn(
+                                "flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors",
+                                selectedAnchorage?.id === anchorage.id
+                                  ? "border-primary bg-primary/5"
+                                  : "hover:bg-muted"
+                              )}
+                            >
+                              <Anchor
+                                className={cn(
+                                  "h-4 w-4 shrink-0",
+                                  selectedAnchorage?.id === anchorage.id
+                                    ? "text-primary"
+                                    : "text-muted-foreground"
+                                )}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm">{anchorage.name}</p>
+                                {anchorage.distance !== undefined && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {anchorage.distance.toFixed(1)} km away
+                                  </p>
+                                )}
+                              </div>
+                              {selectedAnchorage?.id === anchorage.id && (
+                                <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                              )}
+                            </button>
+                          ))}
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ))}
+                  </div>
+                </ScrollArea>
+
+                {nearestAnchorage && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      setSelectedAnchorage(nearestAnchorage);
+                      setCheckinStep("confirm");
+                    }}
+                  >
+                    <Navigation className="mr-2 h-4 w-4" />
+                    Back to Auto-Detected: {nearestAnchorage.name}
+                  </Button>
                 )}
-              >
-                <Anchor
-                  className={cn(
-                    "h-5 w-5",
-                    selectedAnchorage?.id === anchorage.id
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                  )}
-                />
-                <div className="flex-1">
-                  <p className="font-medium">{anchorage.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {anchorage.distance.toFixed(1)} km away
+              </div>
+            )}
+
+            {/* Check-in details (note and visibility) */}
+            {(checkinStep === "confirm" || selectedAnchorage) && (
+              <div className="space-y-4 pt-2 border-t">
+                <div>
+                  <Label htmlFor="checkinNote">Add a note (optional)</Label>
+                  <Input
+                    id="checkinNote"
+                    placeholder="e.g., Here for 2 nights, arrived at sunset"
+                    value={checkinNote}
+                    onChange={(e) => setCheckinNote(e.target.value)}
+                    maxLength={200}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {checkinNote.length}/200 characters
                   </p>
                 </div>
-                {selectedAnchorage?.id === anchorage.id && (
-                  <CheckCircle className="h-5 w-5 text-primary" />
-                )}
-              </button>
-            ))}
+
+                <div>
+                  <Label className="mb-2 block">Visibility</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={checkinVisibility === "public" ? "default" : "outline"}
+                      className="flex-1"
+                      onClick={() => setCheckinVisibility("public")}
+                    >
+                      <Globe className="mr-2 h-4 w-4" />
+                      Public
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={checkinVisibility === "friends" ? "default" : "outline"}
+                      className="flex-1"
+                      onClick={() => setCheckinVisibility("friends")}
+                      disabled
+                    >
+                      <Lock className="mr-2 h-4 w-4" />
+                      Friends
+                      <Badge variant="secondary" className="ml-1 text-xs">Soon</Badge>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="flex justify-end gap-2 pt-4 border-t">
             <Button variant="outline" onClick={() => setShowCheckinDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={completeCheckin} disabled={!selectedAnchorage || isCheckingIn}>
-              {isCheckingIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Check In
-            </Button>
+            {checkinStep === "select" && selectedAnchorage && (
+              <Button onClick={() => setCheckinStep("confirm")}>
+                Continue
+              </Button>
+            )}
+            {checkinStep === "confirm" && (
+              <Button onClick={completeCheckin} disabled={!selectedAnchorage || isCheckingIn}>
+                {isCheckingIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Check In
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

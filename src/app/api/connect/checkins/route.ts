@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { BVI_CHECKIN_BOUNDS, BVI_ANCHORAGES, CHECKIN_CONFIG } from "@/lib/constants";
+import { BVI_CHECKIN_BOUNDS, BVI_ANCHORAGES, CHECKIN_CONFIG, AUTO_CHECKIN_RADIUS_KM } from "@/lib/constants";
 
 export const dynamic = 'force-dynamic';
 
@@ -10,8 +10,8 @@ const LOCATION_RESTRICTION_ENABLED = false;
 
 // Default location for users outside BVI (The Bight, Norman Island)
 const DEFAULT_BVI_LOCATION = {
-  lat: 18.3186,
-  lng: -64.6189,
+  lat: 18.3200,
+  lng: -64.6200,
 };
 
 /**
@@ -20,7 +20,6 @@ const DEFAULT_BVI_LOCATION = {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function isWithinBVI(lat: number, lng: number): boolean {
-  // Location restriction temporarily disabled for global testing
   if (!LOCATION_RESTRICTION_ENABLED) {
     return true;
   }
@@ -35,6 +34,7 @@ function isWithinBVI(lat: number, lng: number): boolean {
 
 /**
  * Calculate distance between two points using Haversine formula
+ * Returns distance in kilometers
  */
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371; // Earth's radius in km
@@ -49,12 +49,29 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 }
 
 /**
- * Get nearest anchorages to a GPS position
- * For users outside BVI, returns anchorages sorted by distance from default BVI location
+ * Find the nearest anchorage within auto-detect radius
+ * Returns null if no anchorage is within range
  */
-function getNearestAnchorages(lat: number, lng: number, count: number = 3) {
-  // TODO: Re-enable BVI location restriction after testing phase - March 2026
-  // If user is outside BVI and restriction is disabled, use default BVI location for suggestions
+function findNearestAnchorageWithinRadius(lat: number, lng: number) {
+  let nearest = null;
+  let nearestDistance = Infinity;
+
+  for (const anchorage of BVI_ANCHORAGES) {
+    const distance = calculateDistance(lat, lng, anchorage.lat, anchorage.lng);
+    if (distance <= AUTO_CHECKIN_RADIUS_KM && distance < nearestDistance) {
+      nearest = { ...anchorage, distance };
+      nearestDistance = distance;
+    }
+  }
+
+  return nearest;
+}
+
+/**
+ * Get all anchorages sorted by distance from a GPS position
+ */
+function getAllAnchoragesSorted(lat: number, lng: number) {
+  // If user is outside BVI and restriction is disabled, use default BVI location
   let searchLat = lat;
   let searchLng = lng;
 
@@ -67,7 +84,6 @@ function getNearestAnchorages(lat: number, lng: number, count: number = 3) {
     );
 
     if (!actuallyInBVI) {
-      // User is outside BVI, show all anchorages sorted by default location
       searchLat = DEFAULT_BVI_LOCATION.lat;
       searchLng = DEFAULT_BVI_LOCATION.lng;
     }
@@ -78,12 +94,11 @@ function getNearestAnchorages(lat: number, lng: number, count: number = 3) {
       ...anchorage,
       distance: calculateDistance(searchLat, searchLng, anchorage.lat, anchorage.lng),
     }))
-    .sort((a, b) => a.distance - b.distance)
-    .slice(0, count);
+    .sort((a, b) => a.distance - b.distance);
 }
 
 /**
- * GET /api/connect/checkins - Get all active check-ins (for map display)
+ * GET /api/connect/checkins - Get check-ins, suggestions, or anchorage data
  */
 export async function GET(request: NextRequest) {
   try {
@@ -92,23 +107,61 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const getSuggestions = searchParams.get("suggestions") === "true";
+    const getAllAnchorages = searchParams.get("anchorages") === "true";
+    const autoDetect = searchParams.get("autoDetect") === "true";
 
     const lat = parseFloat(searchParams.get("lat") || "0");
     const lng = parseFloat(searchParams.get("lng") || "0");
 
-    // If requesting anchorage suggestions
-    if (getSuggestions && lat && lng) {
-      // TODO: Re-enable BVI location restriction after testing phase - March 2026
-      // Location check bypassed - allowing check-in from anywhere
-      // if (LOCATION_RESTRICTION_ENABLED && !isWithinBVI(lat, lng)) {
-      //   return NextResponse.json(
-      //     { error: "Check-in is only available within BVI waters" },
-      //     { status: 400 }
-      //   );
-      // }
+    // Auto-detect nearest anchorage within radius
+    if (autoDetect && lat && lng) {
+      const nearestAnchorage = findNearestAnchorageWithinRadius(lat, lng);
+      return NextResponse.json({
+        nearestAnchorage,
+        withinRadius: nearestAnchorage !== null,
+        radiusKm: AUTO_CHECKIN_RADIUS_KM,
+      });
+    }
 
-      const suggestions = getNearestAnchorages(lat, lng, 5); // Return more suggestions for global users
-      return NextResponse.json({ suggestions, locationRestrictionDisabled: !LOCATION_RESTRICTION_ENABLED });
+    // Get all anchorages for map display
+    if (getAllAnchorages) {
+      const anchorages = lat && lng
+        ? getAllAnchoragesSorted(lat, lng)
+        : BVI_ANCHORAGES.map(a => ({ ...a, distance: 0 }));
+
+      // Get check-in counts per anchorage
+      const { data: checkinCounts } = await supabase
+        .from("checkins")
+        .select("anchorage_id, location_name, location_lat, location_lng")
+        .eq("is_active", true)
+        .gt("expires_at", new Date().toISOString());
+
+      // Count checkins per anchorage
+      const countMap = new Map<string, number>();
+      (checkinCounts || []).forEach((c: { anchorage_id: string | null }) => {
+        if (c.anchorage_id) {
+          countMap.set(c.anchorage_id, (countMap.get(c.anchorage_id) || 0) + 1);
+        }
+      });
+
+      const anchoragesWithCounts = anchorages.map(a => ({
+        ...a,
+        checkinCount: countMap.get(a.id) || 0,
+      }));
+
+      return NextResponse.json({ anchorages: anchoragesWithCounts });
+    }
+
+    // Get anchorage suggestions (sorted by distance)
+    if (getSuggestions && lat && lng) {
+      const suggestions = getAllAnchoragesSorted(lat, lng).slice(0, 10);
+      const nearestWithinRadius = findNearestAnchorageWithinRadius(lat, lng);
+
+      return NextResponse.json({
+        suggestions,
+        nearestWithinRadius,
+        locationRestrictionDisabled: !LOCATION_RESTRICTION_ENABLED,
+      });
     }
 
     // Expire old check-ins first
@@ -119,7 +172,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Get all active check-ins with profile info
-    // Only show check-ins where user is visible
     const { data: checkins, error } = await supabase
       .from("checkins")
       .select(`
@@ -128,6 +180,10 @@ export async function GET(request: NextRequest) {
         location_name,
         location_lat,
         location_lng,
+        anchorage_id,
+        note,
+        visibility,
+        is_custom_location,
         checked_in_at,
         expires_at,
         profiles!inner (
@@ -164,9 +220,20 @@ export async function GET(request: NextRequest) {
       myCheckin = data;
     }
 
+    // Group checkins by anchorage for counts
+    const anchorageCheckins = new Map<string, typeof checkins>();
+    (checkins || []).forEach((c) => {
+      const key = c.anchorage_id || `${c.location_lat},${c.location_lng}`;
+      if (!anchorageCheckins.has(key)) {
+        anchorageCheckins.set(key, []);
+      }
+      anchorageCheckins.get(key)!.push(c);
+    });
+
     return NextResponse.json({
       checkins: checkins || [],
       myCheckin,
+      anchorageCheckins: Object.fromEntries(anchorageCheckins),
     });
   } catch (error) {
     console.error("Error in GET /api/connect/checkins:", error);
@@ -178,7 +245,7 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/connect/checkins - Check in at an anchorage
+ * POST /api/connect/checkins - Check in at an anchorage or custom location
  */
 export async function POST(request: NextRequest) {
   try {
@@ -193,7 +260,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { anchorageId, gpsLat, gpsLng } = body;
+    const {
+      anchorageId,
+      gpsLat,
+      gpsLng,
+      note,
+      visibility = "public",
+      customLocation,
+    } = body;
 
     // Validate GPS coordinates
     if (typeof gpsLat !== "number" || typeof gpsLng !== "number") {
@@ -203,26 +277,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Re-enable BVI location restriction after testing phase - March 2026
-    // Location check bypassed - allowing check-in from anywhere
-    // For users outside BVI, we still record their actual GPS but allow the check-in
-    const finalLat = gpsLat;
-    const finalLng = gpsLng;
-
-    // if (LOCATION_RESTRICTION_ENABLED && !isWithinBVI(finalLat, finalLng)) {
-    //   return NextResponse.json(
-    //     { error: "Check-in is only available within BVI waters" },
-    //     { status: 400 }
-    //   );
-    // }
-
-    // Validate anchorage
-    const anchorage = BVI_ANCHORAGES.find((a) => a.id === anchorageId);
-    if (!anchorage) {
+    // Validate visibility
+    if (visibility !== "public" && visibility !== "friends") {
       return NextResponse.json(
-        { error: "Invalid anchorage selected" },
+        { error: "Invalid visibility setting" },
         { status: 400 }
       );
+    }
+
+    let locationData: {
+      name: string;
+      lat: number;
+      lng: number;
+      anchorageId: string | null;
+      isCustom: boolean;
+    };
+
+    // Handle custom location
+    if (customLocation) {
+      if (!customLocation.name || typeof customLocation.lat !== "number" || typeof customLocation.lng !== "number") {
+        return NextResponse.json(
+          { error: "Custom location requires name, lat, and lng" },
+          { status: 400 }
+        );
+      }
+      locationData = {
+        name: customLocation.name,
+        lat: customLocation.lat,
+        lng: customLocation.lng,
+        anchorageId: null,
+        isCustom: true,
+      };
+    } else {
+      // Validate anchorage
+      const anchorage = BVI_ANCHORAGES.find((a) => a.id === anchorageId);
+      if (!anchorage) {
+        return NextResponse.json(
+          { error: "Invalid anchorage selected" },
+          { status: 400 }
+        );
+      }
+      locationData = {
+        name: `${anchorage.name}, ${anchorage.island}`,
+        lat: anchorage.lat,
+        lng: anchorage.lng,
+        anchorageId: anchorage.id,
+        isCustom: false,
+      };
     }
 
     // Deactivate any existing check-ins for this user
@@ -241,11 +342,15 @@ export async function POST(request: NextRequest) {
       .from("checkins")
       .insert({
         user_id: user.id,
-        location_name: anchorage.name,
-        location_lat: anchorage.lat,
-        location_lng: anchorage.lng,
-        actual_gps_lat: finalLat,
-        actual_gps_lng: finalLng,
+        location_name: locationData.name,
+        location_lat: locationData.lat,
+        location_lng: locationData.lng,
+        anchorage_id: locationData.anchorageId,
+        is_custom_location: locationData.isCustom,
+        actual_gps_lat: gpsLat,
+        actual_gps_lng: gpsLng,
+        note: note || null,
+        visibility,
         expires_at: expiresAt.toISOString(),
         last_verified_at: new Date().toISOString(),
       })

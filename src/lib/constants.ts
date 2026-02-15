@@ -21,37 +21,78 @@ export const CHECKIN_CONFIG = {
   MAX_DISTANCE_FROM_ANCHORAGE_KM: 5, // Max distance to suggest an anchorage
 } as const;
 
-// BVI Anchorages for check-in system
+// BVI Anchorages for check-in system - Comprehensive list organized by island
 export const BVI_ANCHORAGES = [
-  { id: "bight-norman", name: "The Bight, Norman Island", lat: 18.3186, lng: -64.6189 },
-  { id: "great-harbour-jvd", name: "Great Harbour, Jost Van Dyke", lat: 18.4367, lng: -64.7528 },
-  { id: "cane-garden-bay", name: "Cane Garden Bay, Tortola", lat: 18.4289, lng: -64.6481 },
-  { id: "the-baths", name: "The Baths, Virgin Gorda", lat: 18.4283, lng: -64.4472 },
-  { id: "anegada-setting-point", name: "Setting Point, Anegada", lat: 18.7267, lng: -64.3333 },
-  { id: "sopers-hole", name: "Soper's Hole, Tortola", lat: 18.3897, lng: -64.7039 },
-  { id: "road-town", name: "Road Town, Tortola", lat: 18.4267, lng: -64.6200 },
-  { id: "trellis-bay", name: "Trellis Bay, Beef Island", lat: 18.4478, lng: -64.5317 },
-  { id: "cooper-island", name: "Cooper Island", lat: 18.3894, lng: -64.5119 },
-  { id: "salt-island", name: "Salt Island", lat: 18.3722, lng: -64.5256 },
-  { id: "peter-island", name: "Peter Island", lat: 18.3511, lng: -64.5789 },
-  { id: "white-bay-jvd", name: "White Bay, Jost Van Dyke", lat: 18.4397, lng: -64.7614 },
-  { id: "diamond-cay-jvd", name: "Diamond Cay, Jost Van Dyke", lat: 18.4528, lng: -64.7711 },
-  { id: "sandy-spit", name: "Sandy Spit", lat: 18.4489, lng: -64.7517 },
-  { id: "north-sound-vg", name: "North Sound, Virgin Gorda", lat: 18.5072, lng: -64.3833 },
-  { id: "spanish-town-vg", name: "Spanish Town, Virgin Gorda", lat: 18.4456, lng: -64.4319 },
-  { id: "leverick-bay", name: "Leverick Bay, Virgin Gorda", lat: 18.4922, lng: -64.3928 },
-  { id: "bitter-end", name: "Bitter End, Virgin Gorda", lat: 18.5139, lng: -64.3556 },
-  { id: "marina-cay", name: "Marina Cay", lat: 18.4539, lng: -64.5158 },
-  { id: "manchioneel-bay", name: "Manchioneel Bay, Cooper Island", lat: 18.3861, lng: -64.5097 },
-  { id: "deadmans-bay-pi", name: "Deadman's Bay, Peter Island", lat: 18.3572, lng: -64.5708 },
-  { id: "little-harbour-pi", name: "Little Harbour, Peter Island", lat: 18.3519, lng: -64.5986 },
-  { id: "brandywine-bay", name: "Brandywine Bay, Tortola", lat: 18.4067, lng: -64.5719 },
-  { id: "nanny-cay", name: "Nanny Cay, Tortola", lat: 18.3928, lng: -64.6339 },
-  { id: "west-end-tortola", name: "West End, Tortola", lat: 18.3867, lng: -64.7014 },
-  { id: "little-jost", name: "Little Jost Van Dyke", lat: 18.4631, lng: -64.7567 },
-  { id: "guana-island", name: "Guana Island", lat: 18.4828, lng: -64.5736 },
-  { id: "scrub-island", name: "Scrub Island", lat: 18.4622, lng: -64.5028 },
+  // TORTOLA
+  { id: "road-town", name: "Road Town", island: "Tortola", lat: 18.4268, lng: -64.6185 },
+  { id: "nanny-cay", name: "Nanny Cay", island: "Tortola", lat: 18.3920, lng: -64.6350 },
+  { id: "sopers-hole", name: "Soper's Hole", island: "Tortola", lat: 18.3900, lng: -64.6970 },
+  { id: "cane-garden-bay", name: "Cane Garden Bay", island: "Tortola", lat: 18.4320, lng: -64.6480 },
+  { id: "brandywine-bay", name: "Brandywine Bay", island: "Tortola", lat: 18.4080, lng: -64.5620 },
+  { id: "hodges-creek", name: "Hodges Creek", island: "Tortola", lat: 18.4150, lng: -64.5350 },
+  { id: "maya-cove", name: "Maya Cove", island: "Tortola", lat: 18.4100, lng: -64.5450 },
+  { id: "trellis-bay", name: "Trellis Bay", island: "Tortola", lat: 18.4450, lng: -64.5320 },
+  { id: "fat-hogs-bay", name: "Fat Hogs Bay", island: "Tortola", lat: 18.4200, lng: -64.5400 },
+  { id: "brewers-bay", name: "Brewers Bay", island: "Tortola", lat: 18.4280, lng: -64.6680 },
+  { id: "long-bay-west", name: "Long Bay West", island: "Tortola", lat: 18.3950, lng: -64.6800 },
+  { id: "sea-cow-bay", name: "Sea Cow Bay", island: "Tortola", lat: 18.4100, lng: -64.6150 },
+
+  // VIRGIN GORDA
+  { id: "the-baths", name: "The Baths", island: "Virgin Gorda", lat: 18.4310, lng: -64.3700 },
+  { id: "spanish-town", name: "Spanish Town", island: "Virgin Gorda", lat: 18.4450, lng: -64.3720 },
+  { id: "leverick-bay", name: "Leverick Bay", island: "Virgin Gorda", lat: 18.4920, lng: -64.3920 },
+  { id: "gun-creek", name: "Gun Creek", island: "Virgin Gorda", lat: 18.4980, lng: -64.4050 },
+  { id: "north-sound", name: "North Sound", island: "Virgin Gorda", lat: 18.5050, lng: -64.3800 },
+  { id: "savannah-bay", name: "Savannah Bay", island: "Virgin Gorda", lat: 18.4600, lng: -64.3850 },
+  { id: "pond-bay", name: "Pond Bay", island: "Virgin Gorda", lat: 18.4550, lng: -64.3800 },
+
+  // JOST VAN DYKE
+  { id: "great-harbour-jvd", name: "Great Harbour", island: "Jost Van Dyke", lat: 18.4420, lng: -64.7530 },
+  { id: "white-bay-jvd", name: "White Bay", island: "Jost Van Dyke", lat: 18.4380, lng: -64.7580 },
+  { id: "little-harbour-jvd", name: "Little Harbour", island: "Jost Van Dyke", lat: 18.4350, lng: -64.7650 },
+  { id: "diamond-cay", name: "Diamond Cay", island: "Jost Van Dyke", lat: 18.4480, lng: -64.7550 },
+
+  // NORMAN ISLAND
+  { id: "the-bight", name: "The Bight", island: "Norman Island", lat: 18.3200, lng: -64.6200 },
+  { id: "benures-bay", name: "Benures Bay", island: "Norman Island", lat: 18.3280, lng: -64.6050 },
+  { id: "the-caves", name: "The Caves", island: "Norman Island", lat: 18.3150, lng: -64.6200 },
+
+  // PETER ISLAND
+  { id: "great-harbour-pi", name: "Great Harbour", island: "Peter Island", lat: 18.3600, lng: -64.5780 },
+  { id: "deadmans-bay", name: "Deadman's Bay", island: "Peter Island", lat: 18.3650, lng: -64.5700 },
+  { id: "little-harbour-pi", name: "Little Harbour", island: "Peter Island", lat: 18.3550, lng: -64.5650 },
+  { id: "sprat-bay", name: "Sprat Bay", island: "Peter Island", lat: 18.3500, lng: -64.5600 },
+
+  // COOPER ISLAND
+  { id: "manchioneel-bay", name: "Manchioneel Bay", island: "Cooper Island", lat: 18.3900, lng: -64.5120 },
+
+  // SALT ISLAND
+  { id: "salt-pond-bay", name: "Salt Pond Bay", island: "Salt Island", lat: 18.4000, lng: -64.5250 },
+  { id: "lee-bay", name: "Lee Bay", island: "Salt Island", lat: 18.3950, lng: -64.5200 },
+
+  // ANEGADA
+  { id: "setting-point", name: "Setting Point", island: "Anegada", lat: 18.7280, lng: -64.3350 },
+  { id: "pomato-point", name: "Pomato Point", island: "Anegada", lat: 18.7320, lng: -64.3800 },
+  { id: "loblolly-bay", name: "Loblolly Bay", island: "Anegada", lat: 18.7450, lng: -64.3450 },
+
+  // OTHER ISLANDS & CAYS
+  { id: "marina-cay", name: "Marina Cay", island: "Marina Cay", lat: 18.4550, lng: -64.5200 },
+  { id: "scrub-island", name: "Scrub Island", island: "Scrub Island", lat: 18.4700, lng: -64.5100 },
+  { id: "guana-island", name: "Guana Island", island: "Guana Island", lat: 18.4850, lng: -64.5750 },
+  { id: "saba-rock", name: "Saba Rock", island: "Saba Rock", lat: 18.4980, lng: -64.3700 },
+  { id: "sandy-cay", name: "Sandy Cay", island: "Sandy Cay", lat: 18.4420, lng: -64.7100 },
+  { id: "sandy-spit", name: "Sandy Spit", island: "Sandy Spit", lat: 18.4380, lng: -64.7150 },
+  { id: "the-dogs", name: "The Dogs", island: "The Dogs", lat: 18.4750, lng: -64.4500 },
 ] as const;
+
+// Check-in visibility options
+export const CHECKIN_VISIBILITY = {
+  PUBLIC: "public",
+  FRIENDS: "friends",
+} as const;
+
+// Auto-detect check-in radius (0.5 nautical miles in km)
+export const AUTO_CHECKIN_RADIUS_KM = 0.926; // 0.5 nautical miles
 
 // Mapbox style
 export const MAPBOX_STYLE = "mapbox://styles/mapbox/outdoors-v12";
