@@ -38,7 +38,6 @@ interface AnchorageWithCount {
 
 interface ConnectMapProps {
   checkins: CheckedInUser[];
-  anchorages?: AnchorageWithCount[];
   onUserClick: (checkin: CheckedInUser) => void;
   onAnchorageClick?: (anchorage: AnchorageWithCount, usersAtAnchorage: CheckedInUser[]) => void;
   selectedUserId?: string;
@@ -53,7 +52,6 @@ interface ConnectMapProps {
 
 export function ConnectMap({
   checkins,
-  anchorages,
   onUserClick,
   onAnchorageClick,
   selectedUserId,
@@ -288,30 +286,33 @@ export function ConnectMap({
     };
   }, [allowCustomPin, onMapClick]);
 
-  // Update anchorage markers
+  // Update anchorage markers - uses BVI_ANCHORAGES as single source of truth
   useEffect(() => {
     if (!mapRef.current || !isLoaded || !showAnchorageMarkers) return;
 
     const map = mapRef.current;
     const currentMarkers = anchorageMarkersRef.current;
 
-    // Use provided anchorages or fall back to default list
-    const anchorageList: AnchorageWithCount[] = anchorages || BVI_ANCHORAGES.map(a => ({
-      ...a,
+    // ALWAYS use BVI_ANCHORAGES directly - single source of truth for coordinates
+    // This ensures markers never get wrong coordinates
+    const anchorageList: AnchorageWithCount[] = BVI_ANCHORAGES.map(a => ({
+      id: a.id,
+      name: a.name,
+      island: a.island,
+      lat: a.lat,
+      lng: a.lng,
       checkinCount: 0,
     }));
 
-    // Count checkins per anchorage from checkins data if not provided in anchorages
-    if (!anchorages) {
-      checkins.forEach((c) => {
-        if (c.anchorage_id) {
-          const anchorage = anchorageList.find(a => a.id === c.anchorage_id);
-          if (anchorage) {
-            anchorage.checkinCount++;
-          }
+    // Count checkins per anchorage
+    checkins.forEach((c) => {
+      if (c.anchorage_id) {
+        const anchorage = anchorageList.find(a => a.id === c.anchorage_id);
+        if (anchorage) {
+          anchorage.checkinCount++;
         }
-      });
-    }
+      }
+    });
 
     const anchorageIds = new Set(anchorageList.map((a) => a.id));
 
@@ -323,13 +324,12 @@ export function ConnectMap({
       }
     });
 
-    // Debug: Log first few anchorages to verify coordinates
-    if (anchorageList.length > 0) {
-      console.log(`[ConnectMap] Loading ${anchorageList.length} anchorages`);
-      console.log("[ConnectMap] Sample coordinates (should be [lng, lat] for Mapbox):");
-      anchorageList.slice(0, 3).forEach(a => {
-        console.log(`  ${a.name}: lng=${a.lng}, lat=${a.lat} -> setLngLat([${a.lng}, ${a.lat}])`);
-      });
+    // Debug: Log on first load only
+    if (currentMarkers.size === 0 && anchorageList.length > 0) {
+      console.log(`[ConnectMap] Creating ${anchorageList.length} anchorage markers`);
+      console.log("[ConnectMap] Sample coords [lng, lat]:", anchorageList.slice(0, 3).map(a =>
+        `${a.name}: [${a.lng}, ${a.lat}]`
+      ).join(", "));
     }
 
     // Add or update markers
@@ -338,21 +338,35 @@ export function ConnectMap({
       const existingMarker = currentMarkers.get(anchorage.id);
 
       if (existingMarker) {
-        // Update element
-        const el = createAnchorageMarkerElement(anchorage, isSelected);
-        el.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (onAnchorageClick) {
-            const usersAtAnchorage = checkins.filter(c => c.anchorage_id === anchorage.id);
-            onAnchorageClick(anchorage, usersAtAnchorage);
-          }
-        });
-        existingMarker.getElement().replaceWith(el);
-        // Update position in case it changed
-        existingMarker.setLngLat([anchorage.lng, anchorage.lat]);
+        // Only recreate marker if selection state changed
+        // Don't touch position - it's already correct from BVI_ANCHORAGES
+        const needsUpdate = existingMarker.getElement().dataset.selected !== String(isSelected);
+
+        if (needsUpdate) {
+          // Remove old marker and create new one
+          existingMarker.remove();
+          currentMarkers.delete(anchorage.id);
+
+          const el = createAnchorageMarkerElement(anchorage, isSelected);
+          el.dataset.selected = String(isSelected);
+          el.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (onAnchorageClick) {
+              const usersAtAnchorage = checkins.filter(c => c.anchorage_id === anchorage.id);
+              onAnchorageClick(anchorage, usersAtAnchorage);
+            }
+          });
+
+          const marker = new mapboxgl.Marker({ element: el })
+            .setLngLat([anchorage.lng, anchorage.lat])
+            .addTo(map);
+
+          currentMarkers.set(anchorage.id, marker);
+        }
       } else {
         // Create new marker with correct [lng, lat] order for Mapbox
         const el = createAnchorageMarkerElement(anchorage, isSelected);
+        el.dataset.selected = String(isSelected);
         el.addEventListener("click", (e) => {
           e.stopPropagation();
           if (onAnchorageClick) {
@@ -368,7 +382,7 @@ export function ConnectMap({
         currentMarkers.set(anchorage.id, marker);
       }
     });
-  }, [anchorages, checkins, selectedAnchorageId, isLoaded, showAnchorageMarkers, createAnchorageMarkerElement, onAnchorageClick]);
+  }, [checkins, selectedAnchorageId, isLoaded, showAnchorageMarkers, createAnchorageMarkerElement, onAnchorageClick]);
 
   // Update user markers when checkins change
   useEffect(() => {
@@ -516,7 +530,7 @@ export function ConnectMap({
   useEffect(() => {
     if (!mapRef.current || !selectedAnchorageId) return;
 
-    const anchorage = (anchorages || BVI_ANCHORAGES).find((a) => a.id === selectedAnchorageId);
+    const anchorage = BVI_ANCHORAGES.find((a) => a.id === selectedAnchorageId);
     if (anchorage) {
       mapRef.current.flyTo({
         center: [anchorage.lng, anchorage.lat],
@@ -524,7 +538,7 @@ export function ConnectMap({
         duration: 1000,
       });
     }
-  }, [selectedAnchorageId, anchorages]);
+  }, [selectedAnchorageId]);
 
   const handleLocateMe = useCallback(() => {
     if (!navigator.geolocation) {

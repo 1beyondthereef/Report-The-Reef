@@ -66,7 +66,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getInitials, formatRelativeTime, truncate } from "@/lib/utils";
-import { CHECKIN_CONFIG, MESSAGE_POLL_INTERVAL } from "@/lib/constants";
+import { CHECKIN_CONFIG, MESSAGE_POLL_INTERVAL, BVI_ANCHORAGES } from "@/lib/constants";
 import { ConnectMap } from "@/components/maps/ConnectMap";
 import { useToast } from "@/hooks/use-toast";
 
@@ -177,7 +177,6 @@ function ConnectContent() {
   const [isCheckingIn, setIsCheckingIn] = useState(false);
   const [showCheckinDialog, setShowCheckinDialog] = useState(false);
   const [checkinStep, setCheckinStep] = useState<"auto" | "select" | "confirm">("auto");
-  const [anchorageSuggestions, setAnchorageSuggestions] = useState<Anchorage[]>([]);
   const [selectedAnchorage, setSelectedAnchorage] = useState<Anchorage | null>(null);
   const [nearestAnchorage, setNearestAnchorage] = useState<Anchorage | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -210,14 +209,25 @@ function ConnectContent() {
   // Verification timer
   const verificationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Filter anchorages by search
+  // All anchorages from constants - single source of truth
+  const allAnchorages: Anchorage[] = useMemo(() => {
+    return BVI_ANCHORAGES.map(a => ({
+      id: a.id,
+      name: a.name,
+      island: a.island,
+      lat: a.lat,
+      lng: a.lng,
+    }));
+  }, []);
+
+  // Filter anchorages by search - uses ALL anchorages, not just suggestions
   const filteredAnchorages = useMemo(() => {
-    if (!anchorageSearch.trim()) return anchorageSuggestions;
+    if (!anchorageSearch.trim()) return allAnchorages;
     const search = anchorageSearch.toLowerCase();
-    return anchorageSuggestions.filter(
+    return allAnchorages.filter(
       a => a.name.toLowerCase().includes(search) || a.island.toLowerCase().includes(search)
     );
-  }, [anchorageSuggestions, anchorageSearch]);
+  }, [allAnchorages, anchorageSearch]);
 
   const groupedAnchorages = useMemo(() => groupAnchoragesByIsland(filteredAnchorages), [filteredAnchorages]);
 
@@ -350,7 +360,6 @@ function ConnectContent() {
       }
 
       const data = await response.json();
-      setAnchorageSuggestions(data.suggestions || []);
 
       // Check if there's a nearby anchorage (within 0.5 nautical miles)
       if (data.nearestWithinRadius) {
@@ -464,6 +473,54 @@ function ConnectContent() {
       console.error("Checkout error:", error);
     }
   }, [toast, fetchCheckins]);
+
+  // Quick check-in to a specific anchorage (from map tap)
+  const quickCheckinToAnchorage = useCallback(async (anchorage: Anchorage) => {
+    setIsCheckingIn(true);
+    setSelectedAnchoragePanel(null);
+
+    try {
+      // Get current GPS location
+      const location = await getCurrentLocation();
+
+      const response = await fetch("/api/connect/checkins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          anchorageId: anchorage.id,
+          gpsLat: location.lat,
+          gpsLng: location.lng,
+          visibility: "public",
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMyCheckin(data.checkin);
+        toast({
+          title: "Checked In!",
+          description: `You are now checked in at ${anchorage.name}, ${anchorage.island}`,
+        });
+        fetchCheckins();
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Check-in Failed",
+          description: data.error || "Could not complete check-in",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Quick check-in error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to check in. Please enable GPS and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingIn(false);
+    }
+  }, [getCurrentLocation, toast, fetchCheckins]);
 
   // Update profile
   const saveProfile = useCallback(async () => {
@@ -1116,6 +1173,22 @@ function ConnectContent() {
                           </button>
                         ))}
                       </div>
+                    )}
+
+                    {/* Check In Button */}
+                    {!myCheckin && (
+                      <Button
+                        className="w-full mt-3"
+                        onClick={() => quickCheckinToAnchorage(selectedAnchoragePanel)}
+                        disabled={isCheckingIn}
+                      >
+                        {isCheckingIn ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                        )}
+                        Check In Here
+                      </Button>
                     )}
 
                     <div className="flex items-center justify-between mt-3 pt-3 border-t text-xs text-muted-foreground">
