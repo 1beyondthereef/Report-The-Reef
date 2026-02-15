@@ -52,19 +52,28 @@ export async function GET(request: Request) {
     }
 
     // Check if user has a complete profile
-    const { data: { user } } = await supabase.auth.getUser();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
 
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name, username")
-        .eq("id", user.id)
-        .single();
+      if (user) {
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("display_name, username")
+          .eq("id", user.id)
+          .maybeSingle();
 
-      // If no profile or missing required fields, redirect to profile setup
-      if (!profile || !profile.display_name || !profile.username) {
-        return NextResponse.redirect(`${origin}/profile?setup=true`);
+        if (profileError) {
+          console.error("Profile check error:", profileError);
+        }
+
+        // If no profile or missing required fields, redirect to profile setup
+        if (!profile || !profile.display_name || !profile.username) {
+          return NextResponse.redirect(`${origin}/profile?setup=true`);
+        }
       }
+    } catch (profileCheckError) {
+      console.error("Error checking profile:", profileCheckError);
+      // Continue to default redirect even if profile check fails
     }
 
     // Successfully authenticated with complete profile

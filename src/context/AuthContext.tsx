@@ -53,24 +53,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      const { data, error: authError } = await supabase.auth.getUser();
 
-      if (supabaseUser) {
-        const profileData = await fetchProfile(supabaseUser.id);
+      if (authError) {
+        console.error("Auth error:", authError);
+        setUser(null);
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
 
-        if (profileData) {
-          setProfile(profileData);
-          setUser({
-            id: supabaseUser.id,
-            email: supabaseUser.email || "",
-            name: profileData.display_name,
-            avatarUrl: profileData.avatar_url,
-            boatName: profileData.vessel_name,
-            homePort: profileData.home_port,
-            showOnMap: profileData.show_on_map,
-          });
-        } else {
-          // Profile might not exist yet, create basic user
+      const supabaseUser = data?.user;
+
+      if (supabaseUser && supabaseUser.id) {
+        try {
+          const profileData = await fetchProfile(supabaseUser.id);
+
+          if (profileData) {
+            setProfile(profileData);
+            setUser({
+              id: supabaseUser.id,
+              email: supabaseUser.email || "",
+              name: profileData.display_name || null,
+              avatarUrl: profileData.avatar_url || null,
+              boatName: profileData.vessel_name || null,
+              homePort: profileData.home_port || null,
+              showOnMap: profileData.show_on_map ?? false,
+            });
+          } else {
+            // Profile might not exist yet, create basic user
+            setProfile(null);
+            setUser({
+              id: supabaseUser.id,
+              email: supabaseUser.email || "",
+              name: null,
+              avatarUrl: null,
+              boatName: null,
+              homePort: null,
+              showOnMap: false,
+            });
+          }
+        } catch (profileError) {
+          console.error("Error fetching profile:", profileError);
+          // Still set basic user even if profile fetch fails
+          setProfile(null);
           setUser({
             id: supabaseUser.id,
             email: supabaseUser.email || "",

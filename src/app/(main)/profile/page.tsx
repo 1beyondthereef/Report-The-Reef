@@ -159,11 +159,14 @@ function ProfileContent() {
   // Handle avatar upload
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file || !user) {
+      setSetupError("Please select a file and make sure you're logged in.");
+      return;
+    }
 
     // Validate file type and size
     if (!file.type.startsWith("image/")) {
-      setSetupError("Please select an image file");
+      setSetupError("Please select an image file (JPG, PNG, etc.)");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -179,20 +182,35 @@ function ProfileContent() {
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
 
+      console.log("Uploading avatar to:", filePath);
+
       const { error: uploadError } = await supabase.storage
         .from("profile-photos")
         .upload(filePath, file, { upsert: true });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Avatar upload error:", uploadError);
+        // Check for common errors
+        if (uploadError.message.includes("bucket") || uploadError.message.includes("not found")) {
+          setSetupError("Photo upload is not available. You can skip this for now.");
+        } else if (uploadError.message.includes("policy")) {
+          setSetupError("Permission denied. Please try again or skip photo upload.");
+        } else {
+          setSetupError(`Upload failed: ${uploadError.message}`);
+        }
+        return;
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from("profile-photos")
         .getPublicUrl(filePath);
 
+      console.log("Avatar uploaded successfully:", publicUrl);
       setAvatarUrl(publicUrl);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Upload error:", error);
-      setSetupError("Failed to upload image. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      setSetupError(`Failed to upload image: ${errorMessage}`);
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -200,49 +218,75 @@ function ProfileContent() {
 
   // Handle profile setup completion
   const onCompleteSetup = async (data: CompleteProfileInput) => {
-    if (!user) return;
+    if (!user) {
+      setSetupError("You must be logged in to complete profile setup.");
+      return;
+    }
 
     setIsSaving(true);
     setSetupError(null);
 
     try {
-      // Check if username is unique
-      const { data: existingUser, error: checkError } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("username", data.username)
-        .neq("id", user.id)
-        .single();
+      console.log("Starting profile setup for user:", user.id);
 
-      if (existingUser) {
-        setSetupError("This username is already taken. Please choose another.");
+      // Check if username is unique (only if username is provided)
+      if (data.username) {
+        const { data: existingUser, error: checkError } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("username", data.username)
+          .neq("id", user.id)
+          .maybeSingle();
+
+        console.log("Username check result:", { existingUser, checkError });
+
+        if (checkError) {
+          console.error("Username check error:", checkError);
+          setSetupError(`Error checking username: ${checkError.message}`);
+          setIsSaving(false);
+          return;
+        }
+
+        if (existingUser) {
+          setSetupError("This username is already taken. Please choose another.");
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      // Use upsert to handle both new profiles and updates
+      const profileData = {
+        id: user.id,
+        display_name: data.displayName,
+        username: data.username,
+        bio: data.bio || null,
+        avatar_url: avatarUrl,
+        updated_at: new Date().toISOString(),
+      };
+
+      console.log("Upserting profile data:", profileData);
+
+      const { error: upsertError } = await supabase
+        .from("profiles")
+        .upsert(profileData, {
+          onConflict: "id",
+          ignoreDuplicates: false
+        });
+
+      if (upsertError) {
+        console.error("Profile upsert error:", upsertError);
+        setSetupError(`Failed to save profile: ${upsertError.message}`);
         setIsSaving(false);
         return;
       }
 
-      if (checkError && checkError.code !== "PGRST116") {
-        throw checkError;
-      }
-
-      // Update profile
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({
-          display_name: data.displayName,
-          username: data.username,
-          bio: data.bio || null,
-          avatar_url: avatarUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user.id);
-
-      if (updateError) throw updateError;
-
+      console.log("Profile saved successfully, refreshing user...");
       await refreshUser();
       router.push("/connect");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Setup error:", error);
-      setSetupError("Failed to complete setup. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      setSetupError(`Failed to complete setup: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }
@@ -306,7 +350,7 @@ function ProfileContent() {
                   <Avatar className="h-24 w-24">
                     <AvatarImage src={avatarUrl || undefined} />
                     <AvatarFallback className="text-2xl bg-primary/10">
-                      {user.email[0].toUpperCase()}
+                      {user.email ? user.email[0].toUpperCase() : "?"}
                     </AvatarFallback>
                   </Avatar>
                   <button
@@ -429,7 +473,7 @@ function ProfileContent() {
             <Avatar className="h-20 w-20">
               <AvatarImage src={user.avatarUrl || undefined} />
               <AvatarFallback className="text-xl">
-                {user.name ? getInitials(user.name) : user.email[0].toUpperCase()}
+                {user.name ? getInitials(user.name) : (user.email ? user.email[0].toUpperCase() : "?")}
               </AvatarFallback>
             </Avatar>
 

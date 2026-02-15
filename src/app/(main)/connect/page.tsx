@@ -516,8 +516,13 @@ export default function ConnectPage() {
 
     const loadData = async () => {
       setIsLoading(true);
-      await Promise.all([fetchProfile(), fetchCheckins(), fetchConversations()]);
-      setIsLoading(false);
+      try {
+        await Promise.all([fetchProfile(), fetchCheckins(), fetchConversations()]);
+      } catch (error) {
+        console.error("Failed to load Connect data:", error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     loadData();
@@ -748,7 +753,7 @@ export default function ConnectPage() {
                       <Avatar className="h-16 w-16">
                         <AvatarImage src={profile.photo_url || undefined} />
                         <AvatarFallback className="text-lg">
-                          {getInitials(profile.display_name)}
+                          {profile.display_name ? getInitials(profile.display_name) : "?"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
@@ -953,14 +958,14 @@ export default function ConnectPage() {
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={selectedMapUser.profiles.photo_url || undefined} />
                         <AvatarFallback>
-                          {getInitials(selectedMapUser.profiles.display_name)}
+                          {selectedMapUser.profiles?.display_name ? getInitials(selectedMapUser.profiles.display_name) : "?"}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold truncate">
-                          {selectedMapUser.profiles.display_name}
+                          {selectedMapUser.profiles?.display_name || "Boater"}
                         </p>
-                        {selectedMapUser.profiles.boat_name && (
+                        {selectedMapUser.profiles?.boat_name && (
                           <p className="text-sm text-muted-foreground truncate">
                             {selectedMapUser.profiles.boat_name}
                           </p>
