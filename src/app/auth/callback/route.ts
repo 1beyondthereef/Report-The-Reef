@@ -51,7 +51,23 @@ export async function GET(request: Request) {
       );
     }
 
-    // Successfully authenticated
+    // Check if user has a complete profile
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name, username")
+        .eq("id", user.id)
+        .single();
+
+      // If no profile or missing required fields, redirect to profile setup
+      if (!profile || !profile.display_name || !profile.username) {
+        return NextResponse.redirect(`${origin}/profile?setup=true`);
+      }
+    }
+
+    // Successfully authenticated with complete profile
     return NextResponse.redirect(`${origin}${next}`);
   }
 

@@ -4,10 +4,29 @@ import { BVI_BOUNDS } from "./constants";
 // Auth schemas
 export const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
 });
 
-export const verifySchema = z.object({
-  token: z.string().min(1, "Token is required"),
+export const signUpSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+export const completeProfileSchema = z.object({
+  displayName: z.string().min(2, "Display name must be at least 2 characters").max(50),
+  username: z.string()
+    .min(3, "Username must be at least 3 characters")
+    .max(20, "Username must be at most 20 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
+  bio: z.string().max(500, "Bio must be at most 500 characters").optional(),
 });
 
 // User schemas
@@ -122,7 +141,9 @@ export const mooringFilterSchema = z.object({
 
 // Type exports
 export type LoginInput = z.infer<typeof loginSchema>;
-export type VerifyInput = z.infer<typeof verifySchema>;
+export type SignUpInput = z.infer<typeof signUpSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type CompleteProfileInput = z.infer<typeof completeProfileSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type CreateIncidentInput = z.infer<typeof createIncidentSchema>;
 export type CreateWildlifeSightingInput = z.infer<typeof createWildlifeSightingSchema>;

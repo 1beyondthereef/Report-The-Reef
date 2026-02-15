@@ -19,10 +19,12 @@ interface AuthContextType {
   profile: Profile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string) => Promise<{ success: boolean; message: string }>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
+  signUp: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<{ success: boolean; error?: string }>;
+  resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -112,20 +114,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [supabase, refreshUser]);
 
-  const login = async (email: string): Promise<{ success: boolean; message: string }> => {
+  const signIn = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
     try {
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
-        options: {
-          shouldCreateUser: true,
-        },
+        password,
       });
 
       if (error) {
         return { success: false, message: error.message };
       }
 
-      return { success: true, message: "Check your email for a 6-digit verification code." };
+      return { success: true, message: "Signed in successfully." };
+    } catch {
+      return { success: false, message: "Network error. Please try again." };
+    }
+  };
+
+  const signUp = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { success: false, message: error.message };
+      }
+
+      if (data.user?.identities?.length === 0) {
+        return { success: false, message: "An account with this email already exists." };
+      }
+
+      return { success: true, message: "Account created successfully." };
+    } catch {
+      return { success: false, message: "Network error. Please try again." };
+    }
+  };
+
+  const resetPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/profile`,
+      });
+
+      if (error) {
+        return { success: false, message: error.message };
+      }
+
+      return { success: true, message: "Password reset email sent." };
     } catch {
       return { success: false, message: "Network error. Please try again." };
     }
@@ -175,10 +212,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         isLoading,
         isAuthenticated: !!user,
-        login,
+        signIn,
+        signUp,
         logout,
         refreshUser,
         updateProfile,
+        resetPassword,
       }}
     >
       {children}

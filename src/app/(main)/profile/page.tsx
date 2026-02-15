@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -12,18 +12,22 @@ import {
   Loader2,
   Calendar,
   AlertTriangle,
+  Camera,
+  CheckCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
-import { updateProfileSchema, type UpdateProfileInput } from "@/lib/validation";
+import { updateProfileSchema, completeProfileSchema, type UpdateProfileInput, type CompleteProfileInput } from "@/lib/validation";
 import { getInitials, formatDate, formatCurrency } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 interface Reservation {
   id: string;
@@ -50,9 +54,13 @@ interface Incident {
   createdAt: string;
 }
 
-export default function ProfilePage() {
+function ProfileContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isSetupMode = searchParams.get("setup") === "true";
   const { user, isAuthenticated, isLoading: authLoading, logout, refreshUser } = useAuth();
+  const supabase = createClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -60,6 +68,9 @@ export default function ProfilePage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [setupError, setSetupError] = useState<string | null>(null);
 
   const {
     register,
@@ -68,6 +79,11 @@ export default function ProfilePage() {
     formState: { errors },
   } = useForm<UpdateProfileInput>({
     resolver: zodResolver(updateProfileSchema),
+  });
+
+  const setupForm = useForm<CompleteProfileInput>({
+    resolver: zodResolver(completeProfileSchema),
+    defaultValues: { displayName: "", username: "", bio: "" },
   });
 
   useEffect(() => {
@@ -140,6 +156,98 @@ export default function ProfilePage() {
     router.push("/");
   };
 
+  // Handle avatar upload
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type and size
+    if (!file.type.startsWith("image/")) {
+      setSetupError("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setSetupError("Image must be less than 5MB");
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    setSetupError(null);
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("profile-photos")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("profile-photos")
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+    } catch (error) {
+      console.error("Upload error:", error);
+      setSetupError("Failed to upload image. Please try again.");
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  // Handle profile setup completion
+  const onCompleteSetup = async (data: CompleteProfileInput) => {
+    if (!user) return;
+
+    setIsSaving(true);
+    setSetupError(null);
+
+    try {
+      // Check if username is unique
+      const { data: existingUser, error: checkError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", data.username)
+        .neq("id", user.id)
+        .single();
+
+      if (existingUser) {
+        setSetupError("This username is already taken. Please choose another.");
+        setIsSaving(false);
+        return;
+      }
+
+      if (checkError && checkError.code !== "PGRST116") {
+        throw checkError;
+      }
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          display_name: data.displayName,
+          username: data.username,
+          bio: data.bio || null,
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+
+      if (updateError) throw updateError;
+
+      await refreshUser();
+      router.push("/connect");
+    } catch (error) {
+      console.error("Setup error:", error);
+      setSetupError("Failed to complete setup. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -163,6 +271,149 @@ export default function ProfilePage() {
             <Button asChild className="w-full">
               <Link href="/login">Sign In</Link>
             </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Profile Setup Mode for new users
+  if (isSetupMode) {
+    return (
+      <div className="container max-w-lg px-4 py-8">
+        <Card className="shadow-xl">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+              <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+            </div>
+            <CardTitle>Welcome to Report The Reef!</CardTitle>
+            <CardDescription>
+              Let&apos;s set up your profile so other boaters can connect with you.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {setupError && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>{setupError}</span>
+              </div>
+            )}
+
+            <form onSubmit={setupForm.handleSubmit(onCompleteSetup)} className="space-y-6">
+              {/* Avatar Upload */}
+              <div className="flex flex-col items-center gap-4">
+                <div className="relative">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage src={avatarUrl || undefined} />
+                    <AvatarFallback className="text-2xl bg-primary/10">
+                      {user.email[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploadingAvatar}
+                    className="absolute bottom-0 right-0 rounded-full bg-primary p-2 text-primary-foreground shadow-lg hover:bg-primary/90 disabled:opacity-50"
+                  >
+                    {isUploadingAvatar ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Camera className="h-4 w-4" />
+                    )}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Click the camera to upload a profile photo
+                </p>
+              </div>
+
+              {/* Display Name */}
+              <div className="space-y-2">
+                <Label htmlFor="displayName">Display Name *</Label>
+                <Input
+                  id="displayName"
+                  placeholder="Captain Jack"
+                  {...setupForm.register("displayName")}
+                  disabled={isSaving}
+                />
+                {setupForm.formState.errors.displayName && (
+                  <p className="text-sm text-destructive">
+                    {setupForm.formState.errors.displayName.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Username */}
+              <div className="space-y-2">
+                <Label htmlFor="username">Username *</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    @
+                  </span>
+                  <Input
+                    id="username"
+                    placeholder="captainjack"
+                    className="pl-8"
+                    {...setupForm.register("username")}
+                    disabled={isSaving}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Letters, numbers, and underscores only
+                </p>
+                {setupForm.formState.errors.username && (
+                  <p className="text-sm text-destructive">
+                    {setupForm.formState.errors.username.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Bio */}
+              <div className="space-y-2">
+                <Label htmlFor="bio">Bio (optional)</Label>
+                <Textarea
+                  id="bio"
+                  placeholder="Tell us about yourself and your boating adventures..."
+                  rows={3}
+                  {...setupForm.register("bio")}
+                  disabled={isSaving}
+                />
+                {setupForm.formState.errors.bio && (
+                  <p className="text-sm text-destructive">
+                    {setupForm.formState.errors.bio.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Submit */}
+              <div className="flex gap-3">
+                <Button type="submit" className="flex-1" disabled={isSaving}>
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Setting up...
+                    </>
+                  ) : (
+                    "Complete Setup"
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push("/connect")}
+                  disabled={isSaving}
+                >
+                  Skip for now
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>
@@ -418,5 +669,21 @@ export default function ProfilePage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function ProfileFallback() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<ProfileFallback />}>
+      <ProfileContent />
+    </Suspense>
   );
 }

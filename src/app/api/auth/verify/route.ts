@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateWithMagicLink } from "@/lib/auth";
-import { verifySchema } from "@/lib/validation";
 
 export const dynamic = 'force-dynamic';
 
@@ -9,14 +8,13 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const token = searchParams.get("token");
 
-    const parsed = verifySchema.safeParse({ token });
-    if (!parsed.success) {
+    if (!token || token.length === 0) {
       return NextResponse.redirect(
         new URL("/login?error=invalid_token", request.url)
       );
     }
 
-    const result = await authenticateWithMagicLink(parsed.data.token);
+    const result = await authenticateWithMagicLink(token);
 
     if (!result.success) {
       const errorMessage = encodeURIComponent(result.error || "Verification failed");
