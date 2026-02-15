@@ -235,7 +235,7 @@ export default function AnchoragesPage() {
   const hasPanelOpen = selectedAnchorage || selectedDiveSite || selectedRestrictedArea || selectedProtectedArea || showRegulations;
 
   return (
-    <div className="relative h-[calc(100vh-4rem-4rem)] md:h-[calc(100vh-4rem)]">
+    <div className="relative h-[calc(100dvh-3.5rem-5rem)] sm:h-[calc(100dvh-4rem-5rem)] md:h-[calc(100dvh-5rem)] lg:h-[calc(100dvh-11rem)]">
       {/* Top Search Bar */}
       <div className="absolute left-0 right-0 top-0 z-30 bg-background/95 p-3 backdrop-blur border-b">
         <div className="flex gap-2 max-w-xl mx-auto">

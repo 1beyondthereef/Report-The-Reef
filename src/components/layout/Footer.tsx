@@ -1,7 +1,17 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 export function Footer() {
+  const pathname = usePathname();
+
+  // Hide footer on full-screen map pages
+  if (pathname === "/anchorages") {
+    return null;
+  }
+
   return (
     <footer className="border-t bg-muted/50 hidden md:block">
       <div className="container px-4 py-8">
