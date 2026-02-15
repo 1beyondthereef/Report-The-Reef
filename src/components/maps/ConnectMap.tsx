@@ -323,6 +323,15 @@ export function ConnectMap({
       }
     });
 
+    // Debug: Log first few anchorages to verify coordinates
+    if (anchorageList.length > 0) {
+      console.log(`[ConnectMap] Loading ${anchorageList.length} anchorages`);
+      console.log("[ConnectMap] Sample coordinates (should be [lng, lat] for Mapbox):");
+      anchorageList.slice(0, 3).forEach(a => {
+        console.log(`  ${a.name}: lng=${a.lng}, lat=${a.lat} -> setLngLat([${a.lng}, ${a.lat}])`);
+      });
+    }
+
     // Add or update markers
     anchorageList.forEach((anchorage) => {
       const isSelected = anchorage.id === selectedAnchorageId;
@@ -339,8 +348,10 @@ export function ConnectMap({
           }
         });
         existingMarker.getElement().replaceWith(el);
+        // Update position in case it changed
+        existingMarker.setLngLat([anchorage.lng, anchorage.lat]);
       } else {
-        // Create new marker
+        // Create new marker with correct [lng, lat] order for Mapbox
         const el = createAnchorageMarkerElement(anchorage, isSelected);
         el.addEventListener("click", (e) => {
           e.stopPropagation();
