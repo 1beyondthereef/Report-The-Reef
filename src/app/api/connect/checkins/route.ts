@@ -196,7 +196,7 @@ export async function GET(request: NextRequest) {
       `)
       .eq("is_active", true)
       .gt("expires_at", new Date().toISOString())
-      .eq("profiles.is_visible", true);
+      .neq("profiles.is_visible", false);
 
     if (error) {
       console.error("Error fetching checkins:", JSON.stringify(error, null, 2));
