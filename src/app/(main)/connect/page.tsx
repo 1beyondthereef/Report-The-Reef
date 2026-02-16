@@ -217,6 +217,9 @@ function ConnectContent() {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Track previous unread count for new message detection
+  const prevUnreadRef = useRef(0);
+
   // Verification timer
   const verificationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -804,6 +807,31 @@ function ConnectContent() {
 
     loadData();
   }, [isAuthenticated, fetchProfile, fetchCheckins, fetchConversations]);
+
+  // Poll for new conversations/messages (for unread badge updates)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const interval = setInterval(fetchConversations, 15000); // every 15 seconds
+    return () => clearInterval(interval);
+  }, [isAuthenticated, fetchConversations]);
+
+  // Detect new messages and show toast when not on messages tab
+  useEffect(() => {
+    const currentUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+
+    // Only show toast if unread count increased (new message arrived)
+    if (currentUnread > prevUnreadRef.current && prevUnreadRef.current >= 0) {
+      if (activeTab !== "messages") {
+        toast({
+          title: "New Message",
+          description: "You have a new message. Tap Messages to view.",
+        });
+      }
+    }
+
+    prevUnreadRef.current = currentUnread;
+  }, [conversations, activeTab, toast]);
 
   // Request GPS permission on page load (proactively)
   useEffect(() => {
