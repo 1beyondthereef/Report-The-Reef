@@ -1034,6 +1034,7 @@ function ConnectContent() {
                 {selectedConversation.otherUser.boat_name && (
                   <p className="text-xs text-muted-foreground">{selectedConversation.otherUser.boat_name}</p>
                 )}
+                <p className="text-xs text-blue-400">Tap to view profile</p>
               </div>
             </button>
           </div>
@@ -1398,30 +1399,41 @@ function ConnectContent() {
                     ) : (
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {usersAtSelectedAnchorage.map((user) => (
-                          <button
+                          <div
                             key={user.id}
-                            onClick={() => {
-                              setSelectedMapUser(user);
-                              setSelectedAnchoragePanel(null);
-                            }}
-                            className="flex w-full items-center gap-3 rounded-lg border p-2 text-left hover:bg-muted transition-colors"
+                            className="flex w-full items-center gap-3 rounded-lg border p-2 hover:bg-muted transition-colors"
                           >
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={user.profiles.avatar_url || undefined} />
-                              <AvatarFallback className="text-xs">
-                                {user.profiles.display_name ? getInitials(user.profiles.display_name) : "?"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{user.profiles.display_name}</p>
-                              {user.profiles.boat_name && (
-                                <p className="text-xs text-muted-foreground truncate">{user.profiles.boat_name}</p>
-                              )}
-                              {user.note && (
-                                <p className="text-xs text-muted-foreground italic truncate mt-0.5">&quot;{user.note}&quot;</p>
-                              )}
-                            </div>
-                          </button>
+                            <button
+                              onClick={() => {
+                                setSelectedMapUser(user);
+                                setSelectedAnchoragePanel(null);
+                              }}
+                              className="flex flex-1 items-center gap-3 text-left min-w-0"
+                            >
+                              <Avatar className="h-8 w-8 shrink-0">
+                                <AvatarImage src={user.profiles.avatar_url || undefined} />
+                                <AvatarFallback className="text-xs">
+                                  {user.profiles.display_name ? getInitials(user.profiles.display_name) : "?"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{user.profiles.display_name}</p>
+                                {user.profiles.boat_name && (
+                                  <p className="text-xs text-muted-foreground truncate">{user.profiles.boat_name}</p>
+                                )}
+                                {user.note && (
+                                  <p className="text-xs text-muted-foreground italic truncate mt-0.5">&quot;{user.note}&quot;</p>
+                                )}
+                              </div>
+                            </button>
+                            <button
+                              onClick={() => viewUserProfile(user.user_id)}
+                              className="shrink-0 p-1.5 rounded-full hover:bg-muted-foreground/10"
+                              title="View Profile"
+                            >
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            </button>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -1521,6 +1533,14 @@ function ConnectContent() {
                       >
                         <MessageCircle className="mr-2 h-4 w-4" />
                         Message
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => viewUserProfile(selectedMapUser.user_id)}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        Profile
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
