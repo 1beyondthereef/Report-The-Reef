@@ -350,6 +350,7 @@ export function ConnectMap({
           const el = createAnchorageMarkerElement(anchorage, isSelected);
           el.dataset.selected = String(isSelected);
           el.addEventListener("click", (e) => {
+            e.preventDefault();
             e.stopPropagation();
             if (onAnchorageClick) {
               const usersAtAnchorage = checkins.filter(c => c.anchorage_id === anchorage.id);
@@ -368,6 +369,7 @@ export function ConnectMap({
         const el = createAnchorageMarkerElement(anchorage, isSelected);
         el.dataset.selected = String(isSelected);
         el.addEventListener("click", (e) => {
+          e.preventDefault();
           e.stopPropagation();
           if (onAnchorageClick) {
             const usersAtAnchorage = checkins.filter(c => c.anchorage_id === anchorage.id);
@@ -411,6 +413,7 @@ export function ConnectMap({
         // Update element
         const el = createUserMarkerElement(checkin, isSelected);
         el.addEventListener("click", (e) => {
+          e.preventDefault();
           e.stopPropagation();
           onUserClick(checkin);
         });
@@ -419,6 +422,7 @@ export function ConnectMap({
         // Create new marker
         const el = createUserMarkerElement(checkin, isSelected);
         el.addEventListener("click", (e) => {
+          e.preventDefault();
           e.stopPropagation();
           onUserClick(checkin);
         });

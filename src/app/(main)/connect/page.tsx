@@ -749,10 +749,20 @@ function ConnectContent() {
 
   // Handle anchorage click on map
   const handleAnchorageClick = useCallback((anchorage: Anchorage, usersAtAnchorage: CheckedInUser[]) => {
-    setSelectedAnchoragePanel(anchorage);
-    setUsersAtSelectedAnchorage(usersAtAnchorage);
     setSelectedMapUser(null);
-  }, []);
+
+    // If user is not checked in, directly open the quick check-in dialog
+    if (!myCheckin) {
+      setQuickCheckinAnchorage(anchorage);
+      setQuickCheckinNote("");
+      setShowQuickCheckinDialog(true);
+      setSelectedAnchoragePanel(null);
+    } else {
+      // User is already checked in, show the anchorage panel with users
+      setSelectedAnchoragePanel(anchorage);
+      setUsersAtSelectedAnchorage(usersAtAnchorage);
+    }
+  }, [myCheckin]);
 
   // Initial data load
   useEffect(() => {
