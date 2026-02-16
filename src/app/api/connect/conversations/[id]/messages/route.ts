@@ -142,23 +142,6 @@ export async function POST(
       );
     }
 
-    // Check if sender has active check-in
-    const { data: senderCheckin } = await supabase
-      .from("checkins")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("is_active", true)
-      .gt("expires_at", new Date().toISOString())
-      .limit(1)
-      .single();
-
-    if (!senderCheckin) {
-      return NextResponse.json(
-        { error: "You must be checked in to send messages" },
-        { status: 403 }
-      );
-    }
-
     // Check if other user is blocked
     const otherUserId = conversation.user1_id === user.id
       ? conversation.user2_id

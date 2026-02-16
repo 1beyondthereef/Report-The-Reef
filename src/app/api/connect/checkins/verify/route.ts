@@ -2,12 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { BVI_CHECKIN_BOUNDS } from "@/lib/constants";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
+
+// TODO: Re-enable BVI location restriction after testing phase - March 2026
+const LOCATION_RESTRICTION_ENABLED = false;
 
 /**
  * Check if coordinates are within BVI waters
  */
 function isWithinBVI(lat: number, lng: number): boolean {
+  if (!LOCATION_RESTRICTION_ENABLED) {
+    return true;
+  }
+
   return (
     lat >= BVI_CHECKIN_BOUNDS.minLat &&
     lat <= BVI_CHECKIN_BOUNDS.maxLat &&
@@ -17,7 +24,8 @@ function isWithinBVI(lat: number, lng: number): boolean {
 }
 
 /**
- * POST /api/connect/checkins/verify - Verify GPS location to maintain check-in
+ * POST /api/connect/checkins/verify - Verify user's location for active check-in
+ * Updates last_verified_at timestamp. If user has left BVI waters, deactivates check-in.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -43,62 +51,52 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's active check-in
-    const { data: checkin, error: fetchError } = await supabase
+    const { data: activeCheckin, error: fetchError } = await supabase
       .from("checkins")
       .select("*")
       .eq("user_id", user.id)
       .eq("is_active", true)
       .gt("expires_at", new Date().toISOString())
+      .order("checked_in_at", { ascending: false })
+      .limit(1)
       .single();
 
-    if (fetchError || !checkin) {
-      return NextResponse.json(
-        { error: "No active check-in found" },
-        { status: 404 }
-      );
+    if (fetchError || !activeCheckin) {
+      return NextResponse.json({ checkedOut: true });
     }
 
-    // Verify still within BVI waters
+    // Check if user is still within BVI waters
     if (!isWithinBVI(gpsLat, gpsLng)) {
-      // Auto-checkout if user left BVI
+      // User has left BVI, deactivate check-in
       await supabase
         .from("checkins")
         .update({ is_active: false })
-        .eq("id", checkin.id);
+        .eq("id", activeCheckin.id);
 
-      return NextResponse.json(
-        {
-          error: "You have left BVI waters. Check-in has been deactivated.",
-          checkedOut: true
-        },
-        { status: 400 }
-      );
+      return NextResponse.json({ checkedOut: true });
     }
 
-    // Update verification timestamp and GPS
+    // Update last_verified_at timestamp
     const { data: updatedCheckin, error: updateError } = await supabase
       .from("checkins")
       .update({
+        last_verified_at: new Date().toISOString(),
         actual_gps_lat: gpsLat,
         actual_gps_lng: gpsLng,
-        last_verified_at: new Date().toISOString(),
       })
-      .eq("id", checkin.id)
+      .eq("id", activeCheckin.id)
       .select()
       .single();
 
     if (updateError) {
-      console.error("Error verifying checkin:", updateError);
+      console.error("Error updating check-in verification:", updateError);
       return NextResponse.json(
         { error: "Failed to verify location" },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({
-      checkin: updatedCheckin,
-      verified: true
-    });
+    return NextResponse.json({ checkin: updatedCheckin });
   } catch (error) {
     console.error("Error in POST /api/connect/checkins/verify:", error);
     return NextResponse.json(

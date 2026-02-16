@@ -279,16 +279,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user has a display name set
+    // Check if user has a display name and avatar set
     const { data: profile } = await supabase
       .from("profiles")
-      .select("display_name")
+      .select("display_name, avatar_url")
       .eq("id", user.id)
       .single();
 
     if (!profile?.display_name) {
       return NextResponse.json(
-        { error: "Please set your display name in your profile before checking in" },
+        { error: "Please set your display name in Profile settings before checking in" },
+        { status: 400 }
+      );
+    }
+
+    if (!profile?.avatar_url) {
+      return NextResponse.json(
+        { error: "Please add a profile photo in Profile settings before checking in" },
         { status: 400 }
       );
     }

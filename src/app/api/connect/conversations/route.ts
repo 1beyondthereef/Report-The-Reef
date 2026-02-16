@@ -152,23 +152,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if other user has an active check-in
-    const { data: otherCheckin } = await supabase
-      .from("checkins")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("is_active", true)
-      .gt("expires_at", new Date().toISOString())
-      .limit(1)
-      .single();
-
-    if (!otherCheckin) {
-      return NextResponse.json(
-        { error: "This user is not currently checked in" },
-        { status: 400 }
-      );
-    }
-
     // Get or create conversation using the database function
     const { data: conversationId, error: funcError } = await supabase
       .rpc("get_or_create_conversation", {

@@ -18,7 +18,6 @@ import {
   Clock,
   Anchor,
   CheckCircle,
-  AlertCircle,
   Navigation,
   Users,
   Globe,
@@ -27,6 +26,7 @@ import {
   X,
   ChevronDown,
   Search,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -226,6 +226,19 @@ function ConnectContent() {
   // Location help dialog state
   const [showLocationHelpDialog, setShowLocationHelpDialog] = useState(false);
 
+  // Profile viewing state
+  const [viewingProfile, setViewingProfile] = useState<{
+    id: string;
+    display_name: string;
+    vessel_name?: string;
+    boat_name?: string;
+    avatar_url?: string;
+    bio?: string;
+  } | null>(null);
+
+  // Photo upload state
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
   // All anchorages from constants - single source of truth
   const allAnchorages: Anchorage[] = useMemo(() => {
     return BVI_ANCHORAGES.map(a => ({
@@ -330,10 +343,11 @@ function ConnectContent() {
     });
   }, [geoOptions]);
 
+  // Ref to hold the latest verifyLocation function (avoids dependency cycle)
+  const verifyLocationRef = useRef<() => Promise<void>>();
+
   // Verify GPS location for active check-in
   const verifyLocation = useCallback(async () => {
-    if (!myCheckin) return;
-
     try {
       const location = await getCurrentLocation();
       const response = await fetch("/api/connect/checkins/verify", {
@@ -357,7 +371,12 @@ function ConnectContent() {
     } catch (error) {
       console.error("Failed to verify location:", error);
     }
-  }, [myCheckin, getCurrentLocation, toast]);
+  }, [getCurrentLocation, toast]);
+
+  // Keep the ref updated with the latest verifyLocation
+  useEffect(() => {
+    verifyLocationRef.current = verifyLocation;
+  }, [verifyLocation]);
 
   // Start check-in flow
   const startCheckin = useCallback(async () => {
@@ -473,11 +492,17 @@ function ConnectContent() {
         const data = await response.json();
         console.error("Check-in failed:", JSON.stringify(data, null, 2));
 
-        // Check if error is about missing display name
+        // Check if error is about missing profile info
         if (data.error?.toLowerCase().includes("display name")) {
           toast({
             title: "Profile Incomplete",
             description: "Please set your display name first. Tap the settings icon above.",
+            variant: "destructive",
+          });
+        } else if (data.error?.toLowerCase().includes("profile photo")) {
+          toast({
+            title: "Profile Photo Required",
+            description: "Please add a profile photo first. Tap the settings icon above.",
             variant: "destructive",
           });
         } else {
@@ -593,11 +618,17 @@ function ConnectContent() {
       } else {
         const data = await response.json();
 
-        // Check if error is about missing display name
+        // Check if error is about missing profile info
         if (data.error?.toLowerCase().includes("display name")) {
           toast({
             title: "Profile Incomplete",
             description: "Please set your display name first. Tap the settings icon above.",
+            variant: "destructive",
+          });
+        } else if (data.error?.toLowerCase().includes("profile photo")) {
+          toast({
+            title: "Profile Photo Required",
+            description: "Please add a profile photo first. Tap the settings icon above.",
             variant: "destructive",
           });
         } else {
@@ -773,6 +804,50 @@ function ConnectContent() {
     }
   }, [fetchCheckins, fetchConversations, toast]);
 
+  // View another user's profile
+  const viewUserProfile = useCallback(async (userId: string) => {
+    try {
+      const response = await fetch(`/api/connect/profile/${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setViewingProfile(data.profile);
+      }
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+    }
+  }, []);
+
+  // Handle photo upload
+  const handlePhotoUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUser) return;
+
+    setIsUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/connect/profile/photo", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(prev => prev ? { ...prev, avatar_url: data.url } : prev);
+        toast({ title: "Photo Updated", description: "Your profile photo has been saved." });
+      } else {
+        const data = await response.json();
+        toast({ title: "Upload Failed", description: data.error || "Could not upload photo.", variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Photo upload error:", error);
+      toast({ title: "Upload Failed", description: "Could not upload photo.", variant: "destructive" });
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  }, [currentUser, toast]);
+
   // Handle anchorage click on map
   const handleAnchorageClick = useCallback((anchorage: Anchorage, usersAtAnchorage: CheckedInUser[]) => {
     setSelectedMapUser(null);
@@ -858,19 +933,24 @@ function ConnectContent() {
       return;
     }
 
-    // Initial verification
-    verifyLocation();
+    // Initial verification with 5 second delay
+    const initialTimeout = setTimeout(() => {
+      verifyLocationRef.current?.();
+    }, 5000);
 
-    // Set up interval
-    verificationTimerRef.current = setInterval(verifyLocation, VERIFICATION_INTERVAL);
+    // Set up interval using the ref
+    verificationTimerRef.current = setInterval(() => {
+      verifyLocationRef.current?.();
+    }, VERIFICATION_INTERVAL);
 
     return () => {
+      clearTimeout(initialTimeout);
       if (verificationTimerRef.current) {
         clearInterval(verificationTimerRef.current);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [myCheckin?.id, verifyLocation]);
+  }, [myCheckin?.id]);
 
   // Polling for checkins on map tab
   useEffect(() => {
@@ -946,20 +1026,25 @@ function ConnectContent() {
             <Button variant="ghost" size="icon" onClick={() => setSelectedConversation(null)}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <Avatar>
-              <AvatarImage src={selectedConversation.otherUser.avatar_url || undefined} />
-              <AvatarFallback>
-                {selectedConversation.otherUser.display_name
-                  ? getInitials(selectedConversation.otherUser.display_name)
-                  : "?"}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium">{selectedConversation.otherUser.display_name || "Boater"}</p>
-              {selectedConversation.otherUser.boat_name && (
-                <p className="text-xs text-muted-foreground">{selectedConversation.otherUser.boat_name}</p>
-              )}
-            </div>
+            <button
+              onClick={() => viewUserProfile(selectedConversation.otherUser.id)}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            >
+              <Avatar>
+                <AvatarImage src={selectedConversation.otherUser.avatar_url || undefined} />
+                <AvatarFallback>
+                  {selectedConversation.otherUser.display_name
+                    ? getInitials(selectedConversation.otherUser.display_name)
+                    : "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-left">
+                <p className="font-medium">{selectedConversation.otherUser.display_name || "Boater"}</p>
+                {selectedConversation.otherUser.boat_name && (
+                  <p className="text-xs text-muted-foreground">{selectedConversation.otherUser.boat_name}</p>
+                )}
+              </div>
+            </button>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -1020,25 +1105,18 @@ function ConnectContent() {
 
         {/* Message Input */}
         <form onSubmit={sendMessage} className="border-t bg-background p-4">
-          {!myCheckin ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted rounded-lg p-3">
-              <AlertCircle className="h-4 w-4" />
-              <span>You must be checked in to send messages</span>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1"
-                disabled={isSending}
-              />
-              <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending}>
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+          <div className="flex gap-2">
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type a message..."
+              className="flex-1"
+              disabled={isSending}
+            />
+            <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending}>
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
         </form>
       </div>
     );
@@ -1070,12 +1148,32 @@ function ConnectContent() {
                 {profile && !isEditingProfile && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
-                      <Avatar className="h-16 w-16">
-                        <AvatarImage src={profile.avatar_url || undefined} />
-                        <AvatarFallback className="text-lg">
-                          {profile.display_name ? getInitials(profile.display_name) : "?"}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative">
+                        <Avatar className="h-16 w-16">
+                          <AvatarImage src={profile.avatar_url || undefined} />
+                          <AvatarFallback className="text-lg">
+                            {profile.display_name ? getInitials(profile.display_name) : "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <label
+                          htmlFor="photo-upload"
+                          className="absolute bottom-0 right-0 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors"
+                        >
+                          {isUploadingPhoto ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Camera className="h-3 w-3" />
+                          )}
+                        </label>
+                        <input
+                          id="photo-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handlePhotoUpload}
+                          disabled={isUploadingPhoto}
+                        />
+                      </div>
                       <div>
                         <p className="font-semibold">{profile.display_name}</p>
                         {profile.boat_name && (
@@ -1083,6 +1181,11 @@ function ConnectContent() {
                         )}
                       </div>
                     </div>
+                    {!profile.avatar_url && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        Add a profile photo to check in at anchorages
+                      </p>
+                    )}
                     {profile.bio && (
                       <p className="text-sm text-muted-foreground">{profile.bio}</p>
                     )}
@@ -1365,21 +1468,31 @@ function ConnectContent() {
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={selectedMapUser.profiles.avatar_url || undefined} />
-                        <AvatarFallback>
-                          {selectedMapUser.profiles?.display_name ? getInitials(selectedMapUser.profiles.display_name) : "?"}
-                        </AvatarFallback>
-                      </Avatar>
+                      <button
+                        onClick={() => viewUserProfile(selectedMapUser.user_id)}
+                        className="shrink-0 hover:opacity-80 transition-opacity"
+                      >
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={selectedMapUser.profiles.avatar_url || undefined} />
+                          <AvatarFallback>
+                            {selectedMapUser.profiles?.display_name ? getInitials(selectedMapUser.profiles.display_name) : "?"}
+                          </AvatarFallback>
+                        </Avatar>
+                      </button>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate">
-                          {selectedMapUser.profiles?.display_name || "Boater"}
-                        </p>
-                        {selectedMapUser.profiles?.boat_name && (
-                          <p className="text-sm text-muted-foreground truncate">
-                            {selectedMapUser.profiles.boat_name}
+                        <button
+                          onClick={() => viewUserProfile(selectedMapUser.user_id)}
+                          className="text-left hover:opacity-80 transition-opacity"
+                        >
+                          <p className="font-semibold truncate">
+                            {selectedMapUser.profiles?.display_name || "Boater"}
                           </p>
-                        )}
+                          {selectedMapUser.profiles?.boat_name && (
+                            <p className="text-sm text-muted-foreground truncate">
+                              {selectedMapUser.profiles.boat_name}
+                            </p>
+                          )}
+                        </button>
                         <p className="text-xs text-primary flex items-center gap-1 mt-1">
                           <MapPin className="h-3 w-3" />
                           {selectedMapUser.location_name}
@@ -1406,7 +1519,6 @@ function ConnectContent() {
                       <Button
                         className="flex-1"
                         onClick={() => startConversationWith(selectedMapUser.user_id)}
-                        disabled={!myCheckin}
                       >
                         <MessageCircle className="mr-2 h-4 w-4" />
                         Message
@@ -1428,11 +1540,6 @@ function ConnectContent() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    {!myCheckin && (
-                      <p className="mt-2 text-xs text-muted-foreground text-center">
-                        Check in to send messages
-                      </p>
-                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -1882,6 +1989,57 @@ function ConnectContent() {
               Try Again
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Profile Dialog */}
+      <Dialog open={!!viewingProfile} onOpenChange={(open) => !open && setViewingProfile(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Profile</DialogTitle>
+          </DialogHeader>
+
+          {viewingProfile && (
+            <div className="flex flex-col items-center text-center space-y-4">
+              <Avatar className="h-24 w-24">
+                <AvatarImage src={viewingProfile.avatar_url || undefined} />
+                <AvatarFallback className="text-2xl">
+                  {viewingProfile.display_name ? getInitials(viewingProfile.display_name) : "?"}
+                </AvatarFallback>
+              </Avatar>
+
+              <div>
+                <p className="text-xl font-semibold">{viewingProfile.display_name}</p>
+                {(viewingProfile.boat_name || viewingProfile.vessel_name) && (
+                  <p className="text-sm text-muted-foreground">
+                    {viewingProfile.boat_name || viewingProfile.vessel_name}
+                  </p>
+                )}
+              </div>
+
+              {viewingProfile.bio && (
+                <p className="text-sm text-muted-foreground">{viewingProfile.bio}</p>
+              )}
+
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setViewingProfile(null);
+                  startConversationWith(viewingProfile.id);
+                }}
+                disabled={!myCheckin}
+              >
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Send Message
+              </Button>
+
+              {!myCheckin && (
+                <p className="text-xs text-muted-foreground">
+                  Check in to send messages
+                </p>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
