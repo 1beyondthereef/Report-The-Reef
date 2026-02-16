@@ -848,22 +848,12 @@ function ConnectContent() {
     }
   }, [currentUser, toast]);
 
-  // Handle anchorage click on map
+  // Handle anchorage click on map - always show the anchorage panel with users
   const handleAnchorageClick = useCallback((anchorage: Anchorage, usersAtAnchorage: CheckedInUser[]) => {
     setSelectedMapUser(null);
-
-    // If user is not checked in, directly open the quick check-in dialog
-    if (!myCheckin) {
-      setQuickCheckinAnchorage(anchorage);
-      setQuickCheckinNote("");
-      setShowQuickCheckinDialog(true);
-      setSelectedAnchoragePanel(null);
-    } else {
-      // User is already checked in, show the anchorage panel with users
-      setSelectedAnchoragePanel(anchorage);
-      setUsersAtSelectedAnchorage(usersAtAnchorage);
-    }
-  }, [myCheckin]);
+    setSelectedAnchoragePanel(anchorage);
+    setUsersAtSelectedAnchorage(usersAtAnchorage);
+  }, []);
 
   // Initial data load
   useEffect(() => {
@@ -1435,8 +1425,8 @@ function ConnectContent() {
                       </div>
                     )}
 
-                    {/* Check In Button */}
-                    {!myCheckin && (
+                    {/* Check In Button - show if not checked in OR checked in at different anchorage */}
+                    {(!myCheckin || myCheckin.anchorage_id !== selectedAnchoragePanel.id) && (
                       <Button
                         className="w-full mt-3"
                         onClick={() => openQuickCheckinDialog(selectedAnchoragePanel)}
@@ -1447,8 +1437,16 @@ function ConnectContent() {
                         ) : (
                           <CheckCircle className="mr-2 h-4 w-4" />
                         )}
-                        Check In Here
+                        {myCheckin ? "Move Check-In Here" : "Check In Here"}
                       </Button>
+                    )}
+
+                    {/* Show indicator if already checked in at this anchorage */}
+                    {myCheckin && myCheckin.anchorage_id === selectedAnchoragePanel.id && (
+                      <div className="flex items-center justify-center gap-2 mt-3 text-sm text-green-600 dark:text-green-400">
+                        <CheckCircle className="h-4 w-4" />
+                        <span>You are checked in here</span>
+                      </div>
                     )}
 
                     <div className="flex items-center justify-between mt-3 pt-3 border-t text-xs text-muted-foreground">
