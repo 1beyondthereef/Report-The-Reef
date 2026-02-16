@@ -217,6 +217,9 @@ function ConnectContent() {
   // Verification timer
   const verificationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Location help dialog state
+  const [showLocationHelpDialog, setShowLocationHelpDialog] = useState(false);
+
   // All anchorages from constants - single source of truth
   const allAnchorages: Anchorage[] = useMemo(() => {
     return BVI_ANCHORAGES.map(a => ({
@@ -288,6 +291,13 @@ function ConnectContent() {
     }
   }, []);
 
+  // Geolocation options - optimized for mobile
+  const geoOptions: PositionOptions = useMemo(() => ({
+    enableHighAccuracy: false,  // false is faster and works better on mobile
+    timeout: 15000,             // 15 second timeout
+    maximumAge: 300000,         // accept cached position up to 5 minutes old
+  }), []);
+
   // Get user's current GPS location
   const getCurrentLocation = useCallback((): Promise<{ lat: number; lng: number }> => {
     return new Promise((resolve, reject) => {
@@ -298,18 +308,21 @@ function ConnectContent() {
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          resolve({
+          const loc = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-          });
+          };
+          setUserLocation(loc);
+          resolve(loc);
         },
         (error) => {
+          console.error("[GPS] Error getting location:", error.code, error.message);
           reject(error);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        geoOptions
       );
     });
-  }, []);
+  }, [geoOptions]);
 
   // Verify GPS location for active check-in
   const verifyLocation = useCallback(async () => {
@@ -352,8 +365,19 @@ function ConnectContent() {
     setCustomPinLocation(null);
 
     try {
-      const location = await getCurrentLocation();
-      setUserLocation(location);
+      // Use cached location if available, otherwise request new location
+      let location = userLocation;
+      if (!location) {
+        try {
+          location = await getCurrentLocation();
+        } catch (gpsError) {
+          console.error("[GPS] Failed to get location for check-in:", gpsError);
+          // Show helpful location dialog instead of generic error
+          setShowLocationHelpDialog(true);
+          setIsCheckingIn(false);
+          return;
+        }
+      }
 
       // Get anchorage suggestions and auto-detect
       const response = await fetch(
@@ -386,7 +410,7 @@ function ConnectContent() {
     } finally {
       setIsCheckingIn(false);
     }
-  }, [getCurrentLocation]);
+  }, [userLocation, getCurrentLocation]);
 
   // Complete check-in
   const completeCheckin = useCallback(async () => {
@@ -512,8 +536,20 @@ function ConnectContent() {
     setIsCheckingIn(true);
 
     try {
-      // Get current GPS location
-      const location = await getCurrentLocation();
+      // Use cached location if available, otherwise request new location
+      let location = userLocation;
+      if (!location) {
+        try {
+          location = await getCurrentLocation();
+        } catch (gpsError) {
+          console.error("[GPS] Failed to get location for check-in:", gpsError);
+          // Show helpful location dialog instead of generic error
+          setShowQuickCheckinDialog(false);
+          setShowLocationHelpDialog(true);
+          setIsCheckingIn(false);
+          return;
+        }
+      }
 
       const response = await fetch("/api/connect/checkins", {
         method: "POST",
@@ -550,13 +586,13 @@ function ConnectContent() {
       console.error("Quick check-in error:", error);
       toast({
         title: "Error",
-        description: "Failed to check in. Please enable GPS and try again.",
+        description: "Failed to check in. Please try again.",
         variant: "destructive",
       });
     } finally {
       setIsCheckingIn(false);
     }
-  }, [quickCheckinAnchorage, quickCheckinNote, getCurrentLocation, toast, fetchCheckins]);
+  }, [quickCheckinAnchorage, quickCheckinNote, userLocation, getCurrentLocation, toast, fetchCheckins]);
 
   // Confirm checkout
   const confirmCheckout = useCallback(async () => {
@@ -735,6 +771,21 @@ function ConnectContent() {
 
     loadData();
   }, [isAuthenticated, fetchProfile, fetchCheckins, fetchConversations]);
+
+  // Request GPS permission on page load (proactively)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    // Request location permission early to cache position and trigger permission prompt
+    getCurrentLocation()
+      .then((loc) => {
+        console.log("[GPS] Initial location acquired:", loc);
+      })
+      .catch((error) => {
+        // Don't block the page - just log and set flag
+        console.log("[GPS] Initial location request failed (this is ok):", error.message);
+      });
+  }, [isAuthenticated, getCurrentLocation]);
 
   // Set up verification timer
   useEffect(() => {
@@ -1697,6 +1748,77 @@ function ConnectContent() {
             <Button variant="destructive" onClick={confirmCheckout}>
               <LogOut className="mr-2 h-4 w-4" />
               Check Out
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Location Help Dialog */}
+      <Dialog open={showLocationHelpDialog} onOpenChange={setShowLocationHelpDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              Location Access Needed
+            </DialogTitle>
+            <DialogDescription>
+              To check in at an anchorage, we need access to your location. Please enable location services in your browser or device settings.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border p-3 space-y-2">
+              <p className="font-medium text-sm flex items-center gap-2">
+                <span className="text-lg">📱</span> iPhone / iPad
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Go to <span className="font-medium">Settings → Privacy & Security → Location Services → Safari</span> (or your browser) → set to <span className="font-medium">While Using</span>
+              </p>
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-2">
+              <p className="font-medium text-sm flex items-center gap-2">
+                <span className="text-lg">🤖</span> Android
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Tap the <span className="font-medium">lock icon</span> in your browser&apos;s address bar → <span className="font-medium">Permissions → Location → Allow</span>
+              </p>
+            </div>
+
+            <div className="rounded-lg border p-3 space-y-2">
+              <p className="font-medium text-sm flex items-center gap-2">
+                <span className="text-lg">💻</span> Desktop Browser
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Click the <span className="font-medium">lock icon</span> in the address bar → <span className="font-medium">Location → Allow</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setShowLocationHelpDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                setShowLocationHelpDialog(false);
+                try {
+                  await getCurrentLocation();
+                  toast({
+                    title: "Location Enabled",
+                    description: "You can now check in at anchorages.",
+                  });
+                } catch {
+                  toast({
+                    title: "Still No Access",
+                    description: "Please check your browser/device settings and try again.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+            >
+              <Navigation className="mr-2 h-4 w-4" />
+              Try Again
             </Button>
           </div>
         </DialogContent>
