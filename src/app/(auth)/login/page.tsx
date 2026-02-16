@@ -30,15 +30,8 @@ function LoginForm() {
   // Create supabase client once and memoize it
   const supabase = useMemo(() => {
     console.log("[Login] Creating Supabase client...");
-    console.log("[Login] ENV CHECK - NEXT_PUBLIC_SUPABASE_URL:", process.env.NEXT_PUBLIC_SUPABASE_URL ? "SET ✓" : "MISSING ✗");
-    console.log("[Login] ENV CHECK - NEXT_PUBLIC_SUPABASE_ANON_KEY:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? "SET ✓" : "MISSING ✗");
-
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error("[Login] CRITICAL: Supabase environment variables are missing!");
-    }
-
     const client = createClient();
-    console.log("[Login] Supabase client created successfully");
+    console.log("[Login] Supabase client created");
     return client;
   }, []);
 
@@ -46,27 +39,28 @@ function LoginForm() {
   const isMounted = useRef(true);
   useEffect(() => {
     console.log("[Login] Component mounted");
+    isMounted.current = true;
 
-    // Test Supabase connection on mount
-    const testConnection = async () => {
+    // Check for existing session - but don't make new API calls
+    // AuthContext already handles this, we just need to redirect if already logged in
+    const checkExistingSession = async () => {
       try {
-        console.log("[Login] Testing Supabase connection...");
-        const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error("[Login] Supabase connection error:", error);
-        } else {
-          console.log("[Login] Supabase connection OK, existing session:", data.session ? "YES" : "NO");
-          // If already logged in, redirect to connect page
-          if (data.session) {
-            console.log("[Login] User already logged in, redirecting...");
-            router.push("/connect");
-          }
+        // Use getSession which uses cached data, not getUser which makes an API call
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && isMounted.current) {
+          console.log("[Login] User already logged in, redirecting...");
+          router.push("/connect");
         }
       } catch (err) {
-        console.error("[Login] Failed to test Supabase connection:", err);
+        // Ignore AbortError - this happens during React StrictMode double-mount
+        if (err instanceof Error && err.name === "AbortError") {
+          console.log("[Login] Session check aborted (React StrictMode, safe to ignore)");
+          return;
+        }
+        console.error("[Login] Session check error:", err);
       }
     };
-    testConnection();
+    checkExistingSession();
 
     return () => {
       console.log("[Login] Component unmounting");
