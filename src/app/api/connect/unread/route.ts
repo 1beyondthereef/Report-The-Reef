@@ -32,7 +32,7 @@ export async function GET() {
 
     // Count unread messages across all conversations
     const { count, error } = await supabase
-      .from("messages")
+      .from("chat_messages")
       .select("id", { count: "exact", head: true })
       .in("conversation_id", conversationIds)
       .neq("sender_id", user.id)

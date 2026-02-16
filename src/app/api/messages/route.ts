@@ -14,7 +14,7 @@ export async function GET() {
 
     // Get all messages involving this user
     const { data: messages, error } = await supabase
-      .from("messages")
+      .from("chat_messages")
       .select("*")
       .or(`from_user.eq.${user.id},to_user.eq.${user.id}`)
       .order("created_at", { ascending: false });

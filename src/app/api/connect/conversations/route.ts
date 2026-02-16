@@ -66,7 +66,7 @@ export async function GET() {
 
         // Get last message
         const { data: lastMessage } = await supabase
-          .from("messages")
+          .from("chat_messages")
           .select("id, content, sender_id, created_at, read_at")
           .eq("conversation_id", conv.id)
           .order("created_at", { ascending: false })
@@ -75,7 +75,7 @@ export async function GET() {
 
         // Get unread count
         const { count: unreadCount } = await supabase
-          .from("messages")
+          .from("chat_messages")
           .select("id", { count: "exact", head: true })
           .eq("conversation_id", conv.id)
           .neq("sender_id", user.id)

@@ -42,7 +42,7 @@ export async function GET(
 
     // Get messages
     const { data: messages, error: messagesError } = await supabase
-      .from("messages")
+      .from("chat_messages")
       .select("*")
       .or(`and(from_user.eq.${user.id},to_user.eq.${otherUserId}),and(from_user.eq.${otherUserId},to_user.eq.${user.id})`)
       .order("created_at", { ascending: true })
@@ -58,7 +58,7 @@ export async function GET(
 
     // Mark unread messages as read
     await supabase
-      .from("messages")
+      .from("chat_messages")
       .update({ is_read: true })
       .eq("from_user", otherUserId)
       .eq("to_user", user.id)
@@ -139,7 +139,7 @@ export async function POST(
     }
 
     const { data: message, error } = await supabase
-      .from("messages")
+      .from("chat_messages")
       .insert({
         from_user: user.id,
         to_user: receiverId,

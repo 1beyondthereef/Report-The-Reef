@@ -43,7 +43,7 @@ export async function GET(
 
     // Build query for messages
     let query = supabase
-      .from("messages")
+      .from("chat_messages")
       .select(`
         id,
         content,
@@ -71,7 +71,7 @@ export async function GET(
 
     // Mark messages as read
     await supabase
-      .from("messages")
+      .from("chat_messages")
       .update({ read_at: new Date().toISOString() })
       .eq("conversation_id", conversationId)
       .neq("sender_id", user.id)
@@ -181,7 +181,7 @@ export async function POST(
 
     // Create message
     const { data: message, error: msgError } = await supabase
-      .from("messages")
+      .from("chat_messages")
       .insert({
         conversation_id: conversationId,
         sender_id: user.id,
