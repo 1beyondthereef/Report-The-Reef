@@ -262,9 +262,10 @@ export function ConnectMap({
       const existingMarker = currentMarkers.get(anchorage.id);
 
       if (existingMarker) {
-        // Only recreate marker if selection state changed
-        // Don't touch position - it's already correct from BVI_ANCHORAGES
-        const needsUpdate = existingMarker.getElement().dataset.selected !== String(isSelected);
+        // Recreate marker if selection state OR checkin count changed
+        const needsUpdate =
+          existingMarker.getElement().dataset.selected !== String(isSelected) ||
+          existingMarker.getElement().dataset.count !== String(anchorage.checkinCount);
 
         if (needsUpdate) {
           // Remove old marker and create new one
@@ -273,6 +274,7 @@ export function ConnectMap({
 
           const el = createAnchorageMarkerElement(anchorage, isSelected);
           el.dataset.selected = String(isSelected);
+          el.dataset.count = String(anchorage.checkinCount);
           el.addEventListener("click", (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -292,6 +294,7 @@ export function ConnectMap({
         // Create new marker with correct [lng, lat] order for Mapbox
         const el = createAnchorageMarkerElement(anchorage, isSelected);
         el.dataset.selected = String(isSelected);
+        el.dataset.count = String(anchorage.checkinCount);
         el.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
