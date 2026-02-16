@@ -27,7 +27,7 @@ export async function GET() {
         profiles!blocked_users_blocked_id_fkey (
           id,
           display_name,
-          photo_url
+          avatar_url
         )
       `)
       .eq("blocker_id", user.id);

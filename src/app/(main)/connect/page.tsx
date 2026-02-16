@@ -73,10 +73,11 @@ import { useToast } from "@/hooks/use-toast";
 interface Profile {
   id: string;
   display_name: string;
+  vessel_name?: string;
   boat_name?: string;
   bio?: string;
-  photo_url?: string;
-  is_visible: boolean;
+  avatar_url?: string;
+  show_on_map: boolean;
 }
 
 interface CheckedInUser {
@@ -92,9 +93,10 @@ interface CheckedInUser {
   profiles: {
     id: string;
     display_name: string;
+    vessel_name?: string;
     boat_name?: string;
-    photo_url?: string;
-    is_visible: boolean;
+    avatar_url?: string;
+    show_on_map: boolean;
   };
 }
 
@@ -127,8 +129,9 @@ interface Conversation {
   otherUser: {
     id: string;
     display_name: string;
+    vessel_name?: string;
     boat_name?: string;
-    photo_url?: string;
+    avatar_url?: string;
   };
   lastMessage?: {
     id: string;
@@ -639,15 +642,15 @@ function ConnectContent() {
       const response = await fetch("/api/connect/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_visible: !profile.is_visible }),
+        body: JSON.stringify({ show_on_map: !profile.show_on_map }),
       });
 
       if (response.ok) {
         const data = await response.json();
         setProfile(data.profile);
         toast({
-          title: data.profile.is_visible ? "Visible" : "Invisible",
-          description: data.profile.is_visible
+          title: data.profile.show_on_map ? "Visible" : "Invisible",
+          description: data.profile.show_on_map
             ? "Other boaters can now see you on the map."
             : "You are now hidden from other boaters.",
         });
@@ -896,7 +899,7 @@ function ConnectContent() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <Avatar>
-              <AvatarImage src={selectedConversation.otherUser.photo_url || undefined} />
+              <AvatarImage src={selectedConversation.otherUser.avatar_url || undefined} />
               <AvatarFallback>
                 {selectedConversation.otherUser.display_name
                   ? getInitials(selectedConversation.otherUser.display_name)
@@ -1020,7 +1023,7 @@ function ConnectContent() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
                       <Avatar className="h-16 w-16">
-                        <AvatarImage src={profile.photo_url || undefined} />
+                        <AvatarImage src={profile.avatar_url || undefined} />
                         <AvatarFallback className="text-lg">
                           {profile.display_name ? getInitials(profile.display_name) : "?"}
                         </AvatarFallback>
@@ -1088,23 +1091,23 @@ function ConnectContent() {
                 {profile && (
                   <div className="flex items-center justify-between rounded-lg border p-4">
                     <div className="flex items-center gap-3">
-                      {profile.is_visible ? (
+                      {profile.show_on_map ? (
                         <Eye className="h-5 w-5 text-green-500" />
                       ) : (
                         <EyeOff className="h-5 w-5 text-muted-foreground" />
                       )}
                       <div>
                         <p className="font-medium">
-                          {profile.is_visible ? "Visible" : "Invisible"}
+                          {profile.show_on_map ? "Visible" : "Invisible"}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {profile.is_visible
+                          {profile.show_on_map
                             ? "Others can see you on the map"
                             : "You are hidden from the map"}
                         </p>
                       </div>
                     </div>
-                    <Switch checked={profile.is_visible} onCheckedChange={toggleVisibility} />
+                    <Switch checked={profile.show_on_map} onCheckedChange={toggleVisibility} />
                   </div>
                 )}
 
@@ -1262,7 +1265,7 @@ function ConnectContent() {
                             className="flex w-full items-center gap-3 rounded-lg border p-2 text-left hover:bg-muted transition-colors"
                           >
                             <Avatar className="h-8 w-8">
-                              <AvatarImage src={user.profiles.photo_url || undefined} />
+                              <AvatarImage src={user.profiles.avatar_url || undefined} />
                               <AvatarFallback className="text-xs">
                                 {user.profiles.display_name ? getInitials(user.profiles.display_name) : "?"}
                               </AvatarFallback>
@@ -1315,7 +1318,7 @@ function ConnectContent() {
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={selectedMapUser.profiles.photo_url || undefined} />
+                        <AvatarImage src={selectedMapUser.profiles.avatar_url || undefined} />
                         <AvatarFallback>
                           {selectedMapUser.profiles?.display_name ? getInitials(selectedMapUser.profiles.display_name) : "?"}
                         </AvatarFallback>
@@ -1419,7 +1422,7 @@ function ConnectContent() {
                   >
                     <div className="relative">
                       <Avatar>
-                        <AvatarImage src={conversation.otherUser.photo_url || undefined} />
+                        <AvatarImage src={conversation.otherUser.avatar_url || undefined} />
                         <AvatarFallback>
                           {conversation.otherUser.display_name
                             ? getInitials(conversation.otherUser.display_name)

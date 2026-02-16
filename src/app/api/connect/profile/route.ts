@@ -83,7 +83,7 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
 
     // Only allow updating specific fields
-    const allowedFields = ["display_name", "boat_name", "bio", "photo_url", "is_visible"];
+    const allowedFields = ["display_name", "boat_name", "vessel_name", "bio", "avatar_url", "show_on_map"];
     const updateData: Record<string, unknown> = {};
 
     for (const field of allowedFields) {

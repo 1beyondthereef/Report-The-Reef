@@ -60,7 +60,7 @@ export async function GET() {
         // Get other user's profile
         const { data: profile } = await supabase
           .from("profiles")
-          .select("id, display_name, boat_name, photo_url")
+          .select("id, display_name, boat_name, vessel_name, avatar_url")
           .eq("id", otherUserId)
           .single();
 
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
     // Get other user's profile
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, display_name, boat_name, photo_url")
+      .select("id, display_name, boat_name, vessel_name, avatar_url")
       .eq("id", userId)
       .single();
 

@@ -60,14 +60,14 @@ FOR UPDATE
 USING (auth.uid() = id);
 
 -- ============================================================================
--- FIX: Default is_visible to true
+-- FIX: Default show_on_map to true
 -- ============================================================================
 
--- Set is_visible to true for all existing profiles where it's null
-UPDATE profiles SET is_visible = true WHERE is_visible IS NULL;
+-- Set show_on_map to true for all existing profiles where it's null
+UPDATE profiles SET show_on_map = true WHERE show_on_map IS NULL;
 
 -- Set default for future profiles
-ALTER TABLE profiles ALTER COLUMN is_visible SET DEFAULT true;
+ALTER TABLE profiles ALTER COLUMN show_on_map SET DEFAULT true;
 
 -- ============================================================================
 -- ENABLE RLS (if not already enabled)

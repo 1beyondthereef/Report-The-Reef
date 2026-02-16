@@ -189,14 +189,15 @@ export async function GET(request: NextRequest) {
         profiles!inner (
           id,
           display_name,
+          vessel_name,
           boat_name,
-          photo_url,
-          is_visible
+          avatar_url,
+          show_on_map
         )
       `)
       .eq("is_active", true)
       .gt("expires_at", new Date().toISOString())
-      .neq("profiles.is_visible", false);
+      .neq("profiles.show_on_map", false);
 
     if (error) {
       console.error("Error fetching checkins:", JSON.stringify(error, null, 2));

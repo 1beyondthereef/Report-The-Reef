@@ -21,9 +21,10 @@ interface CheckedInUser {
   profiles: {
     id: string;
     display_name: string;
+    vessel_name?: string;
     boat_name?: string;
-    photo_url?: string;
-    is_visible: boolean;
+    avatar_url?: string;
+    show_on_map: boolean;
   };
 }
 
@@ -105,8 +106,8 @@ export function ConnectMap({
             ${isSelected ? "transform: scale(1.1);" : ""}
           ">
             ${
-              profile.photo_url
-                ? `<img src="${profile.photo_url}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />`
+              profile.avatar_url
+                ? `<img src="${profile.avatar_url}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />`
                 : `<span style="color: white; font-weight: 600; font-size: ${isSelected ? "18px" : "16px"};">${initials}</span>`
             }
           </div>
