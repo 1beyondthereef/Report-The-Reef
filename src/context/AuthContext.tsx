@@ -37,6 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Track if component is mounted to prevent state updates after unmount
   const isMounted = useRef(true);
 
+  // Track if initial load is done to prevent double refreshUser calls
+  const initialLoadDone = useRef(false);
+
   // Memoize supabase client to prevent recreation on every render
   const supabase = useMemo(() => createClient(), []);
 
@@ -155,11 +158,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log("[AuthContext] Component mounted, starting initial auth check");
     isMounted.current = true;
+    initialLoadDone.current = false;
 
     // Delay initial auth check slightly to avoid race conditions with React StrictMode
-    const timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(async () => {
       if (isMounted.current) {
-        refreshUser();
+        await refreshUser();
+        initialLoadDone.current = true;
+        console.log("[AuthContext] Initial load complete");
       }
     }, 50);
 
@@ -174,6 +180,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (event === "SIGNED_IN" && session?.user) {
+          // Skip if initial load hasn't completed yet - the setTimeout handles it
+          if (!initialLoadDone.current) {
+            console.log("[AuthContext] Skipping SIGNED_IN refresh - initial load not done yet");
+            return;
+          }
           console.log("[AuthContext] User signed in, refreshing...");
           await refreshUser();
         } else if (event === "SIGNED_OUT") {
