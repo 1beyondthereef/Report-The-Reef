@@ -891,6 +891,7 @@ function ConnectContent() {
         toast({
           title: "New Message",
           description: "You have a new message. Tap Messages to view.",
+          className: "bg-blue-500 text-white border-blue-600",
         });
       }
     }

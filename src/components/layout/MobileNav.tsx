@@ -6,6 +6,7 @@ import { Home, AlertTriangle, Anchor, Ship, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePWAStandalone } from "@/hooks/usePWAStandalone";
 import { WhaleIcon } from "@/components/icons/WhaleIcon";
+import { ConnectNavBadge } from "@/components/ConnectNavBadge";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -64,14 +65,25 @@ export function MobileNav() {
                 {isActive && (
                   <span className="absolute inset-0 rounded-xl bg-primary/10 animate-scale-in" />
                 )}
-                <Icon className={cn(
-                  "relative z-10 transition-transform duration-300",
-                  // Normal icon size
-                  "h-5 w-5",
-                  // PWA standalone: smaller icons
-                  isStandalone && "h-4 w-4",
-                  isActive && "scale-110"
-                )} />
+                {/* Wrap Connect icon in relative container for badge */}
+                {item.href === "/connect" ? (
+                  <div className="relative">
+                    <Icon className={cn(
+                      "relative z-10 transition-transform duration-300",
+                      "h-5 w-5",
+                      isStandalone && "h-4 w-4",
+                      isActive && "scale-110"
+                    )} />
+                    <ConnectNavBadge />
+                  </div>
+                ) : (
+                  <Icon className={cn(
+                    "relative z-10 transition-transform duration-300",
+                    "h-5 w-5",
+                    isStandalone && "h-4 w-4",
+                    isActive && "scale-110"
+                  )} />
+                )}
                 <span className={cn(
                   "relative z-10 font-medium tracking-wide uppercase transition-all duration-300",
                   // Normal text size
