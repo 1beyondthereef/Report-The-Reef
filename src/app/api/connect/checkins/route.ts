@@ -207,6 +207,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Deduplicate checkins by user_id (keep only the most recent per user)
+    const uniqueCheckins = Array.from(
+      (checkins || []).reduce((map, checkin) => {
+        const existing = map.get(checkin.user_id);
+        if (!existing || new Date(checkin.checked_in_at) > new Date(existing.checked_in_at)) {
+          map.set(checkin.user_id, checkin);
+        }
+        return map;
+      }, new Map<string, typeof checkins[0]>()).values()
+    );
+
     // Get current user's active check-in if authenticated
     let myCheckin = null;
     if (user) {
@@ -216,14 +227,16 @@ export async function GET(request: NextRequest) {
         .eq("user_id", user.id)
         .eq("is_active", true)
         .gt("expires_at", new Date().toISOString())
+        .order("checked_in_at", { ascending: false })
+        .limit(1)
         .single();
 
       myCheckin = data;
     }
 
     // Group checkins by anchorage for counts
-    const anchorageCheckins = new Map<string, typeof checkins>();
-    (checkins || []).forEach((c) => {
+    const anchorageCheckins = new Map<string, typeof uniqueCheckins>();
+    uniqueCheckins.forEach((c) => {
       const key = c.anchorage_id || `${c.location_lat},${c.location_lng}`;
       if (!anchorageCheckins.has(key)) {
         anchorageCheckins.set(key, []);
@@ -232,7 +245,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      checkins: checkins || [],
+      checkins: uniqueCheckins,
       myCheckin,
       anchorageCheckins: Object.fromEntries(anchorageCheckins),
     });

@@ -387,55 +387,16 @@ export function ConnectMap({
     });
   }, [checkins, selectedAnchorageId, isLoaded, showAnchorageMarkers, createAnchorageMarkerElement, onAnchorageClick]);
 
-  // Update user markers when checkins change
+  // Individual user markers are disabled - we only show anchorage markers with counts
+  // Users can tap an anchorage to see the list of boaters there
   useEffect(() => {
     if (!mapRef.current || !isLoaded) return;
 
-    const map = mapRef.current;
+    // Clear any existing user markers
     const currentMarkers = userMarkersRef.current;
-    const checkinIds = new Set(checkins.map((c) => c.id));
-
-    // Remove markers for checkins no longer in the list
-    currentMarkers.forEach((marker, id) => {
-      if (!checkinIds.has(id)) {
-        marker.remove();
-        currentMarkers.delete(id);
-      }
-    });
-
-    // Add or update markers
-    checkins.forEach((checkin) => {
-      const isSelected = checkin.user_id === selectedUserId;
-      const existingMarker = currentMarkers.get(checkin.id);
-
-      if (existingMarker) {
-        // Update position
-        existingMarker.setLngLat([checkin.location_lng, checkin.location_lat]);
-        // Update element
-        const el = createUserMarkerElement(checkin, isSelected);
-        el.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onUserClick(checkin);
-        });
-        existingMarker.getElement().replaceWith(el);
-      } else {
-        // Create new marker
-        const el = createUserMarkerElement(checkin, isSelected);
-        el.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onUserClick(checkin);
-        });
-
-        const marker = new mapboxgl.Marker({ element: el })
-          .setLngLat([checkin.location_lng, checkin.location_lat])
-          .addTo(map);
-
-        currentMarkers.set(checkin.id, marker);
-      }
-    });
-  }, [checkins, selectedUserId, isLoaded, createUserMarkerElement, onUserClick]);
+    currentMarkers.forEach((marker) => marker.remove());
+    currentMarkers.clear();
+  }, [checkins, isLoaded]);
 
   // Add/update user location marker
   useEffect(() => {
@@ -633,8 +594,8 @@ export function ConnectMap({
             <span>Empty anchorage</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-green-500" />
-            <span>Checked-in boater</span>
+            <div className="h-3 w-3 rounded-full bg-red-500" />
+            <span>Boater count badge</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-blue-500" />
