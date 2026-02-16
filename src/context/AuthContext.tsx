@@ -60,7 +60,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const { data, error: authError } = await supabase.auth.getUser();
+      // First check for existing session (doesn't throw if no session)
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
       // Check if component is still mounted before updating state
       if (!isMounted.current) {
@@ -68,20 +69,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (authError) {
+      // Handle session errors (but not "no session" which is normal)
+      if (sessionError) {
         // Ignore AbortError - this happens during React StrictMode double-mount
-        if (authError.message?.includes("AbortError") || authError.name === "AbortError") {
-          console.log("[AuthContext] Auth check aborted (React StrictMode, safe to ignore)");
+        if (sessionError.message?.includes("AbortError") || sessionError.name === "AbortError") {
+          console.log("[AuthContext] Session check aborted (React StrictMode, safe to ignore)");
           return;
         }
-        console.error("[AuthContext] Auth error:", authError);
+        console.error("[AuthContext] Session error:", sessionError);
         setUser(null);
         setProfile(null);
-        setIsLoading(false);
         return;
       }
 
-      const supabaseUser = data?.user;
+      // No session = user is logged out (this is normal, not an error)
+      if (!sessionData.session) {
+        console.log("[AuthContext] No session - user is logged out");
+        setUser(null);
+        setProfile(null);
+        return;
+      }
+
+      // Session exists - now get verified user data
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+
+      if (!isMounted.current) return;
+
+      if (userError) {
+        // Ignore AbortError
+        if (userError.message?.includes("AbortError") || userError.name === "AbortError") {
+          console.log("[AuthContext] User fetch aborted (safe to ignore)");
+          return;
+        }
+        // AuthSessionMissingError means session expired - treat as logged out
+        if (userError.message?.includes("Auth session missing") || userError.name === "AuthSessionMissingError") {
+          console.log("[AuthContext] Session expired - user is logged out");
+          setUser(null);
+          setProfile(null);
+          return;
+        }
+        console.error("[AuthContext] User fetch error:", userError);
+        setUser(null);
+        setProfile(null);
+        return;
+      }
+
+      const supabaseUser = userData?.user;
 
       if (supabaseUser && supabaseUser.id) {
         try {
@@ -142,6 +175,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Ignore AbortError - this happens during React StrictMode double-mount
       if (error instanceof Error && error.name === "AbortError") {
         console.log("[AuthContext] Request aborted (React StrictMode, safe to ignore)");
+        return;
+      }
+      // AuthSessionMissingError means no session - treat as logged out (not an error)
+      if (error instanceof Error && (error.message?.includes("Auth session missing") || error.name === "AuthSessionMissingError")) {
+        console.log("[AuthContext] No auth session - user is logged out");
+        if (!isMounted.current) return;
+        setUser(null);
+        setProfile(null);
         return;
       }
       console.error("[AuthContext] Error refreshing user:", error);
