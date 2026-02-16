@@ -53,7 +53,7 @@ interface ConnectMapProps {
 
 export function ConnectMap({
   checkins,
-  onUserClick,
+  onUserClick: _onUserClick,
   onAnchorageClick,
   selectedUserId,
   selectedAnchorageId,
@@ -64,6 +64,8 @@ export function ConnectMap({
   allowCustomPin = false,
   customPinLocation,
 }: ConnectMapProps) {
+  // Note: onUserClick is kept in interface for future use but currently unused
+  void _onUserClick;
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const userMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
@@ -71,85 +73,6 @@ export function ConnectMap({
   const userLocationMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const customPinMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-
-  // Create marker element for a checked-in user
-  const createUserMarkerElement = useCallback(
-    (checkin: CheckedInUser, isSelected: boolean) => {
-      const el = document.createElement("div");
-      el.className = "checkin-marker";
-      el.style.cssText = "cursor: pointer;";
-
-      const profile = checkin.profiles;
-      const size = isSelected ? 56 : 48;
-      const borderColor = isSelected ? "#0d9488" : "#ffffff";
-      const displayName = profile.display_name || "Boater";
-      const initials = displayName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-
-      el.innerHTML = `
-        <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
-          <div style="
-            width: ${size}px;
-            height: ${size}px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
-            border: 3px solid ${borderColor};
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s;
-            ${isSelected ? "transform: scale(1.1);" : ""}
-          ">
-            ${
-              profile.avatar_url
-                ? `<img src="${profile.avatar_url}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;" />`
-                : `<span style="color: white; font-weight: 600; font-size: ${isSelected ? "18px" : "16px"};">${initials}</span>`
-            }
-          </div>
-          <div style="
-            position: absolute;
-            bottom: -2px;
-            right: -2px;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #22c55e;
-            border: 2px solid white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-          "></div>
-          <div style="
-            margin-top: 4px;
-            background: white;
-            padding: 4px 8px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            max-width: 140px;
-            text-align: center;
-          ">
-            <p style="font-size: 12px; font-weight: 600; color: #1f2937; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-              ${displayName}
-            </p>
-            ${
-              profile.boat_name
-                ? `<p style="font-size: 10px; color: #6b7280; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${profile.boat_name}</p>`
-                : ""
-            }
-            <p style="font-size: 9px; color: #0d9488; margin: 2px 0 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-              ${checkin.location_name}
-            </p>
-          </div>
-        </div>
-      `;
-
-      return el;
-    },
-    []
-  );
 
   // Create marker element for an anchorage
   const createAnchorageMarkerElement = useCallback(
