@@ -236,10 +236,7 @@ export async function GET(request: NextRequest) {
 
     // Filter out users without display_name (incomplete profiles)
     const visibleCheckins = uniqueCheckins.filter(
-      (c: any) => {
-        const profile = Array.isArray(c.profiles) ? c.profiles[0] : c.profiles;
-        return profile?.display_name;
-      }
+      (c: any) => c.profiles?.display_name
     );
 
     // Group checkins by anchorage for counts
