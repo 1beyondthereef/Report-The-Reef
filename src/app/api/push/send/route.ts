@@ -4,18 +4,6 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-// Configure web-push with VAPID details
-const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-
-if (vapidPublicKey && vapidPrivateKey) {
-  webpush.setVapidDetails(
-    "mailto:admin@reportthereef.com",
-    vapidPublicKey,
-    vapidPrivateKey
-  );
-}
-
 interface PushRequest {
   recipientUserId: string;
   title?: string;
@@ -30,7 +18,10 @@ interface PushRequest {
  */
 export async function POST(request: Request) {
   try {
-    // Check VAPID configuration
+    // Check VAPID configuration at runtime (not build time)
+    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+
     if (!vapidPublicKey || !vapidPrivateKey) {
       console.error("[Push API] VAPID keys not configured");
       return NextResponse.json(
@@ -38,6 +29,13 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    // Configure web-push with VAPID details (must be inside handler, not at module level)
+    webpush.setVapidDetails(
+      "mailto:admin@reportthereef.com",
+      vapidPublicKey,
+      vapidPrivateKey
+    );
 
     const body: PushRequest = await request.json();
     const { recipientUserId, title, body: messageBody, url, tag } = body;
