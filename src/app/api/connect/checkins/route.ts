@@ -235,8 +235,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter out users without display_name (incomplete profiles)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const visibleCheckins = uniqueCheckins.filter(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (c: any) => c.profiles?.display_name
     );
 
