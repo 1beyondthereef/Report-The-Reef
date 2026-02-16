@@ -60,6 +60,16 @@ export async function GET(request: Request) {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
+        // Try to auto-set display_name from Google OAuth data if not already set
+        const googleName = user.user_metadata?.full_name || user.user_metadata?.name;
+        if (googleName) {
+          await supabase
+            .from("profiles")
+            .update({ display_name: googleName })
+            .eq("id", user.id)
+            .is("display_name", null);
+        }
+
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("display_name, username")

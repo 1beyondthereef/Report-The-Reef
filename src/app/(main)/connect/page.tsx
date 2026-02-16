@@ -469,11 +469,21 @@ function ConnectContent() {
       } else {
         const data = await response.json();
         console.error("Check-in failed:", JSON.stringify(data, null, 2));
-        toast({
-          title: "Check-in Failed",
-          description: data.error || "Could not complete check-in",
-          variant: "destructive",
-        });
+
+        // Check if error is about missing display name
+        if (data.error?.toLowerCase().includes("display name")) {
+          toast({
+            title: "Profile Incomplete",
+            description: "Please set your display name first. Tap the settings icon above.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Check-in Failed",
+            description: data.error || "Could not complete check-in",
+            variant: "destructive",
+          });
+        }
         // Also show details in console for debugging
         if (data.details) {
           console.error("Error details:", data.details);
@@ -579,11 +589,21 @@ function ConnectContent() {
         fetchCheckins();
       } else {
         const data = await response.json();
-        toast({
-          title: "Check-in Failed",
-          description: data.error || "Could not complete check-in",
-          variant: "destructive",
-        });
+
+        // Check if error is about missing display name
+        if (data.error?.toLowerCase().includes("display name")) {
+          toast({
+            title: "Profile Incomplete",
+            description: "Please set your display name first. Tap the settings icon above.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Check-in Failed",
+            description: data.error || "Could not complete check-in",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error("Quick check-in error:", error);

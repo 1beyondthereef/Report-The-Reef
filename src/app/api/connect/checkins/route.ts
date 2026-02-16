@@ -234,9 +234,14 @@ export async function GET(request: NextRequest) {
       myCheckin = data;
     }
 
+    // Filter out users without display_name (incomplete profiles)
+    const visibleCheckins = uniqueCheckins.filter(
+      (c) => c.profiles?.display_name
+    );
+
     // Group checkins by anchorage for counts
-    const anchorageCheckins = new Map<string, typeof uniqueCheckins>();
-    uniqueCheckins.forEach((c) => {
+    const anchorageCheckins = new Map<string, typeof visibleCheckins>();
+    visibleCheckins.forEach((c) => {
       const key = c.anchorage_id || `${c.location_lat},${c.location_lng}`;
       if (!anchorageCheckins.has(key)) {
         anchorageCheckins.set(key, []);
@@ -245,7 +250,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      checkins: uniqueCheckins,
+      checkins: visibleCheckins,
       myCheckin,
       anchorageCheckins: Object.fromEntries(anchorageCheckins),
     });
@@ -270,6 +275,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
+      );
+    }
+
+    // Check if user has a display name set
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.display_name) {
+      return NextResponse.json(
+        { error: "Please set your display name in your profile before checking in" },
+        { status: 400 }
       );
     }
 
