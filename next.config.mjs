@@ -5,6 +5,8 @@ const withPWA = withPWAInit({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development',
+  // Import custom push notification handlers
+  importScripts: ['/push-sw.js'],
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/api\.mapbox\.com\/.*/i,

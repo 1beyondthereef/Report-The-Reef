@@ -204,6 +204,29 @@ export async function POST(
       .update({ updated_at: new Date().toISOString() })
       .eq("id", conversationId);
 
+    // Get sender's display name for the notification
+    const { data: senderProfile } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .single();
+
+    const senderName = senderProfile?.display_name || "Someone";
+    const messagePreview = content.trim().substring(0, 50) + (content.trim().length > 50 ? "..." : "");
+
+    // Send push notification to recipient (fire and forget)
+    fetch(`${process.env.NEXT_PUBLIC_APP_URL || ""}/api/push/send`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recipientUserId: otherUserId,
+        title: `Message from ${senderName}`,
+        body: messagePreview,
+        url: "/connect",
+        tag: `conversation-${conversationId}`,
+      }),
+    }).catch((err) => console.error("[Messages] Push notification error:", err));
+
     return NextResponse.json({ message }, { status: 201 });
   } catch (error) {
     console.error("Error in POST /api/connect/conversations/[id]/messages:", error);

@@ -3,6 +3,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/supabase/types";
+import { registerPushNotifications } from "@/lib/push-notifications";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 interface User {
   id: string;
@@ -208,7 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: AuthChangeEvent, session: Session | null) => {
         console.log("[AuthContext] Auth state changed:", event, session?.user?.email);
 
         if (!isMounted.current) {
@@ -216,12 +218,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        if (event === "SIGNED_IN" && session?.user) {
+        if (event === "INITIAL_SESSION") {
+          // Initial session loaded from storage - refresh user data
+          if (session?.user) {
+            console.log("[AuthContext] Initial session found, loading user data...");
+            await refreshUser();
+            // Register for push notifications if user is logged in
+            registerPushNotifications(session.user.id, supabase).catch(console.error);
+          } else {
+            console.log("[AuthContext] No initial session");
+            setUser(null);
+            setProfile(null);
+            setIsLoading(false);
+            hasInitialized.current = true;
+          }
+        } else if (event === "SIGNED_IN" && session?.user) {
           // Only refresh if initial load has already completed
           // Otherwise the initial refreshUser() call handles it
           if (hasInitialized.current) {
             console.log("[AuthContext] User signed in, refreshing...");
             await refreshUser();
+            // Register for push notifications after sign in
+            registerPushNotifications(session.user.id, supabase).catch(console.error);
           } else {
             console.log("[AuthContext] Skipping SIGNED_IN refresh - initial load handles it");
           }
@@ -233,8 +251,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsLoading(false);
           }
         } else if (event === "TOKEN_REFRESHED") {
-          // Do nothing - token refresh doesn't require re-fetching user data
-          console.log("[AuthContext] Token refreshed (no action needed)");
+          // Token refreshed silently - no action needed
+          // The session is automatically updated by Supabase client
+          console.log("[AuthContext] Token refreshed (session updated silently)");
         } else if (event === "USER_UPDATED") {
           console.log("[AuthContext] User updated, refreshing...");
           await refreshUser();
