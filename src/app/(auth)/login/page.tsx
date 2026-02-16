@@ -19,6 +19,7 @@ import {
   type ForgotPasswordInput
 } from "@/lib/validation";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 type AuthMode = "signin" | "signup" | "forgot-password" | "check-email" | "complete-profile";
 
@@ -27,46 +28,30 @@ function LoginForm() {
   const router = useRouter();
   const error = searchParams.get("error");
 
+  // Use AuthContext as single source of truth for auth state
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
   // Create supabase client once and memoize it
-  const supabase = useMemo(() => {
-    console.log("[Login] Creating Supabase client...");
-    const client = createClient();
-    console.log("[Login] Supabase client created");
-    return client;
-  }, []);
+  const supabase = useMemo(() => createClient(), []);
 
   // Track if component is mounted to prevent state updates after unmount
   const isMounted = useRef(true);
+
+  // Redirect to /connect if already authenticated (AuthContext is source of truth)
   useEffect(() => {
-    console.log("[Login] Component mounted");
+    if (isAuthenticated && !authLoading) {
+      console.log("[Login] User authenticated via AuthContext, redirecting to /connect");
+      router.push("/connect");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  // Track mount state for cleanup
+  useEffect(() => {
     isMounted.current = true;
-
-    // Check for existing session - but don't make new API calls
-    // AuthContext already handles this, we just need to redirect if already logged in
-    const checkExistingSession = async () => {
-      try {
-        // Use getSession which uses cached data, not getUser which makes an API call
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session && isMounted.current) {
-          console.log("[Login] User already logged in, redirecting...");
-          router.push("/connect");
-        }
-      } catch (err) {
-        // Ignore AbortError - this happens during React StrictMode double-mount
-        if (err instanceof Error && err.name === "AbortError") {
-          console.log("[Login] Session check aborted (React StrictMode, safe to ignore)");
-          return;
-        }
-        console.error("[Login] Session check error:", err);
-      }
-    };
-    checkExistingSession();
-
     return () => {
-      console.log("[Login] Component unmounting");
       isMounted.current = false;
     };
-  }, [supabase, router]);
+  }, []);
 
   const [mode, setMode] = useState<AuthMode>("signin");
   const [isLoading, setIsLoading] = useState(false);
