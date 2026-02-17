@@ -360,18 +360,26 @@ function ConnectContent() {
 
       if (data.checkedOut) {
         setMyCheckin(null);
+        fetchCheckins();
         toast({
-          title: "Check-in Deactivated",
-          description: "You have left BVI waters.",
-          variant: "destructive",
+          title: "Check-in Expired",
+          description: "Your check-in has expired. Check in again to reconnect.",
+        });
+      } else if (data.movedAway) {
+        // Ask user if they've moved - show a gentle prompt
+        toast({
+          title: "Still at your anchorage?",
+          description: `You appear to be ${data.distanceKm}km away. Check out if you've moved.`,
+          duration: 10000,
         });
       } else if (response.ok) {
         setMyCheckin(data.checkin);
       }
     } catch (error) {
-      console.error("Failed to verify location:", error);
+      // GPS failed - that's ok, just skip this verification
+      console.log("[Verify] GPS check failed, skipping:", error);
     }
-  }, [getCurrentLocation, toast]);
+  }, [getCurrentLocation, toast, fetchCheckins]);
 
   // Keep the ref updated with the latest verifyLocation
   useEffect(() => {

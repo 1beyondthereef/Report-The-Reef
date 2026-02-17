@@ -16,8 +16,8 @@ export const BVI_CHECKIN_BOUNDS = {
 
 // Check-in configuration
 export const CHECKIN_CONFIG = {
-  EXPIRY_HOURS: 8,
-  VERIFICATION_INTERVAL_HOURS: 2,
+  EXPIRY_HOURS: 48,
+  VERIFICATION_INTERVAL_HOURS: 6,
   MAX_DISTANCE_FROM_ANCHORAGE_KM: 5, // Max distance to suggest an anchorage
 } as const;
 

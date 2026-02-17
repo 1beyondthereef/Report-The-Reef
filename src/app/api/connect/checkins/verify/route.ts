@@ -1,31 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { BVI_CHECKIN_BOUNDS } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
-// TODO: Re-enable BVI location restriction after testing phase - March 2026
-const LOCATION_RESTRICTION_ENABLED = false;
+// 5 nautical miles in kilometers
+const AUTO_CHECKOUT_DISTANCE_KM = 9.3;
 
 /**
- * Check if coordinates are within BVI waters
+ * Calculate distance between two points using Haversine formula
+ * Returns distance in kilometers
  */
-function isWithinBVI(lat: number, lng: number): boolean {
-  if (!LOCATION_RESTRICTION_ENABLED) {
-    return true;
-  }
-
-  return (
-    lat >= BVI_CHECKIN_BOUNDS.minLat &&
-    lat <= BVI_CHECKIN_BOUNDS.maxLat &&
-    lng >= BVI_CHECKIN_BOUNDS.minLng &&
-    lng <= BVI_CHECKIN_BOUNDS.maxLng
-  );
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 /**
  * POST /api/connect/checkins/verify - Verify user's location for active check-in
- * Updates last_verified_at timestamp. If user has left BVI waters, deactivates check-in.
+ * Updates last_verified_at timestamp. Shows warning if user moved far from anchorage.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -51,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's active check-in
-    const { data: activeCheckin, error: fetchError } = await supabase
+    const { data: checkin, error: fetchError } = await supabase
       .from("checkins")
       .select("*")
       .eq("user_id", user.id)
@@ -61,42 +60,51 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .single();
 
-    if (fetchError || !activeCheckin) {
+    if (fetchError || !checkin) {
       return NextResponse.json({ checkedOut: true });
     }
 
-    // Check if user is still within BVI waters
-    if (!isWithinBVI(gpsLat, gpsLng)) {
-      // User has left BVI, deactivate check-in
+    // Calculate distance from check-in location
+    const distance = calculateDistance(
+      checkin.location_lat,
+      checkin.location_lng,
+      gpsLat,
+      gpsLng
+    );
+
+    // If user has moved more than 5 nautical miles from their anchorage, flag it
+    // but DON'T auto-checkout - instead return a warning so the frontend can ask
+    if (distance > AUTO_CHECKOUT_DISTANCE_KM) {
+      // Update GPS but flag that they may have moved
       await supabase
         .from("checkins")
-        .update({ is_active: false })
-        .eq("id", activeCheckin.id);
+        .update({
+          last_verified_at: new Date().toISOString(),
+          actual_gps_lat: gpsLat,
+          actual_gps_lng: gpsLng,
+        })
+        .eq("id", checkin.id);
 
-      return NextResponse.json({ checkedOut: true });
+      return NextResponse.json({
+        checkin,
+        movedAway: true,
+        distanceKm: Math.round(distance * 10) / 10,
+      });
     }
 
-    // Update last_verified_at timestamp
-    const { data: updatedCheckin, error: updateError } = await supabase
+    // User is still near their anchorage - just update verification timestamp
+    const { data: updatedCheckin } = await supabase
       .from("checkins")
       .update({
         last_verified_at: new Date().toISOString(),
         actual_gps_lat: gpsLat,
         actual_gps_lng: gpsLng,
       })
-      .eq("id", activeCheckin.id)
+      .eq("id", checkin.id)
       .select()
       .single();
 
-    if (updateError) {
-      console.error("Error updating check-in verification:", updateError);
-      return NextResponse.json(
-        { error: "Failed to verify location" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ checkin: updatedCheckin });
+    return NextResponse.json({ checkin: updatedCheckin || checkin });
   } catch (error) {
     console.error("Error in POST /api/connect/checkins/verify:", error);
     return NextResponse.json(
