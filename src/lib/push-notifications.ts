@@ -33,15 +33,15 @@ export async function registerPushNotifications(
 
     if (!subscription) {
       // Create new subscription
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
       if (!vapidKey) {
         console.error("[Push] VAPID public key not configured");
         return false;
       }
 
       console.log("[Push] Creating new push subscription...");
-      console.log("[Push] VAPID key value:", process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.substring(0, 20) + "...");
-      console.log("[Push] Raw VAPID key:", JSON.stringify(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY), "length:", process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.length);
+      console.log("[Push] VAPID key value:", process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()?.substring(0, 20) + "...");
+      console.log("[Push] Raw VAPID key:", JSON.stringify(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()), "length:", process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()?.length);
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
