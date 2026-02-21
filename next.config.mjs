@@ -2,9 +2,9 @@ import withPWAInit from 'next-pwa';
 
 const withPWA = withPWAInit({
   dest: 'public',
-  register: true,
+  register: false, // We register manually in ServiceWorkerRegistration.tsx
   skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
+  disable: true, // Disable auto-generation - we use a manual sw.js
   // Import custom push notification handlers
   importScripts: ['/push-sw.js'],
   runtimeCaching: [
