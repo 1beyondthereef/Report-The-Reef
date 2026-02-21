@@ -57,9 +57,7 @@ public/IMG_*
 !public/Logo Design*.png
 !public/images/
 
-# PWA generated files
-public/sw.js
-public/sw.js.map
+# PWA generated files (workbox only - sw.js is now manually maintained)
 public/workbox-*.js
 public/workbox-*.js.map
 
