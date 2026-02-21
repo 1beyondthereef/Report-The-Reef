@@ -41,6 +41,7 @@ export async function registerPushNotifications(
 
       console.log("[Push] Creating new push subscription...");
       console.log("[Push] VAPID key value:", process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.substring(0, 20) + "...");
+      console.log("[Push] Raw VAPID key:", JSON.stringify(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY), "length:", process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.length);
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidKey) as BufferSource,
