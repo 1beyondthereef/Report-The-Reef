@@ -53,6 +53,6 @@ export const config = {
      * - service worker files
      * - public folder files
      */
-    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|push-sw\\.js|manifest\\.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|mov|MOV|MP4)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|push-sw\\.js|manifest\\.json|login|verify|auth|api/auth|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|mov|MOV|MP4)$).*)",
   ],
 };
