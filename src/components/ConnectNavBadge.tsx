@@ -34,7 +34,7 @@ export function ConnectNavBadge() {
   if (unreadCount === 0) return null;
 
   return (
-    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-md">
+    <span className="absolute -top-4 left-1/2 -translate-x-1/2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-md">
       {unreadCount > 9 ? "9+" : unreadCount}
     </span>
   );
