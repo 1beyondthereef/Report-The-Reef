@@ -57,7 +57,7 @@ export async function registerPushNotifications(
         updated_at: new Date().toISOString(),
       },
       {
-        onConflict: "user_id,subscription",
+        onConflict: "user_id",
       }
     );
 
