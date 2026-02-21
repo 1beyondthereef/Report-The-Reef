@@ -19,8 +19,8 @@ interface PushRequest {
 export async function POST(request: Request) {
   try {
     // Check VAPID configuration at runtime (not build time)
-    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
+    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY?.trim();
 
     if (!vapidPublicKey || !vapidPrivateKey) {
       console.error("[Push API] VAPID keys not configured");
