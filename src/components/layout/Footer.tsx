@@ -52,7 +52,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/social" className="text-muted-foreground hover:text-foreground">
+                <Link href="/connect" className="text-muted-foreground hover:text-foreground">
                   Connect with Boaters
                 </Link>
               </li>

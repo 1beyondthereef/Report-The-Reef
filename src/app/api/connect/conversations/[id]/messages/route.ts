@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth } from "@/lib/api-helpers";
+import { sendPushNotification } from "@/lib/push";
 
 export const dynamic = 'force-dynamic';
 
@@ -11,15 +12,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const auth = await withAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { supabase, user } = auth;
 
     const { id: conversationId } = await params;
     const searchParams = request.nextUrl.searchParams;
@@ -99,15 +94,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
-    }
+    const auth = await withAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { supabase, user } = auth;
 
     const { id: conversationId } = await params;
     const body = await request.json();
@@ -197,17 +186,12 @@ export async function POST(
     const senderName = senderProfile?.display_name || "Someone";
     const messagePreview = content.trim().substring(0, 50) + (content.trim().length > 50 ? "..." : "");
 
-    // Send push notification to recipient (fire and forget)
-    fetch(`${process.env.NEXT_PUBLIC_APP_URL || ""}/api/push/send`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        recipientUserId: otherUserId,
-        title: `Message from ${senderName}`,
-        body: messagePreview,
-        url: "/connect",
-        tag: `conversation-${conversationId}`,
-      }),
+    sendPushNotification({
+      recipientUserId: otherUserId,
+      title: `Message from ${senderName}`,
+      body: messagePreview,
+      url: "/connect",
+      tag: `conversation-${conversationId}`,
     }).catch((err) => console.error("[Messages] Push notification error:", err));
 
     return NextResponse.json({ message }, { status: 201 });

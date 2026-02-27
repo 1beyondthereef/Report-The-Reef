@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createIncidentSchema } from "@/lib/validation";
+import { isAdmin } from "@/lib/api-helpers";
 
 export const dynamic = 'force-dynamic';
+
+const PUBLIC_INCIDENT_COLUMNS = "id, activity_type, description, status, latitude, longitude, observed_at, photo_urls, contact_name, contact_email, reporter_id, created_at, updated_at";
+const ADMIN_INCIDENT_COLUMNS = `${PUBLIC_INCIDENT_COLUMNS}, internal_notes`;
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,9 +18,12 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
 
+    const { data: { user } } = await supabase.auth.getUser();
+    const columns = user && isAdmin(user.id) ? ADMIN_INCIDENT_COLUMNS : PUBLIC_INCIDENT_COLUMNS;
+
     let query = supabase
       .from("incidents")
-      .select("*", { count: "exact" })
+      .select(columns, { count: "exact" })
       .order("created_at", { ascending: false })
       .range((page - 1) * limit, page * limit - 1);
 

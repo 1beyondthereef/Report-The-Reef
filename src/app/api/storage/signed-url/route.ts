@@ -1,16 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { STORAGE_BUCKETS } from "@/lib/supabase/storage";
 
 export const dynamic = 'force-dynamic';
 
+const ALLOWED_BUCKETS = new Set<string>(Object.values(STORAGE_BUCKETS));
+
 /**
- * Generate signed URLs for private bucket files
+ * Generate signed URLs for private bucket files.
+ * Requires authentication. Only allows known buckets.
  * POST /api/storage/signed-url
  * Body: { paths: string[], bucket: string }
  */
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { paths, bucket } = await request.json();
 
     if (!paths || !Array.isArray(paths) || paths.length === 0) {
@@ -27,13 +37,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate signed URLs for each path (valid for 1 hour)
+    if (!ALLOWED_BUCKETS.has(bucket)) {
+      return NextResponse.json(
+        { error: "Invalid bucket" },
+        { status: 403 }
+      );
+    }
+
     const signedUrls: Record<string, string> = {};
 
     for (const path of paths) {
       const { data, error } = await supabase.storage
         .from(bucket)
-        .createSignedUrl(path, 3600); // 1 hour expiry
+        .createSignedUrl(path, 3600);
 
       if (error) {
         console.error(`Failed to create signed URL for ${path}:`, error);

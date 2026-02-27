@@ -2,7 +2,7 @@
 // This loads directly from the seed data file so it works on Vercel
 // without needing a persistent database for anchorage information
 
-import { anchoragesData } from "../../prisma/seed-data/anchorages";
+import { anchoragesData } from "@/data/anchorages";
 
 export interface Anchorage {
   id: string;

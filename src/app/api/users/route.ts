@@ -1,32 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { withAuth, getBlockedUserIds } from "@/lib/api-helpers";
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const auth = await withAuth();
+    if (auth instanceof NextResponse) return auth;
+    const { supabase, user } = auth;
 
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
 
-    // Get list of blocked users (both directions)
-    const { data: blocked } = await supabase
-      .from("blocked_users")
-      .select("blocker_id, blocked_id")
-      .or(`blocker_id.eq.${user.id},blocked_id.eq.${user.id}`);
+    const uniqueBlockedIds = await getBlockedUserIds(supabase, user.id);
 
-    const blockedIds = (blocked || []).flatMap((b) => [b.blocker_id, b.blocked_id]);
-    const uniqueBlockedIds = Array.from(new Set(blockedIds)).filter((id) => id !== user.id);
-
-    // Build query
     let query = supabase
       .from("profiles")
       .select("id, display_name, avatar_url, vessel_name, home_port, bio", { count: "exact" })
@@ -37,9 +26,17 @@ export async function GET(request: NextRequest) {
       query = query.not("id", "in", `(${uniqueBlockedIds.join(",")})`);
     }
 
-    // Apply search filter
     if (search) {
-      query = query.or(`display_name.ilike.%${search}%,vessel_name.ilike.%${search}%,home_port.ilike.%${search}%`);
+      const sanitized = search
+        .replace(/[%_,()\\]/g, "")
+        .trim()
+        .slice(0, 100);
+      if (sanitized) {
+        const pattern = `%${sanitized}%`;
+        query = query.or(
+          `display_name.ilike.${pattern},vessel_name.ilike.${pattern},home_port.ilike.${pattern}`
+        );
+      }
     }
 
     // Apply pagination

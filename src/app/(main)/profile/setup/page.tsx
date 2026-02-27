@@ -128,7 +128,7 @@ export default function ProfileSetupPage() {
       console.log("Uploading avatar to:", filePath);
 
       const { error: uploadError } = await supabase.storage
-        .from("profile-photos")
+        .from("avatars")
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
@@ -144,7 +144,7 @@ export default function ProfileSetupPage() {
       }
 
       const { data: { publicUrl } } = supabase.storage
-        .from("profile-photos")
+        .from("avatars")
         .getPublicUrl(filePath);
 
       console.log("Avatar uploaded successfully:", publicUrl);

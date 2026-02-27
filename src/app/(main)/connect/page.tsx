@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "rea
 import Link from "next/link";
 import {
   MessageCircle,
-  Send,
-  ArrowLeft,
   Loader2,
   MoreVertical,
   Ban,
@@ -66,91 +64,14 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/context/AuthContext";
 import { cn, getInitials, formatRelativeTime, truncate } from "@/lib/utils";
-import { CHECKIN_CONFIG, MESSAGE_POLL_INTERVAL, BVI_ANCHORAGES } from "@/lib/constants";
+import { CHECKIN_CONFIG, BVI_ANCHORAGES } from "@/lib/constants";
 import { ConnectMap } from "@/components/maps/ConnectMap";
+import { ChatView } from "@/components/connect/ChatView";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { usePolling } from "@/hooks/usePolling";
 import { useToast } from "@/hooks/use-toast";
+import type { Profile, CheckedInUser, MyCheckin, Anchorage, Conversation } from "@/types/connect";
 
-interface Profile {
-  id: string;
-  display_name: string;
-  vessel_name?: string;
-  boat_name?: string;
-  bio?: string;
-  avatar_url?: string;
-  show_on_map: boolean;
-}
-
-interface CheckedInUser {
-  id: string;
-  user_id: string;
-  location_name: string;
-  location_lat: number;
-  location_lng: number;
-  anchorage_id?: string;
-  note?: string;
-  checked_in_at: string;
-  expires_at: string;
-  profiles: {
-    id: string;
-    display_name: string;
-    vessel_name?: string;
-    boat_name?: string;
-    avatar_url?: string;
-    show_on_map: boolean;
-  };
-}
-
-interface MyCheckin {
-  id: string;
-  location_name: string;
-  location_lat: number;
-  location_lng: number;
-  anchorage_id?: string;
-  note?: string;
-  visibility?: string;
-  checked_in_at: string;
-  expires_at: string;
-  last_verified_at: string;
-  is_active: boolean;
-}
-
-interface Anchorage {
-  id: string;
-  name: string;
-  island: string;
-  lat: number;
-  lng: number;
-  distance?: number;
-  checkinCount?: number;
-}
-
-interface Conversation {
-  id: string;
-  otherUser: {
-    id: string;
-    display_name: string;
-    vessel_name?: string;
-    boat_name?: string;
-    avatar_url?: string;
-  };
-  lastMessage?: {
-    id: string;
-    content: string;
-    sender_id: string;
-    created_at: string;
-  };
-  unreadCount: number;
-}
-
-interface Message {
-  id: string;
-  content: string;
-  sender_id: string;
-  created_at: string;
-  read_at?: string;
-}
-
-// GPS verification interval (every 2 hours)
 const VERIFICATION_INTERVAL = CHECKIN_CONFIG.VERIFICATION_INTERVAL_HOURS * 60 * 60 * 1000;
 
 // Group anchorages by island
@@ -182,7 +103,6 @@ function ConnectContent() {
   const [checkinStep, setCheckinStep] = useState<"auto" | "select" | "confirm">("auto");
   const [selectedAnchorage, setSelectedAnchorage] = useState<Anchorage | null>(null);
   const [nearestAnchorage, setNearestAnchorage] = useState<Anchorage | null>(null);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [checkinNote, setCheckinNote] = useState("");
   const [checkinVisibility, setCheckinVisibility] = useState<"public" | "friends">("public");
@@ -212,10 +132,6 @@ function ConnectContent() {
   // Chat state
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [selectedMapUser, setSelectedMapUser] = useState<CheckedInUser | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Track previous unread count for new message detection
   const prevUnreadRef = useRef(0);
@@ -238,6 +154,9 @@ function ConnectContent() {
 
   // Photo upload state
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  // Geolocation hook
+  const { userLocation, getCurrentLocation } = useGeolocation();
 
   // All anchorages from constants - single source of truth
   const allAnchorages: Anchorage[] = useMemo(() => {
@@ -297,51 +216,6 @@ function ConnectContent() {
       console.error("Failed to fetch conversations:", error);
     }
   }, []);
-
-  const fetchMessages = useCallback(async (conversationId: string) => {
-    try {
-      const response = await fetch(`/api/connect/conversations/${conversationId}/messages`);
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data.messages || []);
-      }
-    } catch (error) {
-      console.error("Failed to fetch messages:", error);
-    }
-  }, []);
-
-  // Geolocation options - optimized for mobile
-  const geoOptions: PositionOptions = useMemo(() => ({
-    enableHighAccuracy: false,  // false is faster and works better on mobile
-    timeout: 15000,             // 15 second timeout
-    maximumAge: 300000,         // accept cached position up to 5 minutes old
-  }), []);
-
-  // Get user's current GPS location
-  const getCurrentLocation = useCallback((): Promise<{ lat: number; lng: number }> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error("Geolocation is not supported"));
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const loc = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setUserLocation(loc);
-          resolve(loc);
-        },
-        (error) => {
-          console.error("[GPS] Error getting location:", error.code, error.message);
-          reject(error);
-        },
-        geoOptions
-      );
-    });
-  }, [geoOptions]);
 
   // Ref to hold the latest verifyLocation function (avoids dependency cycle)
   const verifyLocationRef = useRef<() => Promise<void>>();
@@ -722,43 +596,6 @@ function ConnectContent() {
     }
   }, [profile, toast]);
 
-  // Send message
-  const sendMessage = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedConversation || !newMessage.trim() || isSending) return;
-
-    setIsSending(true);
-
-    try {
-      const response = await fetch(
-        `/api/connect/conversations/${selectedConversation.id}/messages`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: newMessage }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setMessages((prev) => [...prev, data.message]);
-        setNewMessage("");
-        fetchConversations();
-      } else {
-        const data = await response.json();
-        toast({
-          title: "Error",
-          description: data.error || "Failed to send message",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Send message error:", error);
-    } finally {
-      setIsSending(false);
-    }
-  }, [selectedConversation, newMessage, isSending, fetchConversations, toast]);
-
   // Start conversation with a user
   const startConversationWith = useCallback(async (userId: string) => {
     try {
@@ -773,7 +610,6 @@ function ConnectContent() {
         setSelectedConversation(data.conversation);
         setSelectedMapUser(null);
         setSelectedAnchoragePanel(null);
-        fetchMessages(data.conversation.id);
         fetchConversations();
       } else {
         const data = await response.json();
@@ -786,7 +622,7 @@ function ConnectContent() {
     } catch (error) {
       console.error("Start conversation error:", error);
     }
-  }, [fetchMessages, fetchConversations, toast]);
+  }, [fetchConversations, toast]);
 
   // Block user
   const blockUser = useCallback(async (userId: string) => {
@@ -881,13 +717,8 @@ function ConnectContent() {
     loadData();
   }, [isAuthenticated, fetchProfile, fetchCheckins, fetchConversations]);
 
-  // Poll for new conversations/messages (for unread badge updates)
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const interval = setInterval(fetchConversations, 15000); // every 15 seconds
-    return () => clearInterval(interval);
-  }, [isAuthenticated, fetchConversations]);
+  // Poll for conversations with visibility-based pausing
+  usePolling(fetchConversations, 15000, isAuthenticated);
 
   // Detect new messages and show toast when not on messages tab
   useEffect(() => {
@@ -951,29 +782,8 @@ function ConnectContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myCheckin?.id]);
 
-  // Polling for checkins on map tab
-  useEffect(() => {
-    if (!isAuthenticated || activeTab !== "map") return;
-
-    const interval = setInterval(fetchCheckins, 30000);
-    return () => clearInterval(interval);
-  }, [isAuthenticated, activeTab, fetchCheckins]);
-
-  // Polling for messages
-  useEffect(() => {
-    if (!isAuthenticated || !selectedConversation) return;
-
-    const interval = setInterval(() => {
-      fetchMessages(selectedConversation.id);
-    }, MESSAGE_POLL_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [isAuthenticated, selectedConversation, fetchMessages]);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // Poll for checkins on map tab with visibility-based pausing
+  usePolling(fetchCheckins, 30000, isAuthenticated && activeTab === "map");
 
   // Populate edit form
   useEffect(() => {
@@ -1015,110 +825,17 @@ function ConnectContent() {
     );
   }
 
-  // Chat view
-  if (selectedConversation) {
+  // Chat view — delegated to ChatView component
+  if (selectedConversation && currentUser) {
     return (
-      <div className="flex h-[calc(100vh-4rem-4rem)] flex-col md:h-[calc(100vh-4rem)]">
-        {/* Chat Header */}
-        <div className="flex items-center justify-between border-b bg-background px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => setSelectedConversation(null)}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <button
-              onClick={() => viewUserProfile(selectedConversation.otherUser.id)}
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-            >
-              <Avatar>
-                <AvatarImage src={selectedConversation.otherUser.avatar_url || undefined} />
-                <AvatarFallback>
-                  {selectedConversation.otherUser.display_name
-                    ? getInitials(selectedConversation.otherUser.display_name)
-                    : "?"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="text-left">
-                <p className="font-medium">{selectedConversation.otherUser.display_name || "Boater"}</p>
-                {selectedConversation.otherUser.boat_name && (
-                  <p className="text-xs text-muted-foreground">{selectedConversation.otherUser.boat_name}</p>
-                )}
-                <p className="text-xs text-blue-400">Tap to view profile</p>
-              </div>
-            </button>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => blockUser(selectedConversation.otherUser.id)}
-              >
-                <Ban className="mr-2 h-4 w-4" />
-                Block User
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center text-center">
-              <MessageCircle className="h-12 w-12 text-muted-foreground/30" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                No messages yet. Start the conversation!
-              </p>
-            </div>
-          ) : (
-            messages.map((message) => {
-              const isMine = message.sender_id === currentUser?.id;
-              return (
-                <div key={message.id} className={cn("flex", isMine ? "justify-end" : "justify-start")}>
-                  <div
-                    className={cn(
-                      "max-w-[75%] rounded-2xl px-4 py-2",
-                      isMine
-                        ? "bg-primary text-primary-foreground rounded-br-sm"
-                        : "bg-muted rounded-bl-sm"
-                    )}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    <p
-                      className={cn(
-                        "mt-1 text-[10px]",
-                        isMine ? "text-primary-foreground/70" : "text-muted-foreground"
-                      )}
-                    >
-                      {formatRelativeTime(message.created_at)}
-                    </p>
-                  </div>
-                </div>
-              );
-            })
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Message Input */}
-        <form onSubmit={sendMessage} className="border-t bg-background p-4">
-          <div className="flex gap-2">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1"
-              disabled={isSending}
-            />
-            <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending}>
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </form>
-      </div>
+      <ChatView
+        conversation={selectedConversation}
+        currentUserId={currentUser.id}
+        onBack={() => setSelectedConversation(null)}
+        onBlockUser={blockUser}
+        onViewProfile={viewUserProfile}
+        onMessageSent={fetchConversations}
+      />
     );
   }
 
@@ -1598,7 +1315,6 @@ function ConnectContent() {
                     key={conversation.id}
                     onClick={() => {
                       setSelectedConversation(conversation);
-                      fetchMessages(conversation.id);
                     }}
                     className="flex w-full items-center gap-4 rounded-xl border p-4 text-left transition-colors hover:bg-muted"
                   >

@@ -1,22 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { isAdmin } from "@/lib/api-helpers";
 
 export const dynamic = 'force-dynamic';
 
+const PUBLIC_COLUMNS = "id, activity_type, description, status, latitude, longitude, observed_at, photo_urls, contact_name, contact_email, reporter_id, created_at, updated_at";
+const ADMIN_COLUMNS = `${PUBLIC_COLUMNS}, internal_notes`;
+
 /**
  * Update an incident (status, internal notes, etc.)
- * PATCH /api/incidents/[id]
+ * PATCH /api/incidents/[id] — admin only
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const { id } = params;
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!isAdmin(user.id)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { id } = await params;
     const body = await request.json();
 
-    // Only allow updating specific fields
     const allowedFields = ["status", "internal_notes"];
     const updateData: Record<string, unknown> = {};
 
@@ -33,7 +46,6 @@ export async function PATCH(
       );
     }
 
-    // Validate status if provided
     if (updateData.status) {
       const validStatuses = ["pending", "in_progress", "reviewed", "resolved", "dismissed"];
       if (!validStatuses.includes(updateData.status as string)) {
@@ -70,20 +82,24 @@ export async function PATCH(
 }
 
 /**
- * Get a single incident
+ * Get a single incident.
+ * Public callers get public-safe fields; admins also get internal_notes.
  * GET /api/incidents/[id]
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
-    const { id } = params;
+    const { id } = await params;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    const columns = user && isAdmin(user.id) ? ADMIN_COLUMNS : PUBLIC_COLUMNS;
 
     const { data: incident, error } = await supabase
       .from("incidents")
-      .select("*")
+      .select(columns)
       .eq("id", id)
       .single();
 

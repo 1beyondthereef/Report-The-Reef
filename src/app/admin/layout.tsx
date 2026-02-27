@@ -7,19 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-const ADMIN_PASSWORD = "Octopusfun1*";
 const AUTH_KEY = "rtr_admin_auth";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isValidating, setIsValidating] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    // Check if already authenticated
     const authToken = sessionStorage.getItem(AUTH_KEY);
     if (authToken === "authenticated") {
       setIsAuthenticated(true);
@@ -27,14 +26,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setIsLoading(false);
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
-      sessionStorage.setItem(AUTH_KEY, "authenticated");
-      setIsAuthenticated(true);
-      setError("");
-    } else {
-      setError("Incorrect password");
+    setIsValidating(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (response.ok) {
+        sessionStorage.setItem(AUTH_KEY, "authenticated");
+        setIsAuthenticated(true);
+      } else {
+        setError("Incorrect password");
+      }
+    } catch {
+      setError("Failed to verify password. Please try again.");
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -74,12 +87,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="text-center"
+                  disabled={isValidating}
                 />
                 {error && (
                   <p className="mt-2 text-sm text-destructive text-center">{error}</p>
                 )}
               </div>
-              <Button type="submit" className="w-full rounded-full">
+              <Button type="submit" className="w-full rounded-full" disabled={isValidating}>
+                {isValidating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
                 Access Admin
               </Button>
             </form>
@@ -91,7 +108,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Admin Header */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center justify-between">
           <div className="flex items-center gap-6">
@@ -121,7 +137,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </header>
 
-      {/* Content */}
       <main className="container py-6">
         {children}
       </main>

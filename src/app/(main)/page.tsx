@@ -55,7 +55,7 @@ const features = [
     title: "Connect",
     subtitle: "Join the Community",
     description: "Meet fellow sailors, share experiences, and build lasting connections on the water.",
-    href: "/social",
+    href: "/connect",
     gradient: "from-violet-500/10 to-purple-500/10",
     iconColor: "text-violet-600 dark:text-violet-400",
   },

@@ -197,7 +197,7 @@ function ProfileContent() {
       const filePath = `avatars/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("profile-photos")
+        .from("avatars")
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
@@ -207,7 +207,7 @@ function ProfileContent() {
       }
 
       const { data: { publicUrl } } = supabase.storage
-        .from("profile-photos")
+        .from("avatars")
         .getPublicUrl(filePath);
 
       setAvatarUrl(publicUrl);
