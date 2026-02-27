@@ -10,8 +10,8 @@ const LOCATION_RESTRICTION_ENABLED = false;
 
 // Default location for users outside BVI (The Bight, Norman Island)
 const DEFAULT_BVI_LOCATION = {
-  lat: 18.3200,
-  lng: -64.6200,
+  lat: 18.3166,
+  lng: -64.6193,
 };
 
 /**
