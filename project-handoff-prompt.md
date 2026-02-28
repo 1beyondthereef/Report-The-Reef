@@ -1,5 +1,7 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
+*Last updated: February 28, 2026*
+
 ## What This App Is
 Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://report-the-reef.vercel.app
 
@@ -8,14 +10,24 @@ Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating 
 **Core Features:**
 1. **Report** — Report marine incidents (groundings, pollution, anchor damage, illegal activity) with GPS location and photos
 2. **Wildlife** — Log megafauna sightings (whales, dolphins, turtles, rays) with photos and GPS for citizen science
-3. **Explore** — Browse all dive sites, anchorages, marine parks, national parks, bird sanctuaries, fisheries zones in the BVI on an interactive map
-4. **Connect** — Check in at anchorages, see who's nearby on a real-time map, and message other boaters directly (in-app messaging)
+3. **Explore** — Browse 64 BVI anchorages with detailed information (descriptions, depth, holding, protection, amenities, habitat warnings, moorings) on an interactive map. Also includes dive sites, marine parks, national parks, bird sanctuaries, fisheries zones.
+4. **Connect** — Check in at 49 overnight-eligible anchorages, see who's nearby on a real-time map, and message other boaters directly (in-app messaging)
 5. **Reserve** — Mooring reservations (integrates with BoatyBall via iframe/redirect)
 6. **Home** — Dashboard with stats (incidents reported, anchorages, moorings, community members)
 
 ---
 
 ## Project Structure — Key Files
+
+### Anchorage Data (Two Datasets)
+
+The app has two independent anchorage datasets that are kept in sync via an automated script:
+
+- **Explore dataset** — `src/data/anchorages.ts` exports `anchoragesData` (64 detailed entries using the `AnchorageSeedData` interface). Transformed by `src/lib/anchorages-data.ts` into the `Anchorage` format, served via `/api/anchorages`. IDs are auto-generated as `anchorage-1`, `anchorage-2`, etc. (not persisted in DB).
+- **Connect dataset** — `src/lib/constants.ts` exports `BVI_ANCHORAGES` (49 simple entries: id, name, island, lat, lng). Consumed by `src/app/(main)/connect/page.tsx`, `src/components/maps/ConnectMap.tsx`, and `src/app/api/connect/checkins/route.ts`. IDs are semantic slugs (e.g., `the-bight`, `great-harbour-jvd`) and **persisted in the Supabase `checkins` table** — never change them.
+- **Sync script** — `scripts/check-anchorage-sync.ts` validates coordinate consistency between the two datasets. Run via `npm run check:anchorages`. Checks: coordinate drift (0.001° tolerance), BVI bounding box, required fields, duplicate names, intentional non-overlaps, and the-bight reference coordinates.
+
+**Key constraint:** 49 of the 64 Explore entries overlap with Connect. 15 are intentionally Explore-only (day-use sites, private islands, removed-from-Connect entries). The sync script tracks both sets explicitly.
 
 ### Auth
 - `src/context/AuthContext.tsx` — Single source of truth for auth state. Uses `hasInitialized` ref to prevent double-refresh on page load. Calls `registerPushNotifications` on SIGNED_IN and INITIAL_SESSION events.
@@ -26,18 +38,22 @@ Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating 
 - `src/lib/supabase/server.ts` — Server Supabase client with cookie handlers
 
 ### Connect (Social/Messaging)
-- `src/app/(main)/connect/page.tsx` — Main Connect page (~1000+ lines). Contains: check-in system, anchorage map (ConnectMap), user panels, messaging interface, profile viewing, anchorage browsing. This is the biggest file in the project.
-- `src/components/maps/ConnectMap.tsx` — Mapbox map showing anchorages with boater count badges. Markers update when count or selection changes.
+- `src/app/(main)/connect/page.tsx` — Main Connect page (~1800 lines). Contains: check-in system, anchorage map (ConnectMap), user panels, messaging interface, profile viewing, anchorage browsing, verification timer (6hr intervals), GPS distance checking, toast notifications. This is the biggest file in the project.
+- `src/components/maps/ConnectMap.tsx` — Mapbox map showing anchorages with boater count badges. Builds marker list from `BVI_ANCHORAGES` — only the 49 Connect entries appear as check-in-able map pins.
 - `src/components/ConnectNavBadge.tsx` — Red unread message count badge on the Connect nav icon. Polls /api/connect/conversations every 15 seconds.
 - `src/components/ServiceWorkerRegistration.tsx` — Registers /sw.js on mount. Imported in layout.tsx.
 
 ### Connect API Routes
-- `src/app/api/connect/checkins/route.ts` — GET (list active checkins), POST (check in at anchorage). Validates display_name and avatar_url before check-in.
+- `src/app/api/connect/checkins/route.ts` — GET (list active checkins), POST (check in at anchorage). Validates display_name and avatar_url before check-in. `DEFAULT_BVI_LOCATION` is derived from `BVI_ANCHORAGES` (not hardcoded).
 - `src/app/api/connect/checkins/verify/route.ts` — POST with GPS coords. Checks distance from anchorage (5 nautical miles / 9.3km threshold). Returns `movedAway: true` if too far instead of auto-checkout.
 - `src/app/api/connect/conversations/route.ts` — GET (list conversations with last message + unread count), POST (create/get conversation). Uses `chat_messages` table (NOT the `messages` table which is Supabase Realtime system table).
 - `src/app/api/connect/conversations/[id]/messages/route.ts` — GET (messages in conversation), POST (send message + trigger push notification to recipient)
 - `src/app/api/connect/profile/[id]/route.ts` — GET another user's profile
 - `src/app/api/connect/profile/photo/route.ts` — POST to upload profile photo. Limit: 20MB. Stores in Supabase Storage "avatars" bucket (public).
+
+### Explore API Routes
+- `src/app/api/anchorages/route.ts` — GET anchorages with optional `island` and `search` filters. Calls `searchAnchorages()` from `src/lib/anchorages-data.ts`.
+- `src/app/api/anchorages/[id]/route.ts` — GET single anchorage by ID (auto-generated `anchorage-N` format).
 
 ### Push Notifications
 - `src/lib/push-notifications.ts` — `registerPushNotifications()` function. Requests notification permission, subscribes to push via VAPID key, saves subscription to `push_subscriptions` table. **CRITICAL: uses `.trim()` on VAPID key because trailing spaces were causing atob failures.**
@@ -46,10 +62,13 @@ Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating 
 - `public/push-sw.js` — Push notification event handlers. Shows notifications, handles clicks (opens app to /connect).
 
 ### Other Key Files
-- `src/app/(main)/connect/page.tsx` — Also contains: verification timer (6hr intervals), GPS distance checking, toast notifications for moved-away warnings
-- `src/lib/constants.ts` — `CHECKIN_CONFIG`: EXPIRY_HOURS: 48, VERIFICATION_INTERVAL_HOURS: 6
+- `src/lib/constants.ts` — `BVI_ANCHORAGES` (49 entries), `CHECKIN_CONFIG` (EXPIRY_HOURS: 48, VERIFICATION_INTERVAL_HOURS: 6), `AUTO_CHECKIN_RADIUS_KM` (0.926km = 0.5nm), `HOLDING_TYPES` (sand, sand_mud, sand_rock, mud, grass, rocky, coral), `PROTECTION_LEVELS`, `BVI_BOUNDS`, `BVI_CHECKIN_BOUNDS`
+- `src/lib/geo-utils.ts` — Shared `calculateDistance()` haversine function
 - `next.config.mjs` — next-pwa has been REMOVED entirely. Manual SW only.
 - `prisma/seed.ts` — Excluded from tsconfig build (was causing PrismaClient import error)
+
+### Scripts
+- `scripts/check-anchorage-sync.ts` — Anchorage coordinate sync validation. Run via `npm run check:anchorages`.
 
 ---
 
@@ -57,7 +76,7 @@ Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating 
 
 ### Tables
 - `profiles` — id (uuid, references auth.users), display_name, avatar_url, vessel_name, boat_name, bio, created_at, updated_at
-- `checkins` — id, user_id, location_name, location_lat, location_lng, anchorage_id, is_active, visibility, expires_at, last_verified_at, actual_gps_lat, actual_gps_lng, created_at
+- `checkins` — id, user_id, location_name, location_lat, location_lng, **anchorage_id** (references BVI_ANCHORAGES IDs by convention, not FK), is_active, visibility, expires_at, last_verified_at, actual_gps_lat, actual_gps_lng, created_at. **anchorage_id values persist even if the entry is removed from BVI_ANCHORAGES.**
 - `conversations` — id, user1_id, user2_id, created_at, updated_at. UNIQUE(user1_id, user2_id)
 - `chat_messages` — id, conversation_id (references conversations), sender_id (references profiles), content, read_at, created_at. **NOT the `messages` table** (that's Supabase Realtime system table).
 - `push_subscriptions` — id, user_id, subscription (jsonb), created_at, updated_at. Has unique index on user_id.
@@ -96,8 +115,8 @@ Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating 
 2. ✅ Session persistence (stays logged in across browser restarts)
 3. ✅ Incident reporting with GPS and photo upload
 4. ✅ Wildlife sighting logging
-5. ✅ Explore page with all BVI sites on map
-6. ✅ Connect — check-in at anchorages (48hr expiry)
+5. ✅ Explore page with 64 detailed BVI anchorages on interactive map
+6. ✅ Connect — check-in at 49 overnight-eligible anchorages (48hr expiry)
 7. ✅ Connect — see boaters on map with count badges
 8. ✅ Connect — browse any anchorage's boaters
 9. ✅ Connect — in-app messaging (conversations persist forever)
@@ -108,6 +127,7 @@ Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating 
 14. ✅ Push notification sending (api/push/send returns sent:1)
 15. ✅ GPS verification with 5nm distance threshold (warns instead of auto-checkout)
 16. ✅ Unread message badge on Connect nav icon
+17. ✅ Anchorage sync validation script (`npm run check:anchorages`)
 
 ## What Needs Fixing / Testing
 1. **Push notifications not appearing on screen** — `sent:1` is returned but no notification shows. Possible causes:
@@ -129,6 +149,8 @@ Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating 
 
 8. **Chrome stale cache issues** — Old Workbox service worker from next-pwa was caching aggressively. After removing next-pwa, users with old cached data may need to clear site data. The new sw.js is simple and doesn't precache.
 
+9. **Anchorage data Phase 4 follow-ups** — See "BVI Anchorage Data Overhaul" section below for remaining coordinate verification tasks.
+
 ## Known Architecture Decisions
 - `chat_messages` table is used (NOT `messages` which is Supabase Realtime system table)
 - Conversations persist forever regardless of check-in status (users can message after checkout)
@@ -139,12 +161,72 @@ Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating 
 - Push notification upsert uses `onConflict: "user_id"` (one subscription per user)
 - next-pwa removed entirely — manual service worker only
 - sw.js must NOT be in .gitignore (was previously, causing 404 on Vercel)
+- Explore and Connect use separate anchorage datasets by design (different detail levels, different purposes). Sync enforced by `scripts/check-anchorage-sync.ts`.
+- Connect anchorage IDs are persisted in DB. **Never rename or change existing IDs.** Entries can be removed from `BVI_ANCHORAGES` but historical checkins remain valid.
+
+---
+
+## BVI Anchorage Data Overhaul (Completed Feb 28, 2026)
+
+A major data overhaul was performed across the two anchorage datasets. The plan file is at `.cursor/plans/bvi_anchorage_overhaul_v4_4a3691ce.plan.md` (read-only reference, do not edit).
+
+### What was done
+
+**Phase 1a — Fixed 8 wrong coordinates in `src/lib/constants.ts`:**
+- `the-baths`, `savannah-bay`, `pond-bay`, `valley-trunk-bay`, `berchers-bay`, `lee-bay`, `cow-wreck-bay`, `pomato-point` all had incorrect lat/lng values (some were in the wrong ocean). Corrected using BVI Pirate GPS waypoints and other verified sources.
+- `lee-bay` was reassigned from Salt Island to Great Camanoe (correct island).
+- `DEFAULT_BVI_LOCATION` in `src/app/api/connect/checkins/route.ts` (lines 12-16) is now derived from `BVI_ANCHORAGES` instead of being hardcoded, eliminating a drift risk.
+- `valley-trunk-bay` and `berchers-bay` remain **medium-confidence** — queued for Phase 4 visual verification.
+
+**Phase 1b — Created sync validation script:**
+- New file: `scripts/check-anchorage-sync.ts` — validates coordinate consistency between Connect (`BVI_ANCHORAGES`) and Explore (`anchoragesData`), checks BVI bounding box, required fields, duplicate names, and intentional non-overlaps.
+- Run via `npm run check:anchorages` (added to `package.json`).
+- Currently reports: `✓ 49 coordinate pairs in sync. 64 Explore entries, 49 Connect entries. the-bight validated. All quality checks passed.`
+
+**Phase 2 — Removed 14 entries from Connect (still in Explore):**
+- Day-use only: `the-caves`, `sandy-spit`, `loblolly-bay`, `cow-wreck-bay`, `the-dogs`
+- Redundant/restricted: `cistern-point`, `necker-island`, `eustatia-island`
+- Day-stop/edge cases: `sandy-cay`, `buck-island`, `lee-bay`, `west-end`, `east-end`, `the-baths`
+- Connect went from 63 → 49 entries. All section comments updated.
+- `valley-trunk-bay` removal held pending user input on overnight usage.
+- Historical `checkins` DB records with removed IDs remain valid but won't render on the Connect map.
+
+**Phase 3 — Expanded Explore from 9 → 64 entries:**
+- `src/data/anchorages.ts` now has 64 entries (all 63 original Connect locations + The Indians which is Explore-only).
+- Each entry uses the `AnchorageSeedData` interface with: description, coordinates, island, depth, holding, protection, capacity, amenities, habitat warnings, moorings.
+- Moorings arrays are empty for new entries (only the original 9 had verified mooring data).
+- Images arrays are empty for new entries (placeholders).
+- `src/lib/anchorages-data.ts` required no changes — it auto-transforms the expanded data.
+
+**Post-review fixes (from two rounds of AI code review):**
+- Header comment in `constants.ts` updated to reflect mixed coordinate confidence.
+- Long Bay West description corrected (had incorrectly referenced north-coast resort).
+- `sand_rock` added to `HOLDING_TYPES` in `constants.ts` so UI renders "Sand/Rock" properly.
+
+### Phase 4 follow-ups (not yet done)
+- **Mapbox satellite verification** of `gun-creek`, `marina-cay`, `mosquito-island`, `frenchmans-cay` — apply candidate corrections if confirmed
+- **Chart verification** of `brandywine-bay`, `maya-cove`, `fat-hogs-bay`, `sea-cow-bay`, `nanny-cay`, `long-bay-west`, `benures-bay`, `privateer-bay`
+- Re-add `lee-bay` to Connect once Great Camanoe coordinates validated
+- Add `cam-bay` (Great Camanoe) once coordinates verified
+- Decide on `valley-trunk-bay` Connect removal
+- Consider `dayUseOnly` / `connectEligible` flags in `AnchorageSeedData` interface
+- Factual QA sweep on all 55 new Explore descriptions (spot-check geographic/directional claims)
+
+### Critical constraints for future edits
+- Connect anchorage IDs are persisted in the Supabase `checkins` table (`anchorage_id` column). **Never change existing IDs.**
+- Display names are stored as strings in `location_name`. Removed entries remain interpretable in historical records.
+- The sync script mapping uses Explore display names as keys. If you rename an Explore entry, update the mapping in `scripts/check-anchorage-sync.ts`.
+- Always run `npm run check:anchorages` after editing either anchorage dataset.
+
+---
 
 ## Previous Conversation Transcripts
 Full conversation history is available at:
 - `/mnt/transcripts/2026-02-16-20-20-28-bvi-app-auth-gps-push-fixes.txt` — Auth fixes, GPS, initial push setup
 - `/mnt/transcripts/2026-02-18-20-55-27-connect-messaging-visibility-fixes.txt` — Messaging, Connect visibility
 - `/mnt/transcripts/2026-02-21-00-54-15-connect-messaging-profiles-push-notifications.txt` — Profiles, photo upload, push notifications, service worker
+
+---
 
 ## Go-To-Market Status
 - Created charter boat flyer (HTML + PDF) with QR code

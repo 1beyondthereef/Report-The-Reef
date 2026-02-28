@@ -10,9 +10,10 @@ export const dynamic = 'force-dynamic';
 const LOCATION_RESTRICTION_ENABLED = false;
 
 // Default location for users outside BVI (The Bight, Norman Island)
+const theBight = BVI_ANCHORAGES.find(a => a.id === "the-bight");
 const DEFAULT_BVI_LOCATION = {
-  lat: 18.3166,
-  lng: -64.6193,
+  lat: theBight?.lat ?? 18.3166,
+  lng: theBight?.lng ?? -64.6193,
 };
 
 /**
