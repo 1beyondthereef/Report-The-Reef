@@ -139,8 +139,6 @@ export function AnchorageMap<T extends BaseAnchorage>({
 
     anchorages.forEach((anchorage) => {
       const isSelected = anchorage.id === selectedId;
-      const mooringCount = anchorage._count?.moorings || anchorage.moorings?.length || 0;
-      const hasMoorings = mooringCount > 0;
       const hasSensitiveHabitat = anchorage.hasReef || anchorage.hasSeagrass;
 
       const el = document.createElement("div");
@@ -161,9 +159,6 @@ export function AnchorageMap<T extends BaseAnchorage>({
               <path d="M5 12H2a10 10 0 0 0 20 0h-3"/>
             </svg>
           </div>
-          ${hasMoorings ? `<div class="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-green-500 border border-white flex items-center justify-center">
-              <span class="text-[8px] font-bold text-white">${mooringCount}</span>
-            </div>` : ""}
         </div>
       `;
 

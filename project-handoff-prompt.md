@@ -153,6 +153,7 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 9. **Anchorage data Phase 4 follow-ups** — See "BVI Anchorage Data Overhaul" section below for remaining coordinate verification tasks.
 
 ## Known Architecture Decisions
+- Explore map markers (`AnchorageMap.tsx`) do NOT show mooring count badges — removed to reduce visual clutter. Mooring data is still visible in the anchorage detail panel when clicked.
 - `chat_messages` table is used (NOT `messages` which is Supabase Realtime system table)
 - Conversations persist forever regardless of check-in status (users can message after checkout)
 - Check-in required to appear on map, but not required to send messages
