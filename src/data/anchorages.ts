@@ -64,8 +64,8 @@ export const anchoragesData: AnchorageSeedData[] = [
   {
     name: "Benures Bay",
     description: "Benures Bay is a quiet anchorage on the northeast side of Norman Island, offering a more secluded alternative to The Bight. The bay provides reasonable protection from the prevailing trade winds and features good snorkeling along the rocky shoreline. It is less crowded than The Bight and appeals to those seeking a peaceful night at anchor.",
-    latitude: 18.3295,
-    longitude: -64.6040,
+    latitude: 18.3222,
+    longitude: -64.6081,
     island: "Norman Island",
     depth: "20-35ft",
     holding: "sand_rock",
@@ -102,8 +102,8 @@ export const anchoragesData: AnchorageSeedData[] = [
   {
     name: "Privateer Bay",
     description: "Privateer Bay sits on the northeast coast of Norman Island and offers a remote, undeveloped anchorage. The bay is open to the east, making it best suited for settled conditions with light easterly winds. It appeals to experienced cruisers who want solitude and good snorkeling along the rocky headlands.",
-    latitude: 18.3270,
-    longitude: -64.5985,
+    latitude: 18.3120,
+    longitude: -64.6247,
     island: "Norman Island",
     depth: "20-40ft",
     holding: "sand_rock",
@@ -172,8 +172,8 @@ export const anchoragesData: AnchorageSeedData[] = [
   {
     name: "Nanny Cay, Tortola",
     description: "Nanny Cay is a full-service marina and boatyard on the south coast of Tortola, popular with both charter and private vessels. The marina offers haul-out facilities, a chandlery, fuel dock, restaurant, and pool. It is a convenient base for provisioning and boat maintenance, with a grocery store and several restaurants on site.",
-    latitude: 18.3885,
-    longitude: -64.6345,
+    latitude: 18.3960,
+    longitude: -64.6360,
     island: "Tortola",
     depth: "10-20ft",
     holding: "mud",
@@ -252,8 +252,8 @@ export const anchoragesData: AnchorageSeedData[] = [
   {
     name: "Brandywine Bay, Tortola",
     description: "Brandywine Bay is a quiet anchorage on the south coast of Tortola, east of Road Town. The bay provides fair protection in normal trade wind conditions and is convenient for accessing the east end of Tortola. Brandywine Bay restaurant ashore is well-regarded for its Italian-inspired cuisine.",
-    latitude: 18.4045,
-    longitude: -64.5630,
+    latitude: 18.4136,
+    longitude: -64.5809,
     island: "Tortola",
     depth: "15-25ft",
     holding: "sand_mud",
@@ -271,8 +271,8 @@ export const anchoragesData: AnchorageSeedData[] = [
   {
     name: "Hodges Creek, Tortola",
     description: "Hodges Creek is a small, well-protected harbor on the south coast of Tortola near the east end. The Hodges Creek Marina offers slips, fuel, and basic services. The harbor is surrounded by mangroves and offers good hurricane protection. It is a quieter alternative to the busier marinas further west.",
-    latitude: 18.4115,
-    longitude: -64.5345,
+    latitude: 18.4243,
+    longitude: -64.5658,
     island: "Tortola",
     depth: "8-15ft",
     holding: "mud",
@@ -284,25 +284,6 @@ export const anchoragesData: AnchorageSeedData[] = [
       hasReef: false,
       hasSeagrass: true,
       warning: "Mangrove and seagrass habitat in the approach. Follow marked channel."
-    },
-    moorings: []
-  },
-  {
-    name: "Maya Cove, Tortola",
-    description: "Maya Cove is a small, sheltered bay on the south coast of Tortola near Fat Hogs Bay. It is home to a boatyard and offers a peaceful anchorage in calm conditions. The surrounding area has mangrove-lined shores and provides reasonable hurricane protection.",
-    latitude: 18.4060,
-    longitude: -64.5445,
-    island: "Tortola",
-    depth: "8-15ft",
-    holding: "mud",
-    protection: "all_weather",
-    capacity: 8,
-    amenities: [],
-    images: [],
-    sensitiveHabitat: {
-      hasReef: false,
-      hasSeagrass: true,
-      warning: "Mangrove fringe and seagrass in the area. Anchor carefully to avoid habitat damage."
     },
     moorings: []
   },
@@ -364,25 +345,6 @@ export const anchoragesData: AnchorageSeedData[] = [
     moorings: []
   },
   {
-    name: "Long Bay West, Tortola",
-    description: "Long Bay West is an anchorage on the southwest coast of Tortola near Frenchman's Cay. The bay faces south toward the Sir Francis Drake Channel and offers fair weather protection with views of the offshore islands. It is a quieter alternative to the busier anchorages further east along the south coast.",
-    latitude: 18.3915,
-    longitude: -64.6810,
-    island: "Tortola",
-    depth: "15-25ft",
-    holding: "sand",
-    protection: "fair_weather",
-    capacity: 10,
-    amenities: ["beach", "restaurant"],
-    images: [],
-    sensitiveHabitat: {
-      hasReef: false,
-      hasSeagrass: true,
-      warning: "Seagrass patches near shore. Anchor in sand."
-    },
-    moorings: []
-  },
-  {
     name: "Sea Cow Bay, Tortola",
     description: "Sea Cow Bay is a shallow harbor on the south coast of Tortola, west of Road Town. It is primarily a local anchorage used by resident boat owners. The bay has limited facilities but offers fair protection and proximity to Road Town for provisioning and services.",
     latitude: 18.4065,
@@ -440,29 +402,10 @@ export const anchoragesData: AnchorageSeedData[] = [
     moorings: []
   },
   {
-    name: "East End, Tortola",
-    description: "East End is the area around the eastern tip of Tortola, near the Beef Island bridge. The anchorage provides access to Trellis Bay and the nearby cays. Conditions can be choppy when trade winds funnel through the cut between Tortola and Beef Island.",
-    latitude: 18.4510,
-    longitude: -64.5215,
-    island: "Tortola",
-    depth: "12-20ft",
-    holding: "sand",
-    protection: "fair_weather",
-    capacity: 8,
-    amenities: [],
-    images: [],
-    sensitiveHabitat: {
-      hasReef: false,
-      hasSeagrass: false,
-      warning: null
-    },
-    moorings: []
-  },
-  {
     name: "Paraquita Bay, Tortola",
-    description: "Paraquita Bay is a mangrove-fringed harbor on the south coast of Tortola between Road Town and Fat Hogs Bay. The bay hosts a boatyard and several local fishing operations. It offers good hurricane protection due to its enclosed nature and mangrove surroundings, though depths are limited.",
-    latitude: 18.4115,
-    longitude: -64.5660,
+    description: "Paraquita Bay is a mangrove-fringed harbor on the south coast of Tortola between Road Town and Fat Hogs Bay. This is designated as a hurricane anchorage and is used primarily for storm shelter. The bay hosts a boatyard and several local fishing operations. Its enclosed nature and mangrove surroundings provide excellent heavy-weather protection, though depths are limited.",
+    latitude: 18.4193,
+    longitude: -64.5723,
     island: "Tortola",
     depth: "6-12ft",
     holding: "mud",
@@ -592,8 +535,8 @@ export const anchoragesData: AnchorageSeedData[] = [
   {
     name: "Gun Creek, Virgin Gorda",
     description: "Gun Creek is a small settlement on the west side of North Sound, Virgin Gorda. It serves as a ferry landing for North Sound access and has a few local restaurants and shops. The anchorage is shallow and best suited for smaller vessels. It provides a local, non-touristy feel compared to the resorts on the opposite shore.",
-    latitude: 18.4990,
-    longitude: -64.3985,
+    latitude: 18.4899,
+    longitude: -64.3825,
     island: "Virgin Gorda",
     depth: "8-15ft",
     holding: "sand_mud",
@@ -761,29 +704,10 @@ export const anchoragesData: AnchorageSeedData[] = [
     moorings: []
   },
   {
-    name: "Berchers Bay, Virgin Gorda",
-    description: "Berchers Bay is a small bay on the northwest coast of Virgin Gorda, between Spanish Town and North Sound. It offers a quiet anchorage away from the busier harbors. The bay has limited facilities but provides decent protection from easterly trade winds and good snorkeling along the rocky shoreline.",
-    latitude: 18.4923,
-    longitude: -64.3529,
-    island: "Virgin Gorda",
-    depth: "15-25ft",
-    holding: "sand_rock",
-    protection: "fair_weather",
-    capacity: 6,
-    amenities: ["snorkeling"],
-    images: [],
-    sensitiveHabitat: {
-      hasReef: true,
-      hasSeagrass: false,
-      warning: "Rocky reef habitat along the shore. Anchor in sand."
-    },
-    moorings: []
-  },
-  {
     name: "Valley Trunk Bay, Virgin Gorda",
     description: "Valley Trunk Bay is a small, scenic bay on the southwest coast of Virgin Gorda, south of Spanish Town. The beach is relatively undeveloped and offers calm, clear water for swimming. The anchorage is suitable for day visits in settled conditions. Access ashore may involve a rocky dinghy landing.",
-    latitude: 18.4333,
-    longitude: -64.4333,
+    latitude: 18.4390,
+    longitude: -64.4444,
     island: "Virgin Gorda",
     depth: "15-25ft",
     holding: "sand",
@@ -1098,8 +1022,8 @@ export const anchoragesData: AnchorageSeedData[] = [
   // ANEGADA
   // ═══════════════════════════════════════
   {
-    name: "Anegada Settlement",
-    description: "Anegada is the BVI's only coral atoll, featuring miles of pristine white sand beaches and a unique flat landscape unlike any other island in the chain. Setting Point, near the main settlement, offers the best anchorage with access to the famous lobster restaurants like the Lobster Trap and Anegada Reef Hotel. The island is known for its flamingo colony, iguanas, and exceptional fishing. Navigation requires careful attention to the reef-strewn approaches.",
+    name: "Setting Point, Anegada",
+    description: "Setting Point is the main yacht anchorage on Anegada, the BVI's only coral atoll. This is the primary arrival point for visiting vessels, with mooring balls and anchorage in sand. Nearby are the famous lobster restaurants including the Lobster Trap and Anegada Reef Hotel. The island is known for its flamingo colony, iguanas, and exceptional fishing. Navigation requires careful attention to the reef-strewn approaches via the marked channel.",
     latitude: 18.7232,
     longitude: -64.3844,
     island: "Anegada",
@@ -1128,48 +1052,10 @@ export const anchoragesData: AnchorageSeedData[] = [
     ]
   },
   {
-    name: "Pomato Point, Anegada",
-    description: "Pomato Point is an anchorage on the south side of Anegada, near the Pomato Point Restaurant. The area offers a more sheltered alternative to Setting Point in certain wind conditions. The Pomato Point Restaurant is known for its seafood. The approach requires careful navigation to avoid the surrounding reef system.",
-    latitude: 18.7287,
-    longitude: -64.4046,
-    island: "Anegada",
-    depth: "8-15ft",
-    holding: "sand",
-    protection: "fair_weather",
-    capacity: 8,
-    amenities: ["restaurant"],
-    images: [],
-    sensitiveHabitat: {
-      hasReef: true,
-      hasSeagrass: true,
-      warning: "Extensive reef system surrounds Anegada. Navigate with extreme caution using GPS and marked channels only."
-    },
-    moorings: []
-  },
-  {
-    name: "Loblolly Bay, Anegada",
-    description: "Loblolly Bay is a stunning beach on the north shore of Anegada, featuring crystal-clear water, white sand, and excellent reef snorkeling directly off the beach. The Big Bamboo restaurant operates on the beach. This is a day-use anchorage only, as the north shore is exposed to Atlantic swells and not suitable for overnight stays. Access by boat requires navigating carefully through the reef.",
-    latitude: 18.7485,
-    longitude: -64.3430,
-    island: "Anegada",
-    depth: "10-20ft",
-    holding: "sand",
-    protection: "fair_weather",
-    capacity: 4,
-    amenities: ["restaurant", "beach", "snorkeling"],
-    images: [],
-    sensitiveHabitat: {
-      hasReef: true,
-      hasSeagrass: true,
-      warning: "Pristine reef directly off the beach. Do not anchor on reef. Extreme caution required for boat approach from the north."
-    },
-    moorings: []
-  },
-  {
     name: "Cow Wreck Bay, Anegada",
-    description: "Cow Wreck Bay is a remote beach on the north shore of Anegada, named after the bones of cattle that washed ashore from a shipwreck. The Cow Wreck Bar and Grill serves food and drinks on the beach. The bay features excellent beachcombing and calm, shallow water. Like Loblolly Bay, it is a day-use destination when approaching by boat, as the north shore exposure makes it unsuitable for overnight anchoring.",
-    latitude: 18.7454,
-    longitude: -64.4017,
+    description: "Cow Wreck Bay is a remote beach on the north shore of Anegada, named after the bones of cattle that washed ashore from a shipwreck. The Cow Wreck Bar and Grill serves food and drinks on the beach. The bay features excellent beachcombing and calm, shallow water. Accessible by dinghy from Setting Point only; yachts may not approach this area. Not suitable for overnight anchoring.",
+    latitude: 18.7474,
+    longitude: -64.4011,
     island: "Anegada",
     depth: "8-15ft",
     holding: "sand",
@@ -1210,8 +1096,8 @@ export const anchoragesData: AnchorageSeedData[] = [
   {
     name: "Marina Cay",
     description: "Marina Cay is a tiny island off the east end of Tortola, once made famous by Robb White's book 'Two on the Isle'. The island features a small resort with a restaurant, bar, and gift shop. Pusser's operates the restaurant and there is a dinghy dock for visitors. The surrounding waters offer good snorkeling, and the island provides a charming, intimate setting.",
-    latitude: 18.4535,
-    longitude: -64.5210,
+    latitude: 18.4600,
+    longitude: -64.5283,
     island: "Other Cays",
     depth: "12-20ft",
     holding: "sand",
@@ -1229,8 +1115,8 @@ export const anchoragesData: AnchorageSeedData[] = [
   {
     name: "Scrub Island",
     description: "Scrub Island Resort, Spa and Marina is a luxury destination off the east end of Tortola. The resort features a full-service marina with modern facilities, multiple restaurants, a spa, and private beaches. The marina can accommodate vessels up to 160 feet. It is one of the newer and more upscale developments in the BVI.",
-    latitude: 18.4685,
-    longitude: -64.5070,
+    latitude: 18.4663,
+    longitude: -64.5249,
     island: "Other Cays",
     depth: "12-25ft",
     holding: "sand",
@@ -1286,8 +1172,8 @@ export const anchoragesData: AnchorageSeedData[] = [
   {
     name: "The Dogs",
     description: "The Dogs are a group of small uninhabited islands (Great Dog, George Dog, West Dog, and Seal Dog) between Tortola and Virgin Gorda. These rocky islets are a popular snorkel and dive destination with dramatic underwater terrain featuring walls, tunnels, and abundant marine life. There is no shore access, and anchoring is limited to the leeward sides of the islands in settled conditions. Day use only.",
-    latitude: 18.4750,
-    longitude: -64.4500,
+    latitude: 18.4839,
+    longitude: -64.4658,
     island: "Other Cays",
     depth: "20-40ft",
     holding: "rocky",
@@ -1305,8 +1191,8 @@ export const anchoragesData: AnchorageSeedData[] = [
   {
     name: "Mosquito Island",
     description: "Mosquito Island (also known as Moskito Island) is a private island in North Sound owned by Sir Richard Branson. The island was previously the site of Drake's Anchorage resort. The anchorage on the west side offers protection within North Sound. While the island is privately owned, boats can anchor in the surrounding waters and access nearby Prickly Pear by dinghy.",
-    latitude: 18.5020,
-    longitude: -64.3870,
+    latitude: 18.5086,
+    longitude: -64.3905,
     island: "Other Cays",
     depth: "10-20ft",
     holding: "sand",
@@ -1375,6 +1261,44 @@ export const anchoragesData: AnchorageSeedData[] = [
       hasReef: true,
       hasSeagrass: true,
       warning: "Protected marine area around the island. Do not anchor on reef or seagrass. No shore access without invitation."
+    },
+    moorings: []
+  },
+  {
+    name: "Anegada Settlement",
+    description: "The main settlement on Anegada, located on the south side of the island. The settlement is the hub of local life with small shops, restaurants, and the government dock used by local fishermen. Accessible by dinghy from Setting Point anchorage. Dinghies only; yachts may not approach this area. Not suitable for yacht mooring or overnight use.",
+    latitude: 18.7126,
+    longitude: -64.3157,
+    island: "Anegada",
+    depth: "3-6ft",
+    holding: "sand",
+    protection: "fair_weather",
+    capacity: 0,
+    amenities: ["restaurant", "provisions"],
+    images: [],
+    sensitiveHabitat: {
+      hasReef: true,
+      hasSeagrass: true,
+      warning: "Shallow reef-strewn waters. Dinghy access only from Setting Point. Yachts may not approach."
+    },
+    moorings: []
+  },
+  {
+    name: "Red Rock, Tortola",
+    description: "Red Rock is a small rocky islet off the east end of Tortola near Beef Island, popular as a snorkel and dive site. The rocks rise dramatically from the water and feature colorful marine life along the underwater walls. This is a day-use stop only; there is no anchorage suitable for overnight stays.",
+    latitude: 18.4387,
+    longitude: -64.5611,
+    island: "Tortola",
+    depth: "15-35ft",
+    holding: "rocky",
+    protection: "fair_weather",
+    capacity: 3,
+    amenities: ["snorkeling"],
+    images: [],
+    sensitiveHabitat: {
+      hasReef: true,
+      hasSeagrass: false,
+      warning: "Rocky reef habitat. Do not anchor on reef. Day use only."
     },
     moorings: []
   }

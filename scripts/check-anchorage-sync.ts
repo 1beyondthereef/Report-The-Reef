@@ -16,14 +16,11 @@ const EXPLORE_TO_CONNECT_ID: Record<string, string> = {
   "Cane Garden Bay, Tortola": "cane-garden-bay",
   "Brandywine Bay, Tortola": "brandywine-bay",
   "Hodges Creek, Tortola": "hodges-creek",
-  "Maya Cove, Tortola": "maya-cove",
   "Trellis Bay, Tortola": "trellis-bay",
   "Fat Hogs Bay, Tortola": "fat-hogs-bay",
   "Brewers Bay, Tortola": "brewers-bay",
-  "Long Bay West, Tortola": "long-bay-west",
   "Sea Cow Bay, Tortola": "sea-cow-bay",
   "Beef Island Bluff, Tortola": "beef-island-bluff",
-  "Paraquita Bay, Tortola": "paraquita-bay",
   "Frenchman's Cay, Tortola": "frenchmans-cay",
   // Virgin Gorda
   "Virgin Gorda Yacht Harbour": "spanish-town",
@@ -37,7 +34,6 @@ const EXPLORE_TO_CONNECT_ID: Record<string, string> = {
   "Biras Creek, Virgin Gorda": "biras-creek",
   "Saba Rock, Virgin Gorda": "saba-rock",
   "Oil Nut Bay, Virgin Gorda": "oil-nut-bay",
-  "Berchers Bay, Virgin Gorda": "berchers-bay",
   "Valley Trunk Bay, Virgin Gorda": "valley-trunk-bay",
   // Jost Van Dyke
   "Great Harbour, Jost Van Dyke": "great-harbour-jvd",
@@ -54,14 +50,12 @@ const EXPLORE_TO_CONNECT_ID: Record<string, string> = {
   // Salt Island
   "Salt Island Anchorage": "salt-pond-bay",
   // Anegada
-  "Anegada Settlement": "setting-point",
-  "Pomato Point, Anegada": "pomato-point",
+  "Setting Point, Anegada": "setting-point",
   // Other Cays & Islands
   "Marina Cay": "marina-cay",
   "Scrub Island": "scrub-island",
   "Monkey Point, Guana Island": "guana-island-monkey-point",
   "White Bay, Guana Island": "guana-island-white-bay",
-  "Mosquito Island": "mosquito-island",
   "Prickly Pear Island": "prickly-pear",
 };
 
@@ -74,15 +68,17 @@ const INTENTIONAL_NON_OVERLAPS = {
     "Sandy Cay",                      // Day-use only, removed from Connect
     "Sandy Spit",                     // Day-use only, removed from Connect
     "West End, Tortola",              // Ferry port edge case, removed from Connect
-    "East End, Tortola",              // Edge case, removed from Connect
     "Buck Island, Tortola",           // Day stop, removed from Connect
     "Cistern Point, Cooper Island",   // Redundant with Cooper Island, removed from Connect
-    "Loblolly Bay, Anegada",          // Day-use beach, removed from Connect
     "Cow Wreck Bay, Anegada",         // Day-use beach, removed from Connect
     "Lee Bay, Great Camanoe",         // Broken coords, removed from Connect pending re-add
     "The Dogs",                       // Day-use dive site, removed from Connect
     "Eustatia Island",                // Private/restricted, removed from Connect
     "Necker Island",                  // Private/restricted, removed from Connect
+    "Paraquita Bay, Tortola",         // Hurricane anchorage, moved to Explore only
+    "Mosquito Island",                // Moved to Explore only
+    "Red Rock, Tortola",              // Day-use snorkel/dive site, Explore only
+    "Anegada Settlement",             // Dinghy landing, Explore only
   ],
   connectOnly: [] as string[],
 };

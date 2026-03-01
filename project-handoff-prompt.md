@@ -1,6 +1,6 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
-*Last updated: February 28, 2026*
+*Last updated: February 27, 2026*
 
 ## What This App Is
 Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://report-the-reef.vercel.app
@@ -10,8 +10,8 @@ Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating 
 **Core Features:**
 1. **Report** — Report marine incidents (groundings, pollution, anchor damage, illegal activity) with GPS location and photos
 2. **Wildlife** — Log megafauna sightings (whales, dolphins, turtles, rays) with photos and GPS for citizen science
-3. **Explore** — Browse 64 BVI anchorages with detailed information (descriptions, depth, holding, protection, amenities, habitat warnings, moorings) on an interactive map. Also includes dive sites, marine parks, national parks, bird sanctuaries, fisheries zones.
-4. **Connect** — Check in at 49 overnight-eligible anchorages, see who's nearby on a real-time map, and message other boaters directly (in-app messaging)
+3. **Explore** — Browse 60 BVI anchorages with detailed information (descriptions, depth, holding, protection, amenities, habitat warnings, moorings) on an interactive map. Also includes dive sites, marine parks, national parks, bird sanctuaries, fisheries zones.
+4. **Connect** — Check in at 43 overnight-eligible anchorages, see who's nearby on a real-time map, and message other boaters directly (in-app messaging)
 5. **Reserve** — Mooring reservations (integrates with BoatyBall via iframe/redirect)
 6. **Home** — Dashboard with stats (incidents reported, anchorages, moorings, community members)
 
@@ -23,11 +23,12 @@ Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating 
 
 The app has two independent anchorage datasets that are kept in sync via an automated script:
 
-- **Explore dataset** — `src/data/anchorages.ts` exports `anchoragesData` (64 detailed entries using the `AnchorageSeedData` interface). Transformed by `src/lib/anchorages-data.ts` into the `Anchorage` format, served via `/api/anchorages`. IDs are auto-generated as `anchorage-1`, `anchorage-2`, etc. (not persisted in DB).
-- **Connect dataset** — `src/lib/constants.ts` exports `BVI_ANCHORAGES` (49 simple entries: id, name, island, lat, lng). Consumed by `src/app/(main)/connect/page.tsx`, `src/components/maps/ConnectMap.tsx`, and `src/app/api/connect/checkins/route.ts`. IDs are semantic slugs (e.g., `the-bight`, `great-harbour-jvd`) and **persisted in the Supabase `checkins` table** — never change them.
+- **Explore dataset** — `src/data/anchorages.ts` exports `anchoragesData` (60 detailed entries using the `AnchorageSeedData` interface). Transformed by `src/lib/anchorages-data.ts` into the `Anchorage` format, served via `/api/anchorages`. IDs are auto-generated as `anchorage-1`, `anchorage-2`, etc. (not persisted in DB).
+- **Connect dataset** — `src/lib/constants.ts` exports `BVI_ANCHORAGES` (43 simple entries: id, name, island, lat, lng). Consumed by `src/app/(main)/connect/page.tsx`, `src/components/maps/ConnectMap.tsx`, and `src/app/api/connect/checkins/route.ts`. IDs are semantic slugs (e.g., `the-bight`, `great-harbour-jvd`) and **persisted in the Supabase `checkins` table** — never change them.
 - **Sync script** — `scripts/check-anchorage-sync.ts` validates coordinate consistency between the two datasets. Run via `npm run check:anchorages`. Checks: coordinate drift (0.001° tolerance), BVI bounding box, required fields, duplicate names, intentional non-overlaps, and the-bight reference coordinates.
+- **Coordinate review CSV** — `anchorage-coordinates-review.csv` lists all 60 Explore entries with Name, Island, Latitude, Longitude, Dataset (Both/Explore Only), Notes. Regenerated after each data change.
 
-**Key constraint:** 49 of the 64 Explore entries overlap with Connect. 15 are intentionally Explore-only (day-use sites, private islands, removed-from-Connect entries). The sync script tracks both sets explicitly.
+**Key constraint:** 43 of the 60 Explore entries overlap with Connect. 17 are intentionally Explore-only (day-use sites, private islands, hurricane anchorages, dinghy-only landings, removed-from-Connect entries). The sync script tracks both sets explicitly.
 
 ### Auth
 - `src/context/AuthContext.tsx` — Single source of truth for auth state. Uses `hasInitialized` ref to prevent double-refresh on page load. Calls `registerPushNotifications` on SIGNED_IN and INITIAL_SESSION events.
@@ -39,7 +40,7 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 
 ### Connect (Social/Messaging)
 - `src/app/(main)/connect/page.tsx` — Main Connect page (~1800 lines). Contains: check-in system, anchorage map (ConnectMap), user panels, messaging interface, profile viewing, anchorage browsing, verification timer (6hr intervals), GPS distance checking, toast notifications. This is the biggest file in the project.
-- `src/components/maps/ConnectMap.tsx` — Mapbox map showing anchorages with boater count badges. Builds marker list from `BVI_ANCHORAGES` — only the 49 Connect entries appear as check-in-able map pins.
+- `src/components/maps/ConnectMap.tsx` — Mapbox map showing anchorages with boater count badges. Builds marker list from `BVI_ANCHORAGES` — only the 43 Connect entries appear as check-in-able map pins.
 - `src/components/ConnectNavBadge.tsx` — Red unread message count badge on the Connect nav icon. Polls /api/connect/conversations every 15 seconds.
 - `src/components/ServiceWorkerRegistration.tsx` — Registers /sw.js on mount. Imported in layout.tsx.
 
@@ -62,7 +63,7 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 - `public/push-sw.js` — Push notification event handlers. Shows notifications, handles clicks (opens app to /connect).
 
 ### Other Key Files
-- `src/lib/constants.ts` — `BVI_ANCHORAGES` (49 entries), `CHECKIN_CONFIG` (EXPIRY_HOURS: 48, VERIFICATION_INTERVAL_HOURS: 6), `AUTO_CHECKIN_RADIUS_KM` (0.926km = 0.5nm), `HOLDING_TYPES` (sand, sand_mud, sand_rock, mud, grass, rocky, coral), `PROTECTION_LEVELS`, `BVI_BOUNDS`, `BVI_CHECKIN_BOUNDS`
+- `src/lib/constants.ts` — `BVI_ANCHORAGES` (43 entries), `CHECKIN_CONFIG` (EXPIRY_HOURS: 48, VERIFICATION_INTERVAL_HOURS: 6), `AUTO_CHECKIN_RADIUS_KM` (0.926km = 0.5nm), `HOLDING_TYPES` (sand, sand_mud, sand_rock, mud, grass, rocky, coral), `PROTECTION_LEVELS`, `BVI_BOUNDS`, `BVI_CHECKIN_BOUNDS`
 - `src/lib/geo-utils.ts` — Shared `calculateDistance()` haversine function
 - `next.config.mjs` — next-pwa has been REMOVED entirely. Manual SW only.
 - `prisma/seed.ts` — Excluded from tsconfig build (was causing PrismaClient import error)
@@ -115,8 +116,8 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 2. ✅ Session persistence (stays logged in across browser restarts)
 3. ✅ Incident reporting with GPS and photo upload
 4. ✅ Wildlife sighting logging
-5. ✅ Explore page with 64 detailed BVI anchorages on interactive map
-6. ✅ Connect — check-in at 49 overnight-eligible anchorages (48hr expiry)
+5. ✅ Explore page with 60 detailed BVI anchorages on interactive map
+6. ✅ Connect — check-in at 43 overnight-eligible anchorages (48hr expiry)
 7. ✅ Connect — see boaters on map with count badges
 8. ✅ Connect — browse any anchorage's boaters
 9. ✅ Connect — in-app messaging (conversations persist forever)
@@ -181,18 +182,18 @@ A major data overhaul was performed across the two anchorage datasets. The plan 
 **Phase 1b — Created sync validation script:**
 - New file: `scripts/check-anchorage-sync.ts` — validates coordinate consistency between Connect (`BVI_ANCHORAGES`) and Explore (`anchoragesData`), checks BVI bounding box, required fields, duplicate names, and intentional non-overlaps.
 - Run via `npm run check:anchorages` (added to `package.json`).
-- Currently reports: `✓ 49 coordinate pairs in sync. 64 Explore entries, 49 Connect entries. the-bight validated. All quality checks passed.`
+- After Round 2, reports: `✓ 43 coordinate pairs in sync. 60 Explore entries, 43 Connect entries. the-bight validated. All quality checks passed.`
 
 **Phase 2 — Removed 14 entries from Connect (still in Explore):**
 - Day-use only: `the-caves`, `sandy-spit`, `loblolly-bay`, `cow-wreck-bay`, `the-dogs`
 - Redundant/restricted: `cistern-point`, `necker-island`, `eustatia-island`
 - Day-stop/edge cases: `sandy-cay`, `buck-island`, `lee-bay`, `west-end`, `east-end`, `the-baths`
-- Connect went from 63 → 49 entries. All section comments updated.
+- Connect went from 63 → 49 entries (further reduced to 43 in Round 2). All section comments updated.
 - `valley-trunk-bay` removal held pending user input on overnight usage.
 - Historical `checkins` DB records with removed IDs remain valid but won't render on the Connect map.
 
-**Phase 3 — Expanded Explore from 9 → 64 entries:**
-- `src/data/anchorages.ts` now has 64 entries (all 63 original Connect locations + The Indians which is Explore-only).
+**Phase 3 — Expanded Explore from 9 → 64 entries (further refined to 60 in Round 2):**
+- `src/data/anchorages.ts` had 64 entries after Phase 3 (all 63 original Connect locations + The Indians). Round 2 trimmed to 60 and added 2 new entries.
 - Each entry uses the `AnchorageSeedData` interface with: description, coordinates, island, depth, holding, protection, capacity, amenities, habitat warnings, moorings.
 - Moorings arrays are empty for new entries (only the original 9 had verified mooring data).
 - Images arrays are empty for new entries (placeholders).
@@ -203,14 +204,52 @@ A major data overhaul was performed across the two anchorage datasets. The plan 
 - Long Bay West description corrected (had incorrectly referenced north-coast resort).
 - `sand_rock` added to `HOLDING_TYPES` in `constants.ts` so UI renders "Sand/Rock" properly.
 
+### Anchorage Corrections Round 2 (Completed Feb 27, 2026)
+
+A second round of corrections was performed based on continued coordinate review and data cleanup. The plan file is at `.cursor/plans/anchorage_corrections_round_2_40db9a95.plan.md` (read-only reference, do not edit).
+
+**Entries removed from both Connect and Explore (5):**
+- `east-end` (East End, Tortola) — already removed from Connect in Phase 2; now removed from Explore
+- `maya-cove` (Maya Cove, Tortola)
+- `long-bay-west` (Long Bay West, Tortola)
+- `berchers-bay` (Berchers Bay, Virgin Gorda)
+- `pomato-point` (Pomato Point, Anegada)
+
+**Removed from Explore only (1):**
+- Loblolly Bay, Anegada
+
+**Moved from Both to Explore-only (2):**
+- `paraquita-bay` — description updated to note "hurricane anchorage only"
+- `mosquito-island` — removed from Connect, kept in Explore
+
+**Renamed:**
+- "Anegada Settlement" → "Setting Point, Anegada" in Explore (Connect ID `setting-point` unchanged). Description updated to focus on main yacht anchorage.
+
+**New Explore-only entries (2):**
+- **Anegada Settlement** (18.7126, -64.3157) — the actual settlement on Anegada, dinghy landing only, used by local fishermen. Distinct from Setting Point.
+- **Red Rock, Tortola** (18.4387, -64.5611) — rocky islet off east Tortola, snorkel/dive site, day-use only.
+
+**Coordinate updates (14 entries across both datasets):**
+- Both datasets: Brandywine Bay, Hodges Creek, Nanny Cay, Benures Bay, Privateer Bay, Valley Trunk Bay, Gun Creek, Marina Cay, Scrub Island
+- Explore only: Paraquita Bay, Cow Wreck Bay, The Dogs, Mosquito Island
+
+**Description updates:**
+- Paraquita Bay: now notes "hurricane anchorage" designation
+- Cow Wreck Bay: now notes "dinghies only from Setting Point; yachts may not approach"
+
+**Sync script updates:**
+- Removed 6 mappings from `EXPLORE_TO_CONNECT_ID` (for deleted/moved entries)
+- Renamed Anegada mapping key from "Anegada Settlement" to "Setting Point, Anegada"
+- Updated `exploreOnly` list: removed 2 fully-deleted entries, added 4 new Explore-only entries
+
+**Final state:** Connect has 43 entries, Explore has 60 entries. 43 mapped pairs + 17 exploreOnly entries. All checks pass.
+
 ### Phase 4 follow-ups (not yet done)
-- **Mapbox satellite verification** of `gun-creek`, `marina-cay`, `mosquito-island`, `frenchmans-cay` — apply candidate corrections if confirmed
-- **Chart verification** of `brandywine-bay`, `maya-cove`, `fat-hogs-bay`, `sea-cow-bay`, `nanny-cay`, `long-bay-west`, `benures-bay`, `privateer-bay`
 - Re-add `lee-bay` to Connect once Great Camanoe coordinates validated
 - Add `cam-bay` (Great Camanoe) once coordinates verified
 - Decide on `valley-trunk-bay` Connect removal
 - Consider `dayUseOnly` / `connectEligible` flags in `AnchorageSeedData` interface
-- Factual QA sweep on all 55 new Explore descriptions (spot-check geographic/directional claims)
+- Factual QA sweep on Explore descriptions (spot-check geographic/directional claims)
 
 ### Critical constraints for future edits
 - Connect anchorage IDs are persisted in the Supabase `checkins` table (`anchorage_id` column). **Never change existing IDs.**

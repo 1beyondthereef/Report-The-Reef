@@ -21,32 +21,29 @@ export const CHECKIN_CONFIG = {
   MAX_DISTANCE_FROM_ANCHORAGE_KM: 5, // Max distance to suggest an anchorage
 } as const;
 
-// BVI Anchorages for check-in system - 49 overnight-eligible locations organized by island
+// BVI Anchorages for check-in system - 43 overnight-eligible locations organized by island
 // Coordinate confidence varies across entries; validate updates with `npm run check:anchorages` and planned chart/map review
 // Some of these locations overlap with src/data/anchorages.ts (Explore page).
 // Run `npm run check:anchorages` to verify coordinates stay in sync.
 export const BVI_ANCHORAGES = [
-  // TORTOLA (15 locations)
+  // TORTOLA (12 locations)
   { id: "road-town", name: "Road Town", island: "Tortola", lat: 18.4235, lng: -64.6165 },
-  { id: "nanny-cay", name: "Nanny Cay", island: "Tortola", lat: 18.3885, lng: -64.6345 },
+  { id: "nanny-cay", name: "Nanny Cay", island: "Tortola", lat: 18.3960, lng: -64.6360 },
   { id: "sopers-hole", name: "Soper's Hole", island: "Tortola", lat: 18.3857, lng: -64.7040 },
   { id: "cane-garden-bay", name: "Cane Garden Bay", island: "Tortola", lat: 18.4276, lng: -64.6596 },
-  { id: "brandywine-bay", name: "Brandywine Bay", island: "Tortola", lat: 18.4045, lng: -64.5630 },
-  { id: "hodges-creek", name: "Hodges Creek", island: "Tortola", lat: 18.4115, lng: -64.5345 },
-  { id: "maya-cove", name: "Maya Cove", island: "Tortola", lat: 18.4060, lng: -64.5445 },
+  { id: "brandywine-bay", name: "Brandywine Bay", island: "Tortola", lat: 18.4136, lng: -64.5809 },
+  { id: "hodges-creek", name: "Hodges Creek", island: "Tortola", lat: 18.4243, lng: -64.5658 },
   { id: "trellis-bay", name: "Trellis Bay", island: "Tortola", lat: 18.4469, lng: -64.5309 },
   { id: "fat-hogs-bay", name: "Fat Hogs Bay", island: "Tortola", lat: 18.4165, lng: -64.5395 },
   { id: "brewers-bay", name: "Brewers Bay", island: "Tortola", lat: 18.4460, lng: -64.6494 },
-  { id: "long-bay-west", name: "Long Bay West", island: "Tortola", lat: 18.3915, lng: -64.6810 },
   { id: "sea-cow-bay", name: "Sea Cow Bay", island: "Tortola", lat: 18.4065, lng: -64.6145 },
   { id: "beef-island-bluff", name: "Beef Island Bluff", island: "Tortola", lat: 18.4307, lng: -64.5275 },
-  { id: "paraquita-bay", name: "Paraquita Bay", island: "Tortola", lat: 18.4115, lng: -64.5660 },
   { id: "frenchmans-cay", name: "Frenchman's Cay", island: "Tortola", lat: 18.3960, lng: -64.6910 },
 
-  // VIRGIN GORDA (13 locations)
+  // VIRGIN GORDA (12 locations)
   { id: "spanish-town", name: "Spanish Town", island: "Virgin Gorda", lat: 18.4563, lng: -64.4422 },
   { id: "leverick-bay", name: "Leverick Bay", island: "Virgin Gorda", lat: 18.4995, lng: -64.3877 },
-  { id: "gun-creek", name: "Gun Creek", island: "Virgin Gorda", lat: 18.4990, lng: -64.3985 },
+  { id: "gun-creek", name: "Gun Creek", island: "Virgin Gorda", lat: 18.4899, lng: -64.3825 },
   { id: "north-sound", name: "North Sound", island: "Virgin Gorda", lat: 18.5050, lng: -64.3800 },
   { id: "savannah-bay", name: "Savannah Bay", island: "Virgin Gorda", lat: 18.4660, lng: -64.4214 },
   { id: "pond-bay", name: "Pond Bay", island: "Virgin Gorda", lat: 18.4694, lng: -64.4156 },
@@ -55,8 +52,7 @@ export const BVI_ANCHORAGES = [
   { id: "biras-creek", name: "Biras Creek", island: "Virgin Gorda", lat: 18.4929, lng: -64.3568 },
   { id: "saba-rock", name: "Saba Rock", island: "Virgin Gorda", lat: 18.5030, lng: -64.3589 },
   { id: "oil-nut-bay", name: "Oil Nut Bay", island: "Virgin Gorda", lat: 18.5000, lng: -64.3452 },
-  { id: "berchers-bay", name: "Berchers Bay", island: "Virgin Gorda", lat: 18.4923, lng: -64.3529 },
-  { id: "valley-trunk-bay", name: "Valley Trunk Bay", island: "Virgin Gorda", lat: 18.4333, lng: -64.4333 },
+  { id: "valley-trunk-bay", name: "Valley Trunk Bay", island: "Virgin Gorda", lat: 18.4390, lng: -64.4444 },
 
   // JOST VAN DYKE (4 locations)
   { id: "great-harbour-jvd", name: "Great Harbour", island: "Jost Van Dyke", lat: 18.4418, lng: -64.7515 },
@@ -66,8 +62,8 @@ export const BVI_ANCHORAGES = [
 
   // NORMAN ISLAND (3 locations)
   { id: "the-bight", name: "The Bight", island: "Norman Island", lat: 18.3166, lng: -64.6193 },
-  { id: "benures-bay", name: "Benures Bay", island: "Norman Island", lat: 18.3295, lng: -64.6040 },
-  { id: "privateer-bay", name: "Privateer Bay", island: "Norman Island", lat: 18.3270, lng: -64.5985 },
+  { id: "benures-bay", name: "Benures Bay", island: "Norman Island", lat: 18.3222, lng: -64.6081 },
+  { id: "privateer-bay", name: "Privateer Bay", island: "Norman Island", lat: 18.3120, lng: -64.6247 },
 
   // PETER ISLAND (4 locations)
   { id: "great-harbour-pi", name: "Great Harbour", island: "Peter Island", lat: 18.3575, lng: -64.5857 },
@@ -81,16 +77,14 @@ export const BVI_ANCHORAGES = [
   // SALT ISLAND (1 location)
   { id: "salt-pond-bay", name: "Salt Island Anchorage", island: "Salt Island", lat: 18.3703, lng: -64.5342 },
 
-  // ANEGADA (2 locations)
+  // ANEGADA (1 location)
   { id: "setting-point", name: "Setting Point", island: "Anegada", lat: 18.7232, lng: -64.3844 },
-  { id: "pomato-point", name: "Pomato Point", island: "Anegada", lat: 18.7287, lng: -64.4046 },
 
-  // OTHER CAYS & GUANA ISLAND (6 locations)
-  { id: "marina-cay", name: "Marina Cay", island: "Other Cays", lat: 18.4535, lng: -64.5210 },
-  { id: "scrub-island", name: "Scrub Island", island: "Other Cays", lat: 18.4685, lng: -64.5070 },
+  // OTHER CAYS & GUANA ISLAND (5 locations)
+  { id: "marina-cay", name: "Marina Cay", island: "Other Cays", lat: 18.4600, lng: -64.5283 },
+  { id: "scrub-island", name: "Scrub Island", island: "Other Cays", lat: 18.4663, lng: -64.5249 },
   { id: "guana-island-monkey-point", name: "Monkey Point", island: "Guana Island", lat: 18.4641, lng: -64.5720 },
   { id: "guana-island-white-bay", name: "White Bay", island: "Guana Island", lat: 18.4726, lng: -64.5763 },
-  { id: "mosquito-island", name: "Mosquito Island", island: "Other Cays", lat: 18.5020, lng: -64.3870 },
   { id: "prickly-pear", name: "Prickly Pear", island: "Other Cays", lat: 18.5047, lng: -64.3718 },
 ] as const;
 
