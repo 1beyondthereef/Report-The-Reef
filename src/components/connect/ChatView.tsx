@@ -9,7 +9,6 @@ import {
   Ban,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -43,6 +42,8 @@ export function ChatView({
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchMessages = useCallback(async () => {
     try {
@@ -85,6 +86,9 @@ export function ChatView({
         const data = await response.json();
         setMessages((prev) => [...prev, data.message]);
         setNewMessage("");
+        if (textareaRef.current) {
+          textareaRef.current.style.height = "auto";
+        }
         onMessageSent();
       }
     } catch (error) {
@@ -178,13 +182,33 @@ export function ChatView({
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={sendMessage} className="border-t bg-background p-4">
-        <div className="flex gap-2">
-          <Input
+      <form ref={formRef} onSubmit={sendMessage} className="border-t bg-background p-4">
+        <div className="flex gap-2 items-end">
+          <textarea
+            ref={textareaRef}
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = e.target.scrollHeight + "px";
+            }}
+            onKeyDown={(e) => {
+              if (
+                e.key === "Enter" &&
+                !e.shiftKey &&
+                !e.nativeEvent.isComposing
+              ) {
+                e.preventDefault();
+                if (newMessage.trim() && !isSending) {
+                  formRef.current?.requestSubmit();
+                }
+              }
+            }}
             placeholder="Type a message..."
-            className="flex-1"
+            maxLength={2000}
+            rows={1}
+            className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ maxHeight: "7.5rem", overflowY: "auto" }}
             disabled={isSending}
           />
           <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending}>

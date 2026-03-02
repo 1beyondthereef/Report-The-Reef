@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Home, AlertTriangle, Anchor, Ship, Users, Menu, LogOut, User } from "lucide-react";
+import { Home, AlertTriangle, Anchor, Ship, Users, Menu, LogOut, User, Info } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,6 +26,7 @@ const navItems = [
   { href: "/anchorages", label: "Explore", icon: Anchor },
   { href: "/moorings", label: "Reserve", icon: Ship },
   { href: "/connect", label: "Connect", icon: Users },
+  { href: "/info", label: "Info", icon: Info },
 ];
 
 export function Header() {
@@ -161,6 +162,12 @@ export function Header() {
                   <Link href="/profile">
                     <User className="mr-2 h-4 w-4" />
                     Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="rounded-xl px-3 py-2 cursor-pointer">
+                  <Link href="/info">
+                    <Info className="mr-2 h-4 w-4" />
+                    Info
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-border/50" />

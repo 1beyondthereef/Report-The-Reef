@@ -188,8 +188,8 @@ export async function POST(
 
     sendPushNotification({
       recipientUserId: otherUserId,
-      title: `Message from ${senderName}`,
-      body: messagePreview,
+      title: "Report The Reef",
+      body: `New message from ${senderName}: ${messagePreview}`,
       url: "/connect",
       tag: `conversation-${conversationId}`,
     }).catch((err) => console.error("[Messages] Push notification error:", err));

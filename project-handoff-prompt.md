@@ -252,6 +252,22 @@ A second round of corrections was performed based on continued coordinate review
 - Consider `dayUseOnly` / `connectEligible` flags in `AnchorageSeedData` interface
 - Factual QA sweep on Explore descriptions (spot-check geographic/directional claims)
 
+### UX & Feature Updates (Completed Feb 27, 2026)
+
+1. **Message input wrapping** — Replaced single-line `<Input>` with auto-resizing `<textarea>` in `src/components/connect/ChatView.tsx`. Supports Enter-to-send, Shift+Enter for newline, IME guard, maxLength 2000, and height reset after send.
+
+2. **Profile tap from chat fixed** — Removed early return for `ChatView` in `src/app/(main)/connect/page.tsx`. Component now uses a single root return with conditional rendering. The `viewingProfile` Dialog is mounted at the Fragment root so it renders from both chat view and main view.
+
+3. **Removed disabled Friends button** — The "Friends (Soon)" visibility button in the check-in dialog has been removed. `checkinVisibility` state type kept for backend compat. `Lock` icon import cleaned up.
+
+4. **Upload limits normalized to 15MB** — Created `src/lib/upload-limits.ts` as single source of truth (`MAX_UPLOAD_BYTES`, `MAX_UPLOAD_MB`). Updated `src/lib/constants.ts` (re-exports as `MAX_FILE_SIZE`), `src/lib/supabase/storage.ts`, `src/app/(main)/profile/page.tsx`, `src/app/(main)/profile/setup/page.tsx`, and `src/app/api/connect/profile/photo/route.ts` to use consistent 15MB limit.
+
+5. **Check-in privacy notice** — Added GPS privacy text in two locations: the active check-in banner ("Your exact GPS is used only for check-in verification...") and the check-in dialog description.
+
+6. **App naming fixed** — Updated `public/manifest.json` `short_name` from "ReportReef" to "Report The Reef". Updated push notification format in `src/app/api/connect/conversations/[id]/messages/route.ts` to use "Report The Reef" as title with "New message from {sender}: {preview}" as body.
+
+7. **Info page created** — New route at `src/app/(main)/info/page.tsx` with sections: About (with Beyond The Reef and VI Purpose Fund links), How Messaging Works (accurate encryption disclosure), Disclaimer (GPS/nav liability), and Privacy Policy (data collection, use, security, rights, contact email). Linked from Header dropdown (authenticated users), desktop nav bar, and mobile hamburger menu via `navItems` array and a dedicated `DropdownMenuItem`.
+
 ### Critical constraints for future edits
 - Connect anchorage IDs are persisted in the Supabase `checkins` table (`anchorage_id` column). **Never change existing IDs.**
 - Display names are stored as strings in `location_name`. Removed entries remain interpretable in historical records.

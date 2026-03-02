@@ -19,7 +19,6 @@ import {
   Navigation,
   Users,
   Globe,
-  Lock,
   List,
   X,
   ChevronDown,
@@ -825,9 +824,10 @@ function ConnectContent() {
     );
   }
 
-  // Chat view — delegated to ChatView component
-  if (selectedConversation && currentUser) {
-    return (
+  // Single root return — ChatView or main content, with profile dialog always mounted
+  return (
+    <>
+    {selectedConversation && currentUser ? (
       <ChatView
         conversation={selectedConversation}
         currentUserId={currentUser.id}
@@ -836,11 +836,7 @@ function ConnectContent() {
         onViewProfile={viewUserProfile}
         onMessageSent={fetchConversations}
       />
-    );
-  }
-
-  // Main Connect view
-  return (
+    ) : (
     <div className="flex h-[calc(100vh-4rem-4rem)] flex-col md:h-[calc(100vh-4rem)]">
       {/* Header */}
       <div className="border-b bg-background px-4 py-4">
@@ -1058,6 +1054,9 @@ function ConnectContent() {
                 Check Out
               </Button>
             </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Your exact GPS is used only for check-in verification and is not shown to other users; others see only your selected anchorage.
+            </p>
           </div>
         )}
 
@@ -1382,6 +1381,9 @@ function ConnectContent() {
                 ? `You appear to be at ${nearestAnchorage.name}`
                 : "Choose an anchorage or drop a pin on the map"}
             </DialogDescription>
+            <p className="text-xs text-muted-foreground mt-1">
+              Your exact GPS is used only for verification and is not shown to other users.
+            </p>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto space-y-4">
@@ -1537,23 +1539,11 @@ function ConnectContent() {
                   <div className="flex gap-2">
                     <Button
                       type="button"
-                      variant={checkinVisibility === "public" ? "default" : "outline"}
+                      variant="default"
                       className="flex-1"
-                      onClick={() => setCheckinVisibility("public")}
                     >
                       <Globe className="mr-2 h-4 w-4" />
                       Public
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={checkinVisibility === "friends" ? "default" : "outline"}
-                      className="flex-1"
-                      onClick={() => setCheckinVisibility("friends")}
-                      disabled
-                    >
-                      <Lock className="mr-2 h-4 w-4" />
-                      Friends
-                      <Badge variant="secondary" className="ml-1 text-xs">Soon</Badge>
                     </Button>
                   </div>
                 </div>
@@ -1735,57 +1725,60 @@ function ConnectContent() {
         </DialogContent>
       </Dialog>
 
-      {/* View Profile Dialog */}
-      <Dialog open={!!viewingProfile} onOpenChange={(open) => !open && setViewingProfile(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Profile</DialogTitle>
-          </DialogHeader>
+    </div>
+    )}
 
-          {viewingProfile && (
-            <div className="flex flex-col items-center text-center space-y-4">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={viewingProfile.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl">
-                  {viewingProfile.display_name ? getInitials(viewingProfile.display_name) : "?"}
-                </AvatarFallback>
-              </Avatar>
+    {/* View Profile Dialog — mounted at root so it works from both ChatView and main view */}
+    <Dialog open={!!viewingProfile} onOpenChange={(open) => !open && setViewingProfile(null)}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Profile</DialogTitle>
+        </DialogHeader>
 
-              <div>
-                <p className="text-xl font-semibold">{viewingProfile.display_name}</p>
-                {(viewingProfile.boat_name || viewingProfile.vessel_name) && (
-                  <p className="text-sm text-muted-foreground">
-                    {viewingProfile.boat_name || viewingProfile.vessel_name}
-                  </p>
-                )}
-              </div>
+        {viewingProfile && (
+          <div className="flex flex-col items-center text-center space-y-4">
+            <Avatar className="h-24 w-24">
+              <AvatarImage src={viewingProfile.avatar_url || undefined} />
+              <AvatarFallback className="text-2xl">
+                {viewingProfile.display_name ? getInitials(viewingProfile.display_name) : "?"}
+              </AvatarFallback>
+            </Avatar>
 
-              {viewingProfile.bio && (
-                <p className="text-sm text-muted-foreground">{viewingProfile.bio}</p>
-              )}
-
-              <Button
-                className="w-full"
-                onClick={() => {
-                  setViewingProfile(null);
-                  startConversationWith(viewingProfile.id);
-                }}
-                disabled={!myCheckin}
-              >
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Send Message
-              </Button>
-
-              {!myCheckin && (
-                <p className="text-xs text-muted-foreground">
-                  Check in to send messages
+            <div>
+              <p className="text-xl font-semibold">{viewingProfile.display_name}</p>
+              {(viewingProfile.boat_name || viewingProfile.vessel_name) && (
+                <p className="text-sm text-muted-foreground">
+                  {viewingProfile.boat_name || viewingProfile.vessel_name}
                 </p>
               )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
-    </div>
+
+            {viewingProfile.bio && (
+              <p className="text-sm text-muted-foreground">{viewingProfile.bio}</p>
+            )}
+
+            <Button
+              className="w-full"
+              onClick={() => {
+                setViewingProfile(null);
+                startConversationWith(viewingProfile.id);
+              }}
+              disabled={!myCheckin}
+            >
+              <MessageCircle className="mr-2 h-4 w-4" />
+              Send Message
+            </Button>
+
+            {!myCheckin && (
+              <p className="text-xs text-muted-foreground">
+                Check in to send messages
+              </p>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
 

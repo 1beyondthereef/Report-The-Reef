@@ -250,8 +250,8 @@ export const USER_ROLES = [
 export const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 export const MAGIC_LINK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 
-// File upload limits
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+// File upload limits (centralized in upload-limits.ts)
+export { MAX_UPLOAD_BYTES as MAX_FILE_SIZE } from "./upload-limits";
 export const MAX_FILES_PER_INCIDENT = 5;
 export const ALLOWED_FILE_TYPES = [
   "image/jpeg",

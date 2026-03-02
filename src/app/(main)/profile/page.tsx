@@ -183,8 +183,8 @@ function ProfileContent() {
       setSaveError("Please select an image file (JPG, PNG, etc.)");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setSaveError("Image must be less than 5MB");
+    if (file.size > 15 * 1024 * 1024) {
+      setSaveError("Image must be less than 15MB");
       return;
     }
 

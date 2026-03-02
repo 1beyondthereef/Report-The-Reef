@@ -18,7 +18,8 @@ export const ALLOWED_UPLOAD_TYPES = [
   "video/quicktime",
 ];
 
-export const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+import { MAX_UPLOAD_BYTES } from "@/lib/upload-limits";
+export const MAX_UPLOAD_SIZE = MAX_UPLOAD_BYTES;
 
 // File type extensions mapping
 const MIME_TO_EXT: Record<string, string> = {
