@@ -1,6 +1,6 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
-*Last updated: February 27, 2026*
+*Last updated: February 27, 2026 (Session 2 — UX fixes, Info page, upload limits)*
 
 ## What This App Is
 Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://report-the-reef.vercel.app
@@ -14,6 +14,7 @@ Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating 
 4. **Connect** — Check in at 43 overnight-eligible anchorages, see who's nearby on a real-time map, and message other boaters directly (in-app messaging)
 5. **Reserve** — Mooring reservations (integrates with BoatyBall via iframe/redirect)
 6. **Home** — Dashboard with stats (incidents reported, anchorages, moorings, community members)
+7. **Info** — About page with legal disclaimer, privacy policy, messaging encryption disclosure, and partner links (Beyond The Reef, VI Purpose Fund)
 
 ---
 
@@ -39,7 +40,7 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 - `src/lib/supabase/server.ts` — Server Supabase client with cookie handlers
 
 ### Connect (Social/Messaging)
-- `src/app/(main)/connect/page.tsx` — Main Connect page (~1800 lines). Contains: check-in system, anchorage map (ConnectMap), user panels, messaging interface, profile viewing, anchorage browsing, verification timer (6hr intervals), GPS distance checking, toast notifications. This is the biggest file in the project.
+- `src/app/(main)/connect/page.tsx` — Main Connect page (~1800 lines). Contains: check-in system, anchorage map (ConnectMap), user panels, messaging interface, profile viewing, anchorage browsing, verification timer (6hr intervals), GPS distance checking, toast notifications. This is the biggest file in the project. Uses a single root return with conditional rendering (`ChatView` vs main content) — the `viewingProfile` Dialog is mounted at the fragment root outside both branches.
 - `src/components/maps/ConnectMap.tsx` — Mapbox map showing anchorages with boater count badges. Builds marker list from `BVI_ANCHORAGES` — only the 43 Connect entries appear as check-in-able map pins.
 - `src/components/ConnectNavBadge.tsx` — Red unread message count badge on the Connect nav icon. Polls /api/connect/conversations every 15 seconds.
 - `src/components/ServiceWorkerRegistration.tsx` — Registers /sw.js on mount. Imported in layout.tsx.
@@ -50,7 +51,7 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 - `src/app/api/connect/conversations/route.ts` — GET (list conversations with last message + unread count), POST (create/get conversation). Uses `chat_messages` table (NOT the `messages` table which is Supabase Realtime system table).
 - `src/app/api/connect/conversations/[id]/messages/route.ts` — GET (messages in conversation), POST (send message + trigger push notification to recipient)
 - `src/app/api/connect/profile/[id]/route.ts` — GET another user's profile
-- `src/app/api/connect/profile/photo/route.ts` — POST to upload profile photo. Limit: 20MB. Stores in Supabase Storage "avatars" bucket (public).
+- `src/app/api/connect/profile/photo/route.ts` — POST to upload profile photo. Limit: 15MB (centralized via `src/lib/upload-limits.ts`). Stores in Supabase Storage "avatars" bucket (public).
 
 ### Explore API Routes
 - `src/app/api/anchorages/route.ts` — GET anchorages with optional `island` and `search` filters. Calls `searchAnchorages()` from `src/lib/anchorages-data.ts`.
@@ -63,7 +64,8 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 - `public/push-sw.js` — Push notification event handlers. Shows notifications, handles clicks (opens app to /connect).
 
 ### Other Key Files
-- `src/lib/constants.ts` — `BVI_ANCHORAGES` (43 entries), `CHECKIN_CONFIG` (EXPIRY_HOURS: 48, VERIFICATION_INTERVAL_HOURS: 6), `AUTO_CHECKIN_RADIUS_KM` (0.926km = 0.5nm), `HOLDING_TYPES` (sand, sand_mud, sand_rock, mud, grass, rocky, coral), `PROTECTION_LEVELS`, `BVI_BOUNDS`, `BVI_CHECKIN_BOUNDS`
+- `src/lib/constants.ts` — `BVI_ANCHORAGES` (43 entries), `CHECKIN_CONFIG` (EXPIRY_HOURS: 48, VERIFICATION_INTERVAL_HOURS: 6), `AUTO_CHECKIN_RADIUS_KM` (0.926km = 0.5nm), `HOLDING_TYPES` (sand, sand_mud, sand_rock, mud, grass, rocky, coral), `PROTECTION_LEVELS`, `BVI_BOUNDS`, `BVI_CHECKIN_BOUNDS`, `MAX_FILE_SIZE` (re-exported from `upload-limits.ts`)
+- `src/lib/upload-limits.ts` — Single source of truth for upload limits: `MAX_UPLOAD_BYTES` (15MB), `MAX_UPLOAD_MB` (15). Imported by constants.ts, supabase/storage.ts, and API routes.
 - `src/lib/geo-utils.ts` — Shared `calculateDistance()` haversine function
 - `next.config.mjs` — next-pwa has been REMOVED entirely. Manual SW only.
 - `prisma/seed.ts` — Excluded from tsconfig build (was causing PrismaClient import error)
@@ -121,14 +123,19 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 7. ✅ Connect — see boaters on map with count badges
 8. ✅ Connect — browse any anchorage's boaters
 9. ✅ Connect — in-app messaging (conversations persist forever)
-10. ✅ Profile photos (upload up to 20MB, stored in Supabase avatars bucket)
-11. ✅ Profile viewing (from chat header, map panel, anchorage list)
+10. ✅ Profile photos (upload up to 15MB, stored in Supabase avatars bucket)
+11. ✅ Profile viewing (from chat header, map panel, anchorage list — works from both main view and chat view)
 12. ✅ Service worker registered and active
 13. ✅ Push subscription created and saved to database
 14. ✅ Push notification sending (api/push/send returns sent:1)
 15. ✅ GPS verification with 5nm distance threshold (warns instead of auto-checkout)
 16. ✅ Unread message badge on Connect nav icon
 17. ✅ Anchorage sync validation script (`npm run check:anchorages`)
+18. ✅ Message input with text wrapping, auto-resize, Enter/Shift+Enter, 2000 char limit
+19. ✅ Check-in GPS privacy notice (banner + dialog)
+20. ✅ Info page with About, Legal Disclaimer, Privacy Policy, Messaging disclosure
+21. ✅ App branded as "Report The Reef" in manifest and push notifications
+22. ✅ Upload limits normalized to 15MB across all upload paths
 
 ## What Needs Fixing / Testing
 1. **Push notifications not appearing on screen** — `sent:1` is returned but no notification shows. Possible causes:
@@ -165,6 +172,12 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 - sw.js must NOT be in .gitignore (was previously, causing 404 on Vercel)
 - Explore and Connect use separate anchorage datasets by design (different detail levels, different purposes). Sync enforced by `scripts/check-anchorage-sync.ts`.
 - Connect anchorage IDs are persisted in DB. **Never rename or change existing IDs.** Entries can be removed from `BVI_ANCHORAGES` but historical checkins remain valid.
+- Connect page uses a single root return (`<>...</>`) with conditional rendering of `ChatView` vs main content. The profile `Dialog` is mounted at the fragment root so it works from both views.
+- The disabled "Friends" visibility option was removed from the check-in dialog. The `checkinVisibility` state type still includes `"friends"` for future backend compatibility.
+- All file upload limits are centralized in `src/lib/upload-limits.ts` (15MB). Other modules re-export or import from there.
+- Info page (`/info`) is a static server-rendered page (no client state). Linked from header nav, dropdown, and hamburger menu.
+- Push notification title is "Report The Reef" (app-branded), with sender name and preview in the body.
+- Messages are NOT end-to-end encrypted (HTTPS transport + secure DB storage only). This is disclosed on the Info page.
 
 ---
 
