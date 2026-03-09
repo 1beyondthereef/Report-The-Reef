@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
+import { isNativePlatform } from "@/lib/platform";
 
 export function ServiceWorkerRegistration() {
   useEffect(() => {
-    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    if (
+      typeof window !== "undefined" &&
+      "serviceWorker" in navigator &&
+      !isNativePlatform()
+    ) {
       navigator.serviceWorker
         .register("/sw.js")
         .then((registration) => {

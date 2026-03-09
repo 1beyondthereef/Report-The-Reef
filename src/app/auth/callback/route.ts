@@ -50,8 +50,15 @@ export async function GET(request: Request) {
 
     if (exchangeError) {
       console.error("Code exchange error:", exchangeError.message);
+
+      const msg = exchangeError.message.toLowerCase();
+      const friendlyMessage =
+        msg.includes("code verifier") || msg.includes("code challenge")
+          ? "This sign-in link was opened on a different device or browser. Please try signing in again from this device."
+          : exchangeError.message;
+
       return NextResponse.redirect(
-        `${origin}/login?error=${encodeURIComponent(exchangeError.message)}`
+        `${origin}/login?error=${encodeURIComponent(friendlyMessage)}`
       );
     }
 

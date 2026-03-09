@@ -1,9 +1,9 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
-*Last updated: February 27, 2026 (Session 2 — UX fixes, Info page, upload limits)*
+*Last updated: February 27, 2026 (Session 3 — Capacitor setup, platform detection, app store launch prep)*
 
 ## What This App Is
-Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://report-the-reef.vercel.app
+Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://reportthereef.com
 
 **Stack:** Next.js 14 (App Router), TypeScript, Supabase (auth, database, storage), Mapbox, Tailwind CSS, deployed on Vercel.
 
@@ -178,6 +178,12 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 - Info page (`/info`) is a static server-rendered page (no client state). Linked from header nav, dropdown, and hamburger menu.
 - Push notification title is "Report The Reef" (app-branded), with sender name and preview in the body.
 - Messages are NOT end-to-end encrypted (HTTPS transport + secure DB storage only). This is disclosed on the Info page.
+- Capacitor native shells load the Vercel-hosted app remotely (`server.url` in `capacitor.config.ts`). The app is NOT statically exported — Next.js API routes require the Vercel backend.
+- Service worker registration is skipped in native Capacitor shells to avoid SW cache/push conflicts with native push notifications.
+- Platform detection (`src/lib/platform.ts`) uses try/catch so `@capacitor/core` import doesn't crash in web-only builds.
+- Push notification multi-channel support requires running `scripts/push-schema-migration.sql` in Supabase SQL Editor before deploying native iOS builds.
+- Android TWA uses web push (Chrome-backed); no FCM complexity unless reliability issues arise in testing.
+- `public/.well-known/assetlinks.json` has a placeholder fingerprint — must be replaced with real Play signing key before Android submission.
 
 ---
 
@@ -280,6 +286,24 @@ A second round of corrections was performed based on continued coordinate review
 6. **App naming fixed** — Updated `public/manifest.json` `short_name` from "ReportReef" to "Report The Reef". Updated push notification format in `src/app/api/connect/conversations/[id]/messages/route.ts` to use "Report The Reef" as title with "New message from {sender}: {preview}" as body.
 
 7. **Info page created** — New route at `src/app/(main)/info/page.tsx` with sections: About (with Beyond The Reef and VI Purpose Fund links), How Messaging Works (accurate encryption disclosure), Disclaimer (GPS/nav liability), and Privacy Policy (data collection, use, security, rights, contact email). Linked from Header dropdown (authenticated users), desktop nav bar, and mobile hamburger menu via `navItems` array and a dedicated `DropdownMenuItem`.
+
+### App Store Launch Prep (Completed Feb 27, 2026 — Session 3)
+
+1. **Domain updated** — `project-handoff-prompt.md` and `.env.example` now reference `https://reportthereef.com`. External service updates (Supabase Auth URLs, Google OAuth console, Vercel env vars) must be done manually in their respective dashboards.
+
+2. **Capacitor initialized** — Installed `@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`. Ran `cap init`, configured `capacitor.config.ts` with `server.url: 'https://reportthereef.com'`, ran `cap add ios` and `cap sync`. The `ios/` folder is committed to git for build reproducibility.
+
+3. **Platform detection** — Created `src/lib/platform.ts` with `isNativePlatform()`, `getPlatform()`, and `getPushChannel()`. Uses `Capacitor.isNativePlatform()` / `Capacitor.getPlatform()` with try/catch so the app doesn't crash in web-only contexts.
+
+4. **Service worker gating** — `src/components/ServiceWorkerRegistration.tsx` now skips SW registration inside native Capacitor shells (prevents cache/push conflicts with native push).
+
+5. **Digital Asset Links** — Created `public/.well-known/assetlinks.json` for Android TWA with `com.beyondthereef.reportthereef` package name. **Pre-release gate:** Do not submit Android build until real Play signing fingerprint replaces `YOUR_APP_SIGNING_KEY_FINGERPRINT` and is verified at `reportthereef.com/.well-known/assetlinks.json`.
+
+6. **Push schema migration reference** — Created `scripts/push-schema-migration.sql` for manual execution in Supabase SQL Editor. Adds `channel` (text, default 'web') and `device_token` columns, changes unique constraint from `(user_id, subscription)` to `(user_id, channel)` for multi-channel push support.
+
+7. **Unread badge positioning** — Changed `ConnectNavBadge` from `-top-4` to `-top-6` so the red badge sits above the Connect icon without overlapping.
+
+8. **PKCE error messages** — `src/app/auth/callback/route.ts` now detects PKCE-related errors (code verifier/challenge) and shows a user-friendly message ("This sign-in link was opened on a different device or browser...") instead of raw technical errors. Original error is still logged server-side.
 
 ### Critical constraints for future edits
 - Connect anchorage IDs are persisted in the Supabase `checkins` table (`anchorage_id` column). **Never change existing IDs.**
