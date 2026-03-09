@@ -1,6 +1,6 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
-*Last updated: February 27, 2026 (Session 3 — Capacitor setup, platform detection, app store launch prep)*
+*Last updated: March 9, 2026 (Session 3 — Capacitor setup, platform detection, bug fixes, app store launch prep)*
 
 ## What This App Is
 Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://reportthereef.com
@@ -43,7 +43,7 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 - `src/app/(main)/connect/page.tsx` — Main Connect page (~1800 lines). Contains: check-in system, anchorage map (ConnectMap), user panels, messaging interface, profile viewing, anchorage browsing, verification timer (6hr intervals), GPS distance checking, toast notifications. This is the biggest file in the project. Uses a single root return with conditional rendering (`ChatView` vs main content) — the `viewingProfile` Dialog is mounted at the fragment root outside both branches.
 - `src/components/maps/ConnectMap.tsx` — Mapbox map showing anchorages with boater count badges. Builds marker list from `BVI_ANCHORAGES` — only the 43 Connect entries appear as check-in-able map pins.
 - `src/components/ConnectNavBadge.tsx` — Red unread message count badge on the Connect nav icon. Polls /api/connect/conversations every 15 seconds.
-- `src/components/ServiceWorkerRegistration.tsx` — Registers /sw.js on mount. Imported in layout.tsx.
+- `src/components/ServiceWorkerRegistration.tsx` — Registers /sw.js on mount. Imported in layout.tsx. **Skips registration inside native Capacitor shells** (uses `isNativePlatform()` from `src/lib/platform.ts`).
 
 ### Connect API Routes
 - `src/app/api/connect/checkins/route.ts` — GET (list active checkins), POST (check in at anchorage). Validates display_name and avatar_url before check-in. `DEFAULT_BVI_LOCATION` is derived from `BVI_ANCHORAGES` (not hardcoded).
@@ -67,11 +67,15 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 - `src/lib/constants.ts` — `BVI_ANCHORAGES` (43 entries), `CHECKIN_CONFIG` (EXPIRY_HOURS: 48, VERIFICATION_INTERVAL_HOURS: 6), `AUTO_CHECKIN_RADIUS_KM` (0.926km = 0.5nm), `HOLDING_TYPES` (sand, sand_mud, sand_rock, mud, grass, rocky, coral), `PROTECTION_LEVELS`, `BVI_BOUNDS`, `BVI_CHECKIN_BOUNDS`, `MAX_FILE_SIZE` (re-exported from `upload-limits.ts`)
 - `src/lib/upload-limits.ts` — Single source of truth for upload limits: `MAX_UPLOAD_BYTES` (15MB), `MAX_UPLOAD_MB` (15). Imported by constants.ts, supabase/storage.ts, and API routes.
 - `src/lib/geo-utils.ts` — Shared `calculateDistance()` haversine function
+- `src/lib/platform.ts` — Platform detection for Capacitor native vs web. Exports `isNativePlatform()`, `getPlatform()` ('ios'|'android'|'web'), `getPushChannel()` ('apns'|'web'). Uses try/catch so it works safely in web-only builds.
+- `capacitor.config.ts` — Capacitor configuration. Points native shells at `https://reportthereef.com` via `server.url`. App ID: `com.beyondthereef.reportthereef`.
+- `public/.well-known/assetlinks.json` — Android Digital Asset Links for TWA. **Contains placeholder fingerprint** — must be replaced before Android submission.
 - `next.config.mjs` — next-pwa has been REMOVED entirely. Manual SW only.
 - `prisma/seed.ts` — Excluded from tsconfig build (was causing PrismaClient import error)
 
 ### Scripts
 - `scripts/check-anchorage-sync.ts` — Anchorage coordinate sync validation. Run via `npm run check:anchorages`.
+- `scripts/push-schema-migration.sql` — Reference SQL for adding multi-channel push support. Run manually in Supabase SQL Editor before deploying native iOS builds. Adds `channel` and `device_token` columns, changes unique constraint to `(user_id, channel)`.
 
 ---
 
@@ -136,6 +140,11 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 20. ✅ Info page with About, Legal Disclaimer, Privacy Policy, Messaging disclosure
 21. ✅ App branded as "Report The Reef" in manifest and push notifications
 22. ✅ Upload limits normalized to 15MB across all upload paths
+23. ✅ Capacitor initialized with iOS platform (native shell loads Vercel-hosted app)
+24. ✅ Platform detection utility (`src/lib/platform.ts`) for native vs web
+25. ✅ Service worker gated — skips registration in native Capacitor shells
+26. ✅ PKCE auth errors mapped to user-friendly messages
+27. ✅ Unread badge repositioned above Connect nav icon
 
 ## What Needs Fixing / Testing
 1. **Push notifications not appearing on screen** — `sent:1` is returned but no notification shows. Possible causes:
@@ -143,11 +152,11 @@ The app has two independent anchorage datasets that are kept in sync via an auto
    - Mac notification settings for Chrome may be off (System Settings → Notifications → Chrome)
    - Service worker push event handler in push-sw.js may not be firing — needs debugging
    
-2. **Unread badge positioning** — The red notification count badge on the Connect nav button overlaps the button directly. User wants it positioned ABOVE the button instead.
+2. ~~**Unread badge positioning**~~ — **FIXED in Session 3.** Changed `-top-4` to `-top-6` in `ConnectNavBadge.tsx`.
 
-3. **Profile photo squishing** — Need `className="object-cover"` on ALL `<AvatarImage>` components throughout the app (connect page, settings, chat header, user panels, conversation list). Also add to base AvatarImage in `src/components/ui/avatar.tsx`.
+3. ~~**Profile photo squishing**~~ — **Not needed.** Base `AvatarImage` in `src/components/ui/avatar.tsx` already applies `object-cover` by default.
 
-4. **PKCE error on cross-device auth** — When user clicks email link on a different device than where they initiated login, shows raw PKCE error. Need friendly error message in callback route and login page.
+4. ~~**PKCE error on cross-device auth**~~ — **FIXED in Session 3.** `src/app/auth/callback/route.ts` now maps code verifier/challenge errors to a friendly message.
 
 5. **Supabase email delivery** — Rate limited on free tier (3-4 emails/hour). Password reset emails may not arrive. Consider configuring custom SMTP in Supabase settings.
 
@@ -328,3 +337,43 @@ Full conversation history is available at:
 - Created comprehensive GTM strategy document with messaging for Instagram, Facebook, WhatsApp, press, marina flyers, partnerships
 - Created "Project Loading" Instagram teaser post
 - User is actively editing promotional video in iMovie
+
+---
+
+## App Store Launch Roadmap (next steps — not yet done)
+
+The full plan is at `.cursor/plans/domain_capacitor_fixes_v2_be46b5f5.plan.md` (read-only reference, do not edit). Below is a summary of what has been completed vs what remains.
+
+### Completed (Session 3)
+- ✅ Domain code references updated (`reportthereef.com`)
+- ✅ Capacitor initialized with iOS platform + config
+- ✅ Platform detection utility created
+- ✅ Service worker gated for native shells
+- ✅ Digital Asset Links placeholder created
+- ✅ Push schema migration SQL reference created
+- ✅ Badge positioning fixed
+- ✅ PKCE friendly error messages added
+
+### Manual setup required (user must do in external dashboards)
+- Register `reportthereef.com` domain and point DNS to Vercel
+- Supabase Dashboard → Authentication → URL Configuration: set Site URL to `https://reportthereef.com`, add `https://reportthereef.com/auth/callback` to Redirect URLs
+- Google Cloud Console → OAuth 2.0 Client: add `https://reportthereef.com` to Authorized JavaScript Origins + Redirect URIs
+- Vercel dashboard: set `NEXT_PUBLIC_APP_URL=https://reportthereef.com`
+- Enroll in Apple Developer Program ($99/year) — individual first, migrate to org once D-U-N-S approved
+- Enroll in Google Play Developer Program ($25 one-time)
+
+### Remaining code/build work
+1. **Validate OAuth in iOS Simulator** — Run Capacitor app in Xcode, test Google + email OTP sign-in inside WebView. If redirect fails, add custom URL scheme handling.
+2. **Push notification multi-channel implementation** — Run `scripts/push-schema-migration.sql` in Supabase, then update `src/lib/push-notifications.ts` to branch on `getPushChannel()` (web → existing VAPID flow, native → `@capacitor/push-notifications` for APNs token). Update `src/lib/push.ts` server-side to send via APNs for `channel === 'apns'` (requires `apn` npm package + APNs key from Apple Developer dashboard).
+3. **Native plugins** — Install `@capacitor/push-notifications`, `@capacitor/geolocation`, `@capacitor/camera`, run `npx cap sync`, configure iOS permissions in `ios/App/App/Info.plist`.
+4. **Offline error screen** — Add connectivity detection + branded fallback UI for when WebView can't reach the server.
+5. **Android TWA packaging** — Use `@bubblewrap/cli` or PWABuilder. Replace `assetlinks.json` placeholder fingerprint with real Play signing key.
+6. **iOS build + submission** — Archive in Xcode, upload to App Store Connect, submit with Apple review notes (conservation platform, native push/GPS/camera, BVI non-profit).
+7. **Android submission** — Upload signed AAB to Google Play Console with store listing + screenshots.
+8. **QR code + optional /download landing page** — Simple QR pointing to `https://reportthereef.com`, with optional user-agent detection to show App Store / Play Store badges.
+
+### Architecture notes for native builds
+- The app is NOT statically exported. Native shells load `https://reportthereef.com` via `server.url` in `capacitor.config.ts`. All API routes stay on Vercel.
+- iOS uses Capacitor (WebView wrapper). Android uses TWA (Chrome-backed, web push works natively).
+- Push notifications: web channel uses existing VAPID/web-push. iOS native channel uses APNs. Android TWA stays on web push. The `push_subscriptions` table supports one subscription per user per channel after the migration.
+- `ios/` folder is committed to git for build reproducibility. `android/` folder (when created via Bubblewrap) should also be committed.
