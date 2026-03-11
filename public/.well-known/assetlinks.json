@@ -4,7 +4,7 @@
     "target": {
       "namespace": "android_app",
       "package_name": "com.beyondthereef.reportthereef",
-      "sha256_cert_fingerprints": ["YOUR_APP_SIGNING_KEY_FINGERPRINT"]
+      "sha256_cert_fingerprints": ["B0:15:36:0E:2A:CC:44:F5:06:1E:0A:A2:32:30:2E:C1:50:6A:0A:28:AF:5A:7C:FF:41:F4:41:EB:3C:49:59:FC"]
     }
   }
 ]
