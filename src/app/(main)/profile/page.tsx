@@ -717,6 +717,15 @@ function ProfileContent() {
           )}
         </TabsContent>
       </Tabs>
+
+      <div className="mt-8 border-t pt-6 text-center">
+        <Link
+          href="/delete-account"
+          className="text-sm text-destructive hover:underline"
+        >
+          Delete Account
+        </Link>
+      </div>
     </div>
   );
 }

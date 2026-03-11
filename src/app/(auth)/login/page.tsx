@@ -27,6 +27,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const error = searchParams.get("error");
+  const deleted = searchParams.get("deleted");
 
   // Use AuthContext as single source of truth for auth state
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -412,6 +413,13 @@ function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {deleted && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-400">
+            <CheckCircle className="h-4 w-4 shrink-0" />
+            <span>Your account has been permanently deleted. Thank you for being part of the Report The Reef community.</span>
+          </div>
+        )}
+
         {serverError && (
           <div className="mb-4 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
             <AlertCircle className="h-4 w-4 shrink-0" />

@@ -153,7 +153,11 @@ export default function InfoPage() {
             <h3 className="font-semibold text-foreground">Your Rights</h3>
             <p>
               You may request access to, correction of, or deletion of your personal data
-              at any time by contacting us.
+              at any time by contacting us. You can{" "}
+              <a href="/delete-account" className="text-primary hover:underline">
+                delete your account
+              </a>{" "}
+              at any time.
             </p>
           </div>
 

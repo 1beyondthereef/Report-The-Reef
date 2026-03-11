@@ -51,12 +51,12 @@ export async function GET() {
           return null;
         }
 
-        // Get other user's profile
+        // Get other user's profile (may be null if account was deleted)
         const { data: profile } = await supabase
           .from("profiles")
           .select("id, display_name, boat_name, vessel_name, avatar_url")
           .eq("id", otherUserId)
-          .single();
+          .maybeSingle();
 
         // Get last message
         const { data: lastMessage } = await supabase
@@ -65,7 +65,20 @@ export async function GET() {
           .eq("conversation_id", conv.id)
           .order("created_at", { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
+
+        // Hide conversations with deleted users that have no messages left
+        if (!profile && !lastMessage) {
+          return null;
+        }
+
+        const otherUser = profile || {
+          id: otherUserId,
+          display_name: "Deleted User",
+          boat_name: null,
+          vessel_name: null,
+          avatar_url: null,
+        };
 
         // Get unread count
         const { count: unreadCount } = await supabase
@@ -77,7 +90,7 @@ export async function GET() {
 
         return {
           id: conv.id,
-          otherUser: profile,
+          otherUser,
           lastMessage,
           unreadCount: unreadCount || 0,
           updatedAt: conv.updated_at,
@@ -170,12 +183,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get other user's profile
+    // Get other user's profile — reject if account was deleted
     const { data: profile } = await supabase
       .from("profiles")
       .select("id, display_name, boat_name, vessel_name, avatar_url")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({
       conversation: {
