@@ -1,6 +1,6 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
-*Last updated: March 9, 2026 (Session 3 — Capacitor setup, platform detection, bug fixes, app store launch prep)*
+*Last updated: March 11, 2026 (Session 4 — Account deletion for Google Play compliance)*
 
 ## What This App Is
 Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://reportthereef.com
@@ -33,8 +33,10 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 
 ### Auth
 - `src/context/AuthContext.tsx` — Single source of truth for auth state. Uses `hasInitialized` ref to prevent double-refresh on page load. Calls `registerPushNotifications` on SIGNED_IN and INITIAL_SESSION events.
-- `src/app/(auth)/login/page.tsx` — Login page with Google OAuth + email/password. Redirects to /connect when authenticated. Does NOT independently check sessions (AuthContext handles that).
+- `src/app/(auth)/login/page.tsx` — Login page with Google OAuth + email/password. Redirects to /connect when authenticated. Does NOT independently check sessions (AuthContext handles that). Shows green "account deleted" banner when `?deleted=true` query param is present.
+- `src/app/(auth)/delete-account/page.tsx` — Account deletion page for Google Play compliance. Authenticated users type "DELETE" to confirm; unauthenticated users see sign-in link + contact email. Submit this URL to Google Play Console Data Safety.
 - `src/app/auth/callback/route.ts` — OAuth callback handler. Exchanges code for session, checks if profile is complete, redirects accordingly.
+- `src/app/api/account/delete/route.ts` — POST endpoint for account deletion. Uses CSRF origin/referer allowlist, server-side `"DELETE"` confirmation, and service role client. Anonymizes incidents/wildlife (nulls identity fields), deletes user-owned data only (own messages, own reports — not conversations or other users' data), cleans up avatar from storage, then deletes auth user.
 - `src/middleware.ts` — Refreshes auth tokens. Matcher excludes: `_next/static`, `_next/image`, `favicon.ico`, `sw.js`, `push-sw.js`, `manifest.json`, `login`, `verify`, `auth`, `api/auth`, and static file extensions.
 - `src/lib/supabase/client.ts` — Browser Supabase client (singleton, persistSession: true)
 - `src/lib/supabase/server.ts` — Server Supabase client with cookie handlers
@@ -48,7 +50,7 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 ### Connect API Routes
 - `src/app/api/connect/checkins/route.ts` — GET (list active checkins), POST (check in at anchorage). Validates display_name and avatar_url before check-in. `DEFAULT_BVI_LOCATION` is derived from `BVI_ANCHORAGES` (not hardcoded).
 - `src/app/api/connect/checkins/verify/route.ts` — POST with GPS coords. Checks distance from anchorage (5 nautical miles / 9.3km threshold). Returns `movedAway: true` if too far instead of auto-checkout.
-- `src/app/api/connect/conversations/route.ts` — GET (list conversations with last message + unread count), POST (create/get conversation). Uses `chat_messages` table (NOT the `messages` table which is Supabase Realtime system table).
+- `src/app/api/connect/conversations/route.ts` — GET (list conversations with last message + unread count), POST (create/get conversation). Uses `chat_messages` table (NOT the `messages` table which is Supabase Realtime system table). GET uses `.maybeSingle()` for profile lookups with a "Deleted User" fallback; hides conversations with deleted users that have no messages. POST returns 404 when targeting a deleted user.
 - `src/app/api/connect/conversations/[id]/messages/route.ts` — GET (messages in conversation), POST (send message + trigger push notification to recipient)
 - `src/app/api/connect/profile/[id]/route.ts` — GET another user's profile
 - `src/app/api/connect/profile/photo/route.ts` — POST to upload profile photo. Limit: 15MB (centralized via `src/lib/upload-limits.ts`). Stores in Supabase Storage "avatars" bucket (public).
@@ -145,6 +147,10 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 25. ✅ Service worker gated — skips registration in native Capacitor shells
 26. ✅ PKCE auth errors mapped to user-friendly messages
 27. ✅ Unread badge repositioned above Connect nav icon
+28. ✅ Account deletion page (`/delete-account`) for Google Play compliance
+29. ✅ Account deletion API with CSRF protection, safe anonymization, storage cleanup
+30. ✅ Conversations handle deleted profiles gracefully ("Deleted User" fallback)
+31. ✅ Login page shows confirmation banner after account deletion
 
 ## What Needs Fixing / Testing
 1. **Push notifications not appearing on screen** — `sent:1` is returned but no notification shows. Possible causes:
@@ -193,6 +199,12 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 - Push notification multi-channel support requires running `scripts/push-schema-migration.sql` in Supabase SQL Editor before deploying native iOS builds.
 - Android TWA uses web push (Chrome-backed); no FCM complexity unless reliability issues arise in testing.
 - `public/.well-known/assetlinks.json` has a placeholder fingerprint — must be replaced with real Play signing key before Android submission.
+- Account deletion anonymizes `incidents` and `wildlife_sightings` (nulls `reporter_id`, `contact_name`, `contact_email`, `reporter_name`, `reporter_email`) but keeps the records for conservation. All other user data is deleted.
+- Account deletion does NOT delete `conversations` rows (shared between two users). Only the deleting user's own `chat_messages` are removed. The other participant sees a "Deleted User" fallback.
+- Account deletion does NOT delete `reports` where `reported_id = userId` — those were filed by other users and belong to them.
+- Account deletion uses a service role Supabase client (same pattern as `src/lib/push.ts`) to bypass RLS. CSRF protected via Origin/Referer allowlist.
+- Avatar storage cleanup during deletion is defensive (try/catch, non-blocking) — deletion proceeds even if storage cleanup fails.
+- `/delete-account` is the public URL for Google Play Console Data Safety compliance. Unauthenticated users see contact email fallback.
 
 ---
 
@@ -314,6 +326,18 @@ A second round of corrections was performed based on continued coordinate review
 
 8. **PKCE error messages** — `src/app/auth/callback/route.ts` now detects PKCE-related errors (code verifier/challenge) and shows a user-friendly message ("This sign-in link was opened on a different device or browser...") instead of raw technical errors. Original error is still logged server-side.
 
+### Account Deletion (Completed March 11, 2026 — Session 4)
+
+1. **Account deletion API** — Created `src/app/api/account/delete/route.ts`. Uses CSRF origin/referer allowlist (reportthereef.com, legacy Vercel, localhost), server-side `{ confirmation: "DELETE" }` check, and service role client. 11-step idempotent deletion: anonymize incidents + wildlife identity fields, delete push subscriptions, own chat messages, blocked users, checkins, reservations, own reports, avatar from storage, profile, then auth user. Each step has its own error handling; client can safely retry on failure.
+
+2. **Account deletion page** — Created `src/app/(auth)/delete-account/page.tsx`. Authenticated flow: shows what will be deleted vs kept, requires typing "DELETE", destructive button, redirects to `/login?deleted=true` on success. Unauthenticated flow: sign-in link + contact email (`volunteer@1beyondthereef.com`).
+
+3. **Conversations handle deleted profiles** — Updated `src/app/api/connect/conversations/route.ts` GET handler to use `.maybeSingle()` with a "Deleted User" fallback (id, display_name, null avatar). Conversations with deleted users and no remaining messages are filtered out. POST handler returns 404 when creating conversations with deleted users.
+
+4. **Login deletion banner** — `src/app/(auth)/login/page.tsx` now shows a green `CheckCircle` confirmation banner when `?deleted=true` query param is present.
+
+5. **Delete Account links** — Added "Delete Account" link (destructive styling) at the bottom of `src/app/(main)/profile/page.tsx`. Added clickable link to `/delete-account` in the "Your Rights" section of `src/app/(main)/info/page.tsx`.
+
 ### Critical constraints for future edits
 - Connect anchorage IDs are persisted in the Supabase `checkins` table (`anchorage_id` column). **Never change existing IDs.**
 - Display names are stored as strings in `location_name`. Removed entries remain interpretable in historical records.
@@ -344,7 +368,7 @@ Full conversation history is available at:
 
 The full plan is at `.cursor/plans/domain_capacitor_fixes_v2_be46b5f5.plan.md` (read-only reference, do not edit). Below is a summary of what has been completed vs what remains.
 
-### Completed (Session 3)
+### Completed (Sessions 3-4)
 - ✅ Domain code references updated (`reportthereef.com`)
 - ✅ Capacitor initialized with iOS platform + config
 - ✅ Platform detection utility created
@@ -353,12 +377,14 @@ The full plan is at `.cursor/plans/domain_capacitor_fixes_v2_be46b5f5.plan.md` (
 - ✅ Push schema migration SQL reference created
 - ✅ Badge positioning fixed
 - ✅ PKCE friendly error messages added
+- ✅ Account deletion page + API for Google Play compliance
+- ✅ Conversations handle deleted user profiles gracefully
 
 ### Manual setup required (user must do in external dashboards)
-- Register `reportthereef.com` domain and point DNS to Vercel
-- Supabase Dashboard → Authentication → URL Configuration: set Site URL to `https://reportthereef.com`, add `https://reportthereef.com/auth/callback` to Redirect URLs
-- Google Cloud Console → OAuth 2.0 Client: add `https://reportthereef.com` to Authorized JavaScript Origins + Redirect URIs
-- Vercel dashboard: set `NEXT_PUBLIC_APP_URL=https://reportthereef.com`
+- ~~Register `reportthereef.com` domain and point DNS to Vercel~~ — **DONE (Session 4)**
+- ~~Supabase Dashboard → Authentication → URL Configuration~~ — **DONE (Session 4)**
+- ~~Google Cloud Console → OAuth 2.0 Client~~ — **DONE (Session 4)**
+- ~~Vercel dashboard: set `NEXT_PUBLIC_APP_URL=https://reportthereef.com`~~ — **DONE (Session 4)**
 - Enroll in Apple Developer Program ($99/year) — individual first, migrate to org once D-U-N-S approved
 - Enroll in Google Play Developer Program ($25 one-time)
 
