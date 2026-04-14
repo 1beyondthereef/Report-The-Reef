@@ -1,0 +1,487 @@
+"use client";
+
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef, useMemo } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { Profile } from "@/lib/supabase/types";
+import { registerPushNotifications } from "@/lib/push-notifications";
+import { isNativePlatform } from "@/lib/platform";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+
+interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  avatarUrl: string | null;
+  boatName: string | null;
+  homePort: string | null;
+  showOnMap: boolean;
+}
+
+interface AuthContextType {
+  user: User | null;
+  profile: Profile | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
+  signUp: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  updateProfile: (data: Partial<Profile>) => Promise<{ success: boolean; error?: string }>;
+  resetPassword: (email: string) => Promise<{ success: boolean; message: string }>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Track if component is mounted to prevent state updates after unmount
+  const isMounted = useRef(true);
+
+  // Prevent duplicate OAuth return processing
+  const processingAuthReturn = useRef(false);
+
+  // Track if initial auth check has completed
+  const hasInitialized = useRef(false);
+
+  // Memoize supabase client to prevent recreation on every render
+  const supabase = useMemo(() => createClient(), []);
+
+  const fetchProfile = useCallback(async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching profile:", error);
+      return null;
+    }
+
+    return data as Profile;
+  }, [supabase]);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      // First check for existing session (doesn't throw if no session)
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+      // Check if component is still mounted before updating state
+      if (!isMounted.current) {
+        console.log("[AuthContext] Component unmounted, skipping state update");
+        return;
+      }
+
+      // Handle session errors (but not "no session" which is normal)
+      if (sessionError) {
+        // Ignore AbortError - this happens during React StrictMode double-mount
+        if (sessionError.message?.includes("AbortError") || sessionError.name === "AbortError") {
+          console.log("[AuthContext] Session check aborted (React StrictMode, safe to ignore)");
+          return;
+        }
+        console.error("[AuthContext] Session error:", sessionError);
+        setUser(null);
+        setProfile(null);
+        return;
+      }
+
+      // No session = user is logged out (this is normal, not an error)
+      if (!sessionData.session) {
+        console.log("[AuthContext] No session - user is logged out");
+        setUser(null);
+        setProfile(null);
+        return;
+      }
+
+      // Session exists - now get verified user data
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+
+      if (!isMounted.current) return;
+
+      if (userError) {
+        // Ignore AbortError
+        if (userError.message?.includes("AbortError") || userError.name === "AbortError") {
+          console.log("[AuthContext] User fetch aborted (safe to ignore)");
+          return;
+        }
+        // AuthSessionMissingError means session expired - treat as logged out
+        if (userError.message?.includes("Auth session missing") || userError.name === "AuthSessionMissingError") {
+          console.log("[AuthContext] Session expired - user is logged out");
+          setUser(null);
+          setProfile(null);
+          return;
+        }
+        console.error("[AuthContext] User fetch error:", userError);
+        setUser(null);
+        setProfile(null);
+        return;
+      }
+
+      const supabaseUser = userData?.user;
+
+      if (supabaseUser && supabaseUser.id) {
+        try {
+          const profileData = await fetchProfile(supabaseUser.id);
+
+          // Check mounted again after async operation
+          if (!isMounted.current) return;
+
+          if (profileData) {
+            setProfile(profileData);
+            setUser({
+              id: supabaseUser.id,
+              email: supabaseUser.email || "",
+              name: profileData.display_name || null,
+              avatarUrl: profileData.avatar_url || null,
+              boatName: profileData.vessel_name || null,
+              homePort: profileData.home_port || null,
+              showOnMap: profileData.show_on_map ?? false,
+            });
+          } else {
+            // Profile might not exist yet, create basic user
+            setProfile(null);
+            setUser({
+              id: supabaseUser.id,
+              email: supabaseUser.email || "",
+              name: null,
+              avatarUrl: null,
+              boatName: null,
+              homePort: null,
+              showOnMap: false,
+            });
+          }
+        } catch (profileError) {
+          // Ignore AbortError
+          if (profileError instanceof Error && profileError.name === "AbortError") {
+            console.log("[AuthContext] Profile fetch aborted (safe to ignore)");
+            return;
+          }
+          console.error("[AuthContext] Error fetching profile:", profileError);
+          if (!isMounted.current) return;
+          // Still set basic user even if profile fetch fails
+          setProfile(null);
+          setUser({
+            id: supabaseUser.id,
+            email: supabaseUser.email || "",
+            name: null,
+            avatarUrl: null,
+            boatName: null,
+            homePort: null,
+            showOnMap: false,
+          });
+        }
+      } else {
+        setUser(null);
+        setProfile(null);
+      }
+    } catch (error) {
+      // Ignore AbortError - this happens during React StrictMode double-mount
+      if (error instanceof Error && error.name === "AbortError") {
+        console.log("[AuthContext] Request aborted (React StrictMode, safe to ignore)");
+        return;
+      }
+      // AuthSessionMissingError means no session - treat as logged out (not an error)
+      if (error instanceof Error && (error.message?.includes("Auth session missing") || error.name === "AuthSessionMissingError")) {
+        console.log("[AuthContext] No auth session - user is logged out");
+        if (!isMounted.current) return;
+        setUser(null);
+        setProfile(null);
+        return;
+      }
+      console.error("[AuthContext] Error refreshing user:", error);
+      if (!isMounted.current) return;
+      setUser(null);
+      setProfile(null);
+    } finally {
+      if (isMounted.current) {
+        setIsLoading(false);
+        hasInitialized.current = true;
+        console.log("[AuthContext] Auth initialization complete");
+      }
+    }
+  }, [supabase, fetchProfile]);
+
+  useEffect(() => {
+    console.log("[AuthContext] Component mounted, starting initial auth check");
+    isMounted.current = true;
+    hasInitialized.current = false;
+
+    // Call refreshUser directly - no setTimeout needed
+    refreshUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event: AuthChangeEvent, session: Session | null) => {
+        console.log("[AuthContext] Auth state changed:", event, session?.user?.email);
+
+        if (!isMounted.current) {
+          console.log("[AuthContext] Component unmounted, ignoring auth state change");
+          return;
+        }
+
+        if (event === "INITIAL_SESSION") {
+          // Initial session loaded from storage - refresh user data
+          if (session?.user) {
+            console.log("[AuthContext] Initial session found, loading user data...");
+            await refreshUser();
+            // Register for push notifications if user is logged in
+            registerPushNotifications(session.user.id, supabase).catch(console.error);
+          } else {
+            console.log("[AuthContext] No initial session");
+            setUser(null);
+            setProfile(null);
+            setIsLoading(false);
+            hasInitialized.current = true;
+          }
+        } else if (event === "SIGNED_IN" && session?.user) {
+          // Only refresh if initial load has already completed
+          // Otherwise the initial refreshUser() call handles it
+          if (hasInitialized.current) {
+            console.log("[AuthContext] User signed in, refreshing...");
+            await refreshUser();
+            // Register for push notifications after sign in
+            registerPushNotifications(session.user.id, supabase).catch(console.error);
+          } else {
+            console.log("[AuthContext] Skipping SIGNED_IN refresh - initial load handles it");
+          }
+        } else if (event === "SIGNED_OUT") {
+          console.log("[AuthContext] User signed out");
+          if (isMounted.current) {
+            setUser(null);
+            setProfile(null);
+            setIsLoading(false);
+          }
+        } else if (event === "TOKEN_REFRESHED") {
+          // Token refreshed silently - no action needed
+          // The session is automatically updated by Supabase client
+          console.log("[AuthContext] Token refreshed (session updated silently)");
+        } else if (event === "USER_UPDATED") {
+          console.log("[AuthContext] User updated, refreshing...");
+          await refreshUser();
+        }
+      }
+    );
+
+    // Native OAuth handlers
+    const cleanups: (() => void)[] = [];
+    if (isNativePlatform()) {
+      // Deep-link handler: intercept custom-scheme returns from SFSafariViewController
+      import("@capacitor/app").then(({ App }) => {
+        const listener = App.addListener("appUrlOpen", async ({ url }) => {
+          let isAuthCallback = false;
+          try {
+            const parsed = new URL(url);
+            if (parsed.protocol === "reportthereef:") {
+              isAuthCallback =
+                parsed.host === "auth" && parsed.pathname === "/native-callback";
+            } else {
+              isAuthCallback =
+                parsed.pathname === "/auth/native-callback" ||
+                parsed.pathname === "/auth/callback";
+            }
+          } catch {
+            isAuthCallback =
+              (url.includes("/auth/native-callback") || url.includes("/auth/callback")) &&
+              (url.includes("code=") || url.includes("access_token="));
+          }
+
+          console.log("[AuthContext] appUrlOpen event:", { rawUrl: url, isAuthCallback });
+          if (!isAuthCallback) return;
+
+          try {
+            const p = new URL(url);
+            console.log("[AuthContext] appUrlOpen matched:", {
+              rawUrl: url,
+              protocol: p.protocol,
+              host: p.host,
+              pathname: p.pathname,
+              search: p.search,
+              hash: p.hash,
+            });
+          } catch {
+            console.log("[AuthContext] appUrlOpen matched (unparseable):", url);
+          }
+
+          if (processingAuthReturn.current) return;
+          processingAuthReturn.current = true;
+
+          try {
+            const { Browser } = await import("@capacitor/browser");
+            await Browser.close();
+          } catch {}
+
+          try {
+            const urlObj = new URL(url);
+            const code = urlObj.searchParams.get("code");
+            const hashParams = new URLSearchParams(urlObj.hash.substring(1));
+            const accessToken = hashParams.get("access_token");
+            const refreshToken = hashParams.get("refresh_token");
+
+            if (code) {
+              console.log("[AuthContext] OAuth return: code_exchange");
+              const { error } = await supabase.auth.exchangeCodeForSession(code);
+              if (error) {
+                console.error("[AuthContext] OAuth return: exchange_error:", error.message);
+              }
+            } else if (accessToken && refreshToken) {
+              console.log("[AuthContext] OAuth return: set_session_hash");
+              const { error } = await supabase.auth.setSession({
+                access_token: accessToken,
+                refresh_token: refreshToken,
+              });
+              if (error) {
+                console.error("[AuthContext] OAuth return: set_session_error:", error.message);
+              }
+            } else {
+              console.warn("[AuthContext] OAuth return: no_auth_payload in URL:", url);
+            }
+
+            await refreshUser();
+          } catch (err) {
+            console.error("[AuthContext] OAuth return: unhandled_error:", err);
+          } finally {
+            processingAuthReturn.current = false;
+          }
+        });
+
+        cleanups.push(() => listener.then((l) => l.remove()));
+      });
+
+      // Browser-finished handler: when user dismisses SFSafariViewController, refresh session
+      import("@capacitor/browser").then(({ Browser }) => {
+        const listener = Browser.addListener("browserFinished", async () => {
+          await refreshUser();
+        });
+
+        cleanups.push(() => listener.then((l) => l.remove()));
+      });
+    }
+
+    return () => {
+      isMounted.current = false;
+      subscription.unsubscribe();
+      cleanups.forEach((fn) => fn());
+    };
+  }, [supabase, refreshUser]);
+
+  const signIn = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { success: false, message: error.message };
+      }
+
+      return { success: true, message: "Signed in successfully." };
+    } catch {
+      return { success: false, message: "Network error. Please try again." };
+    }
+  };
+
+  const signUp = async (email: string, password: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { success: false, message: error.message };
+      }
+
+      if (data.user?.identities?.length === 0) {
+        return { success: false, message: "An account with this email already exists." };
+      }
+
+      return { success: true, message: "Account created successfully." };
+    } catch {
+      return { success: false, message: "Network error. Please try again." };
+    }
+  };
+
+  const resetPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/profile`,
+      });
+
+      if (error) {
+        return { success: false, message: error.message };
+      }
+
+      return { success: true, message: "Password reset email sent." };
+    } catch {
+      return { success: false, message: "Network error. Please try again." };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setUser(null);
+      setProfile(null);
+    }
+  };
+
+  const updateProfile = async (data: Partial<Profile>): Promise<{ success: boolean; error?: string }> => {
+    if (!user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          ...data,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      // Refresh user data
+      await refreshUser();
+      return { success: true };
+    } catch {
+      return { success: false, error: "Failed to update profile" };
+    }
+  };
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        isLoading,
+        isAuthenticated: !!user,
+        signIn,
+        signUp,
+        logout,
+        refreshUser,
+        updateProfile,
+        resetPassword,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}

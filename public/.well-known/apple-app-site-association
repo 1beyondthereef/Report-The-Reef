@@ -1,0 +1,19 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "949R9WW2TN.com.beyondthereef.reportthereef",
+        "paths": [
+          "/auth/callback*",
+          "/auth/native-callback*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "949R9WW2TN.com.beyondthereef.reportthereef"
+    ]
+  }
+}

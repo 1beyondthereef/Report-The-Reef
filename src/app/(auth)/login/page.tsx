@@ -1,0 +1,767 @@
+"use client";
+
+import { useState, Suspense, useMemo, useEffect, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Mail, Loader2, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  loginSchema,
+  signUpSchema,
+  forgotPasswordSchema,
+  type LoginInput,
+  type SignUpInput,
+  type ForgotPasswordInput
+} from "@/lib/validation";
+import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/context/AuthContext";
+import { isNativePlatform } from "@/lib/platform";
+
+const NATIVE_CALLBACK_URL = "https://www.reportthereef.com/auth/native-callback";
+
+type AuthMode = "signin" | "signup" | "forgot-password" | "check-email" | "complete-profile";
+
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const error = searchParams.get("error");
+  const deleted = searchParams.get("deleted");
+
+  // Use AuthContext as single source of truth for auth state
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Create supabase client once and memoize it
+  const supabase = useMemo(() => createClient(), []);
+
+  // Track if component is mounted to prevent state updates after unmount
+  const isMounted = useRef(true);
+
+  // Prevent double Browser.open() from StrictMode or fast double-tap
+  const oauthInProgress = useRef(false);
+
+  // Redirect to /connect if already authenticated (AuthContext is source of truth)
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      router.replace("/connect");
+    }
+  }, [isAuthenticated, authLoading, router]);
+
+  // Track mount state for cleanup
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  // Tri-state: null = not yet determined, true = native, false = web
+  const [isNative, setIsNative] = useState<boolean | null>(null);
+  useEffect(() => { setIsNative(isNativePlatform()); }, []);
+
+  const [mode, setMode] = useState<AuthMode>("signin");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(
+    error ? decodeURIComponent(error) : null
+  );
+  const [resetEmail, setResetEmail] = useState("");
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
+
+  // Reset OAuth guard when all loading states settle (includes browserFinished → refreshUser path)
+  useEffect(() => {
+    if (!authLoading && !isGoogleLoading && !isAppleLoading && oauthInProgress.current) {
+      oauthInProgress.current = false;
+    }
+  }, [authLoading, isGoogleLoading, isAppleLoading]);
+
+  // Handle Google Sign In
+  const handleGoogleSignIn = async () => {
+    if (oauthInProgress.current && !isGoogleLoading && !isAppleLoading) {
+      oauthInProgress.current = false;
+    }
+    if (oauthInProgress.current) return;
+
+    setIsGoogleLoading(true);
+    setServerError(null);
+
+    const native = isNativePlatform();
+    const timeoutMs = native ? 90000 : 15000;
+    const timeout = setTimeout(() => {
+      oauthInProgress.current = false;
+      if (isMounted.current) {
+        setIsGoogleLoading(false);
+        setServerError("Sign-in is taking too long. Please try again.");
+      }
+    }, timeoutMs);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: native ? NATIVE_CALLBACK_URL : `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: native,
+        },
+      });
+
+      if (error) {
+        clearTimeout(timeout);
+        if (isMounted.current) {
+          setServerError(error.message);
+          setIsGoogleLoading(false);
+        }
+        return;
+      }
+
+      if (native && data?.url) {
+        clearTimeout(timeout);
+        oauthInProgress.current = true;
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.open({ url: data.url });
+        if (isMounted.current) setIsGoogleLoading(false);
+      }
+    } catch (err) {
+      console.error("[Google] UNEXPECTED ERROR:", err);
+      oauthInProgress.current = false;
+      clearTimeout(timeout);
+      if (isMounted.current) {
+        setServerError("Failed to connect to Google. Please try again.");
+        setIsGoogleLoading(false);
+      }
+    }
+  };
+
+  // Handle Apple Sign In
+  const handleAppleSignIn = async () => {
+    if (oauthInProgress.current && !isGoogleLoading && !isAppleLoading) {
+      oauthInProgress.current = false;
+    }
+    if (oauthInProgress.current) return;
+
+    setIsAppleLoading(true);
+    setServerError(null);
+
+    const native = isNativePlatform();
+    const timeoutMs = native ? 90000 : 15000;
+    const timeout = setTimeout(() => {
+      oauthInProgress.current = false;
+      if (isMounted.current) {
+        setIsAppleLoading(false);
+        setServerError("Sign-in is taking too long. Please try again.");
+      }
+    }, timeoutMs);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "apple",
+        options: {
+          redirectTo: native ? NATIVE_CALLBACK_URL : `${window.location.origin}/auth/callback`,
+          skipBrowserRedirect: native,
+        },
+      });
+
+      if (error) {
+        clearTimeout(timeout);
+        if (isMounted.current) {
+          setServerError(error.message);
+          setIsAppleLoading(false);
+        }
+        return;
+      }
+
+      if (native && data?.url) {
+        clearTimeout(timeout);
+        oauthInProgress.current = true;
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.open({ url: data.url });
+        if (isMounted.current) setIsAppleLoading(false);
+      }
+    } catch (err) {
+      console.error("[Apple] UNEXPECTED ERROR:", err);
+      oauthInProgress.current = false;
+      clearTimeout(timeout);
+      if (isMounted.current) {
+        setServerError("Failed to connect to Apple. Please try again.");
+        setIsAppleLoading(false);
+      }
+    }
+  };
+
+  // Sign In form
+  const signInForm = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
+
+  // Sign Up form
+  const signUpForm = useForm<SignUpInput>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: { email: "", password: "", confirmPassword: "" },
+  });
+
+  // Forgot Password form
+  const forgotForm = useForm<ForgotPasswordInput>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: "" },
+  });
+
+  // Handle Sign In
+  const onSignIn = async (data: LoginInput) => {
+    console.log("[Email] 1. Sign in button clicked");
+    setIsLoading(true);
+    setServerError(null);
+
+    // Set a timeout to reset loading state if something hangs
+    const timeout = setTimeout(() => {
+      console.log("[Email] TIMEOUT - Sign-in didn't complete within 15 seconds");
+      if (isMounted.current) {
+        setIsLoading(false);
+        setServerError("Sign-in is taking too long. Please try again.");
+      }
+    }, 15000);
+
+    try {
+      console.log("[Email] 2. Calling supabase.auth.signInWithPassword...");
+      console.log("[Email] 3. Email:", data.email);
+
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      console.log("[Email] 4. Response received:", { user: authData?.user?.email, error });
+
+      if (error) {
+        console.error("[Email] ERROR:", error.message, error);
+        clearTimeout(timeout);
+        if (isMounted.current) {
+          setServerError(error.message);
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      console.log("[Email] 5. Sign-in successful for:", authData.user?.email);
+      console.log("[Email] 6. Redirecting to /connect...");
+
+      clearTimeout(timeout);
+
+      // Reset loading before navigation in case navigation fails
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
+
+      router.push("/connect");
+      console.log("[Email] 7. router.push called");
+    } catch (err) {
+      console.error("[Email] UNEXPECTED ERROR:", err);
+      clearTimeout(timeout);
+      if (isMounted.current) {
+        setServerError("Network error. Please try again.");
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Handle Sign Up
+  const onSignUp = async (data: SignUpInput) => {
+    console.log("[SignUp] 1. Sign up button clicked");
+    setIsLoading(true);
+    setServerError(null);
+
+    // Set a timeout to reset loading state if something hangs
+    const timeout = setTimeout(() => {
+      console.log("[SignUp] TIMEOUT - Sign-up didn't complete within 15 seconds");
+      if (isMounted.current) {
+        setIsLoading(false);
+        setServerError("Sign-up is taking too long. Please try again.");
+      }
+    }, 15000);
+
+    try {
+      console.log("[SignUp] 2. Calling supabase.auth.signUp...");
+
+      const { data: authData, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+      });
+
+      console.log("[SignUp] 3. Response received:", { user: authData?.user?.email, error });
+      clearTimeout(timeout);
+
+      if (error) {
+        console.error("[SignUp] ERROR:", error.message);
+        if (isMounted.current) {
+          setServerError(error.message);
+        }
+      } else if (authData.user) {
+        // Check if email confirmation is required
+        if (authData.user.identities?.length === 0) {
+          console.log("[SignUp] Account already exists");
+          if (isMounted.current) {
+            setServerError("An account with this email already exists. Please sign in instead.");
+          }
+        } else {
+          console.log("[SignUp] 4. Success! Redirecting to profile setup...");
+          // Reset loading before navigation
+          if (isMounted.current) {
+            setIsLoading(false);
+          }
+          router.push("/profile/setup");
+          return;
+        }
+      }
+    } catch (err) {
+      console.error("[SignUp] UNEXPECTED ERROR:", err);
+      clearTimeout(timeout);
+      if (isMounted.current) {
+        setServerError("Network error. Please try again.");
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Handle Forgot Password
+  const onForgotPassword = async (data: ForgotPasswordInput) => {
+    console.log("[ForgotPassword] 1. Reset password clicked");
+    setIsLoading(true);
+    setServerError(null);
+
+    // Set a timeout to reset loading state if something hangs
+    const timeout = setTimeout(() => {
+      console.log("[ForgotPassword] TIMEOUT - Reset didn't complete within 15 seconds");
+      if (isMounted.current) {
+        setIsLoading(false);
+        setServerError("Request is taking too long. Please try again.");
+      }
+    }, 15000);
+
+    try {
+      console.log("[ForgotPassword] 2. Calling supabase.auth.resetPasswordForEmail...");
+
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/auth/callback?next=/profile`,
+      });
+
+      console.log("[ForgotPassword] 3. Response received:", { error });
+      clearTimeout(timeout);
+
+      if (error) {
+        console.error("[ForgotPassword] ERROR:", error.message);
+        if (isMounted.current) {
+          setServerError(error.message);
+        }
+      } else {
+        console.log("[ForgotPassword] 4. Success! Check your email");
+        if (isMounted.current) {
+          setResetEmail(data.email);
+          setMode("check-email");
+        }
+      }
+    } catch (err) {
+      console.error("[ForgotPassword] UNEXPECTED ERROR:", err);
+      clearTimeout(timeout);
+      if (isMounted.current) {
+        setServerError("Network error. Please try again.");
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Forgot Password Success Screen
+  if (mode === "check-email") {
+    return (
+      <Card className="shadow-xl">
+        <CardHeader className="text-center">
+          <button
+            onClick={() => setMode("signin")}
+            className="absolute left-4 top-4 p-2 rounded-full hover:bg-muted transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+            <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+          </div>
+          <CardTitle>Check Your Email</CardTitle>
+          <CardDescription>
+            We sent a password reset link to<br />
+            <span className="font-medium text-foreground">{resetEmail}</span>
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Click the link in the email to reset your password. The link will expire in 1 hour.
+          </p>
+          <Button variant="outline" onClick={() => setMode("signin")} className="w-full">
+            Back to Sign In
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Forgot Password Form
+  if (mode === "forgot-password") {
+    return (
+      <Card className="shadow-xl">
+        <CardHeader className="text-center">
+          <button
+            onClick={() => {
+              setMode("signin");
+              setServerError(null);
+            }}
+            className="absolute left-4 top-4 p-2 rounded-full hover:bg-muted transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <Mail className="h-8 w-8 text-primary" />
+          </div>
+          <CardTitle>Reset Password</CardTitle>
+          <CardDescription>
+            Enter your email and we&apos;ll send you a reset link
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {serverError && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{serverError}</span>
+            </div>
+          )}
+
+          <form onSubmit={forgotForm.handleSubmit(onForgotPassword)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="forgot-email">Email Address</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  placeholder="captain@example.com"
+                  className="pl-10"
+                  {...forgotForm.register("email")}
+                  disabled={isLoading}
+                  autoComplete="email"
+                />
+              </div>
+              {forgotForm.formState.errors.email && (
+                <p className="text-sm text-destructive">{forgotForm.formState.errors.email.message}</p>
+              )}
+            </div>
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Send Reset Link"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Main Sign In / Sign Up Form
+  return (
+    <Card className="shadow-xl">
+      <CardHeader className="text-center pb-2">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <Lock className="h-8 w-8 text-primary" />
+        </div>
+        <CardTitle>Welcome</CardTitle>
+        <CardDescription>
+          Sign in to your account or create a new one
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {deleted && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-400">
+            <CheckCircle className="h-4 w-4 shrink-0" />
+            <span>Your account has been permanently deleted. Thank you for being part of the Report The Reef community.</span>
+          </div>
+        )}
+
+        {serverError && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{serverError}</span>
+          </div>
+        )}
+
+        {isNative === false && (
+          <>
+            {/* Google Sign In Button */}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full mb-4"
+              onClick={handleGoogleSignIn}
+              disabled={isLoading || isGoogleLoading}
+            >
+              {isGoogleLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  />
+                  <path
+                    fill="currentColor"
+                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  />
+                </svg>
+              )}
+              Continue with Google
+            </Button>
+
+            {/* Apple Sign In Button */}
+            <Button
+              type="button"
+              className="w-full mb-4 bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
+              onClick={handleAppleSignIn}
+              disabled={isLoading || isAppleLoading || isGoogleLoading}
+            >
+              {isAppleLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                </svg>
+              )}
+              Continue with Apple
+            </Button>
+
+            {/* Divider */}
+            <div className="relative mb-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">or</span>
+              </div>
+            </div>
+          </>
+        )}
+
+        <Tabs defaultValue="signin" onValueChange={(v) => {
+          setServerError(null);
+          setMode(v as AuthMode);
+        }}>
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="signin">Sign In</TabsTrigger>
+            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+          </TabsList>
+
+          {/* Sign In Tab */}
+          <TabsContent value="signin">
+            <form onSubmit={signInForm.handleSubmit(onSignIn)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signin-email">Email Address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="signin-email"
+                    type="email"
+                    placeholder="captain@example.com"
+                    className="pl-10"
+                    {...signInForm.register("email")}
+                    disabled={isLoading}
+                    autoComplete="email"
+                  />
+                </div>
+                {signInForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{signInForm.formState.errors.email.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signin-password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="signin-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter your password"
+                    className="pl-10 pr-10"
+                    {...signInForm.register("password")}
+                    disabled={isLoading}
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {signInForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{signInForm.formState.errors.password.message}</p>
+                )}
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setMode("forgot-password")}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
+            </form>
+          </TabsContent>
+
+          {/* Sign Up Tab */}
+          <TabsContent value="signup">
+            <form onSubmit={signUpForm.handleSubmit(onSignUp)} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signup-email">Email Address</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    placeholder="captain@example.com"
+                    className="pl-10"
+                    {...signUpForm.register("email")}
+                    disabled={isLoading}
+                    autoComplete="email"
+                  />
+                </div>
+                {signUpForm.formState.errors.email && (
+                  <p className="text-sm text-destructive">{signUpForm.formState.errors.email.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signup-password">Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="signup-password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a password (min 6 characters)"
+                    className="pl-10 pr-10"
+                    {...signUpForm.register("password")}
+                    disabled={isLoading}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {signUpForm.formState.errors.password && (
+                  <p className="text-sm text-destructive">{signUpForm.formState.errors.password.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signup-confirm">Confirm Password</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="signup-confirm"
+                    type={showConfirmPassword ? "text" : "password"}
+                    placeholder="Confirm your password"
+                    className="pl-10 pr-10"
+                    {...signUpForm.register("confirmPassword")}
+                    disabled={isLoading}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {signUpForm.formState.errors.confirmPassword && (
+                  <p className="text-sm text-destructive">{signUpForm.formState.errors.confirmPassword.message}</p>
+                )}
+              </div>
+
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  "Create Account"
+                )}
+              </Button>
+
+              <p className="text-center text-xs text-muted-foreground">
+                By signing up, you agree to our Terms of Service and Privacy Policy.
+              </p>
+            </form>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LoginFallback() {
+  return (
+    <Card className="shadow-xl">
+      <CardHeader className="text-center">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+        <CardTitle>Loading...</CardTitle>
+      </CardHeader>
+    </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginFallback />}>
+      <LoginForm />
+    </Suspense>
+  );
+}

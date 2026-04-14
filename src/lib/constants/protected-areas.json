@@ -1,0 +1,214 @@
+{
+  "metadata": {
+    "title": "British Virgin Islands Protected Areas Data",
+    "description": "Comprehensive dataset of BVI bird sanctuaries, fisheries protected areas, proposed marine protected areas, and national parks.",
+    "sources": ["S.R.O. 20/1959", "S.R.O. 24/1977", "Statutory Instrument No. 20 of 2003", "National GIS", "NPT Act 2006"],
+    "lastUpdated": "2026-02-05",
+    "coordinateNotes": "Coordinates are approximate center points. For precise boundaries, consult BVI National GIS.",
+    "totalLegendNumbers": 111
+  },
+  "birdSanctuaries": [
+    {"id":"bs-001","name":"Cockroach Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.4950,"lng":-64.3320}},
+    {"id":"bs-002","name":"Little Tobago Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.4580,"lng":-64.7850}},
+    {"id":"bs-003","name":"Cooper Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.3850,"lng":-64.5120}},
+    {"id":"bs-004","name":"Mosquito Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.5050,"lng":-64.3950}},
+    {"id":"bs-005","name":"Deadman's Chest Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.3700,"lng":-64.5620}},
+    {"id":"bs-006","name":"Necker Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.5230,"lng":-64.3548}},
+    {"id":"bs-007","name":"Fallen Jerusalem Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.4360,"lng":-64.3780}},
+    {"id":"bs-008","name":"Peter Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.3559,"lng":-64.5711}},
+    {"id":"bs-009","name":"George Dog Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.4780,"lng":-64.4410}},
+    {"id":"bs-010","name":"Prickly Pear Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.5130,"lng":-64.3830}},
+    {"id":"bs-011","name":"Ginger Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.3770,"lng":-64.4920}},
+    {"id":"bs-012","name":"Round Rock Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.3870,"lng":-64.4740}},
+    {"id":"bs-013","name":"Great Dog Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.4750,"lng":-64.4540}},
+    {"id":"bs-014","name":"Saba Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.4830,"lng":-64.3560}},
+    {"id":"bs-015","name":"Great Tobago Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.4720,"lng":-64.7800}},
+    {"id":"bs-016","name":"Salt Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.3920,"lng":-64.5230}},
+    {"id":"bs-017","name":"Little Dog Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.4810,"lng":-64.4520}},
+    {"id":"bs-018","name":"St. Eustatia","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.5030,"lng":-64.3650}},
+    {"id":"bs-019","name":"The Seal Dogs Island","dateEstablished":1959,"legalSource":"S.R.O. 20/1959","protectionType":"Bird Sanctuary","coordinates":{"lat":18.4890,"lng":-64.4400}},
+    {"id":"bs-020","name":"Flamingo Pond, Anegada","dateEstablished":1977,"legalSource":"S.R.O. 24/1977","protectionType":"Bird Sanctuary","coordinates":{"lat":18.7350,"lng":-64.3600}}
+  ],
+  "fisheriesProtectedAreas": [
+    {"id":"fpa-001","name":"Horseshoe Reef","dateEstablished":2003,"sizeAcres":10144.8,"siteType":"Marine","region":"Anegada","coordinates":{"lat":18.7200,"lng":-64.2800},"description":"Fourth-largest barrier coral reef in the world at 18 miles long."},
+    {"id":"fpa-002","name":"Hans Creek, Beef Island","dateEstablished":2003,"sizeAcres":119.4,"siteType":"Marine","region":"Beef Island & Tortola (East)","coordinates":{"lat":18.4250,"lng":-64.5270}},
+    {"id":"fpa-003","name":"Beef Island Channel","dateEstablished":2003,"sizeAcres":93.9,"siteType":"Marine","region":"Beef Island & Tortola (East)","coordinates":{"lat":18.4400,"lng":-64.5350}},
+    {"id":"fpa-004","name":"South Sound, Virgin Gorda","dateEstablished":2003,"sizeAcres":312.8,"siteType":"Marine","region":"Virgin Gorda","coordinates":{"lat":18.4450,"lng":-64.4000}},
+    {"id":"fpa-005","name":"Taylor Bay, Virgin Gorda","dateEstablished":2003,"sizeAcres":647.9,"siteType":"Marine","region":"Virgin Gorda","coordinates":{"lat":18.4500,"lng":-64.3850}},
+    {"id":"fpa-006","name":"The Sound, Salt Island","dateEstablished":2003,"sizeAcres":112.8,"siteType":"Marine","region":"Peter, Salt and Cooper Islands","coordinates":{"lat":18.3950,"lng":-64.5150}},
+    {"id":"fpa-007","name":"The Sound (incl. Wedgeo Bay), Ginger Island","dateEstablished":2003,"sizeAcres":62.5,"siteType":"Marine","region":"Ginger Island","coordinates":{"lat":18.3790,"lng":-64.4870}},
+    {"id":"fpa-008","name":"Dead Chest (Wreck of Rhone Marine Park)","dateEstablished":2003,"sizeAcres":326.9,"siteType":"Marine","region":"Peter, Salt and Cooper Islands","coordinates":{"lat":18.3700,"lng":-64.5600}},
+    {"id":"fpa-009","name":"Big Reef, Peter Island","dateEstablished":2003,"sizeAcres":362.1,"siteType":"Marine","region":"Peter, Salt and Cooper Islands","coordinates":{"lat":18.3480,"lng":-64.5650}},
+    {"id":"fpa-010","name":"Green Cay, Jost Van Dyke","dateEstablished":2003,"sizeAcres":38.4,"siteType":"Marine","region":"Jost Van Dyke","coordinates":{"lat":18.4550,"lng":-64.7020}},
+    {"id":"fpa-011","name":"Money Bay, Norman Island","dateEstablished":2003,"sizeAcres":79.8,"siteType":"Marine","region":"Norman Island","coordinates":{"lat":18.3200,"lng":-64.5950}},
+    {"id":"fpa-012","name":"Santa Monica Rock, off Norman Island","dateEstablished":2003,"sizeAcres":10.4,"siteType":"Marine","region":"Norman Island","coordinates":{"lat":18.3050,"lng":-64.6250}},
+    {"id":"fpa-013","name":"North Bay, Guana Island","dateEstablished":2003,"sizeAcres":70.7,"siteType":"Marine","region":"Guana, Great Camanoe, Scrub Islands","coordinates":{"lat":18.5050,"lng":-64.6280}},
+    {"id":"fpa-014","name":"Frenchman's Cay","dateEstablished":2003,"sizeAcres":23.5,"siteType":"Marine","region":"Tortola","coordinates":{"lat":18.4100,"lng":-64.6600}}
+  ],
+  "protectedAreasByMap": {
+    "map1_anegada": {"mapTitle":"Map 1: Anegada","region":"Anegada","areas":[
+      {"legendNo":1,"name":"Bones Bight to Loblolly","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.7500,"lng":-64.3400}},
+      {"legendNo":2,"name":"Eastern Ponds","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"Ramsar site","proposedMgmtCategory":"15b","managementDescription":"National Park","coordinates":{"lat":18.7250,"lng":-64.3050}},
+      {"legendNo":3,"name":"Horseshoe Reef","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.7200,"lng":-64.2800}},
+      {"legendNo":4,"name":"Ruffling to Pomato Point","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.7300,"lng":-64.3850}},
+      {"legendNo":5,"name":"Virgin Gorda north","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15a(i)","managementDescription":"Strict Nature Reserve","coordinates":{"lat":18.5100,"lng":-64.3700}},
+      {"legendNo":6,"name":"Western Ponds","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"Ramsar site","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.7380,"lng":-64.3650}},
+      {"legendNo":7,"name":"Virgin Gorda north","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15a(i)","managementDescription":"Strict Nature Reserve","coordinates":{"lat":18.5000,"lng":-64.3550}},
+      {"legendNo":8,"name":"Virgin Gorda north","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15a(i)","managementDescription":"Strict Nature Reserve","coordinates":{"lat":18.4950,"lng":-64.3750}},
+      {"legendNo":9,"name":"Anegada south west","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15a(i)","managementDescription":"Strict Nature Reserve","coordinates":{"lat":18.6800,"lng":-64.4100}}
+    ]},
+    "map2_beefIsland": {"mapTitle":"Map 2: Beef Island & Tortola (East)","region":"Beef Island & Tortola (East)","areas":[
+      {"legendNo":10,"name":"Beef Island","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":"15d","managementDescription":"Habitat Management Area","coordinates":{"lat":18.4500,"lng":-64.5250}},
+      {"legendNo":11,"name":"Beef Island Channel","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4400,"lng":-64.5350}},
+      {"legendNo":12,"name":"Great Mountain","proposedOrExisting":"Proposed Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"National Park","coordinates":{"lat":18.4200,"lng":-64.5000}},
+      {"legendNo":13,"name":"Hans Creek","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Habitat Management Area","coordinates":{"lat":18.4280,"lng":-64.5220}},
+      {"legendNo":14,"name":"Hans Creek","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.4200,"lng":-64.5250}},
+      {"legendNo":15,"name":"Hans Creek","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4230,"lng":-64.5240}}
+    ]},
+    "map3_gingerIsland": {"mapTitle":"Map 3: Ginger Island","region":"Ginger Island","areas":[
+      {"legendNo":16,"name":"South Bay to Man Hole","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.3700,"lng":-64.4980}},
+      {"legendNo":17,"name":"The Sound (incl. Wedgeo Bay)","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.3790,"lng":-64.4870}},
+      {"legendNo":18,"name":"The Sound, Wedgeo Bay","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.3800,"lng":-64.4840}}
+    ]},
+    "map4_greatThatch": {"mapTitle":"Map 4: Great Thatch","region":"Great Thatch","areas":[
+      {"legendNo":19,"name":"Great Thatch","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"National Park","coordinates":{"lat":18.3863,"lng":-64.7380}},
+      {"legendNo":20,"name":"Great Thatch north","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15f","managementDescription":"Managed Resource Area","coordinates":{"lat":18.3950,"lng":-64.7350}},
+      {"legendNo":21,"name":"Great Thatch south east","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.3780,"lng":-64.7250}}
+    ]},
+    "map5_guanaCamanoeScrub": {"mapTitle":"Map 5: Guana, Great Camanoe, Scrub Islands","region":"Guana, Great Camanoe, Scrub Islands","areas":[
+      {"legendNo":22,"name":"West South Bay","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.4700,"lng":-64.5800}},
+      {"legendNo":23,"name":"Cam Bay","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4750,"lng":-64.5650}},
+      {"legendNo":24,"name":"Great Camanoe","proposedOrExisting":"Fisheries Priority Area","siteType":"Marine","existingStatus":"Fisheries Priority Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4850,"lng":-64.5600}},
+      {"legendNo":25,"name":"Lee Bay","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15f","managementDescription":"Managed Resource Area","coordinates":{"lat":18.4700,"lng":-64.5650}},
+      {"legendNo":26,"name":"North Bay","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.5050,"lng":-64.6280}},
+      {"legendNo":27,"name":"North Bay","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.5030,"lng":-64.6300}},
+      {"legendNo":28,"name":"West Guana Island","proposedOrExisting":"Fisheries Priority Area","siteType":"Marine","existingStatus":"Fisheries Priority Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4980,"lng":-64.6450}}
+    ]},
+    "map6_jostVanDyke": {"mapTitle":"Map 6: Jost Van Dyke","region":"Jost Van Dyke","areas":[
+      {"legendNo":29,"name":"Green Cay","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Species Management Area","coordinates":{"lat":18.4550,"lng":-64.7020}},
+      {"legendNo":30,"name":"Green Cay, Sandy Cay and Sandy Spit","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.4500,"lng":-64.7050}},
+      {"legendNo":31,"name":"Green Cay","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4530,"lng":-64.7000}},
+      {"legendNo":32,"name":"Thomas George Bay","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.4400,"lng":-64.7100}},
+      {"legendNo":33,"name":"Cape Wright, East End Harbour","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.4350,"lng":-64.7050}},
+      {"legendNo":34,"name":"Diamond Cay","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4480,"lng":-64.7550}},
+      {"legendNo":35,"name":"Lettsome Plantation House","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15h","managementDescription":"Historic Site","coordinates":{"lat":18.4450,"lng":-64.7400}},
+      {"legendNo":36,"name":"Sandy Cay","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Habitat Management Area","coordinates":{"lat":18.4420,"lng":-64.7100}},
+      {"legendNo":37,"name":"Sandy Spit","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15c","managementDescription":"Natural Monument","coordinates":{"lat":18.4380,"lng":-64.7150}}
+    ]},
+    "map7_normanIsland": {"mapTitle":"Map 7: Norman Island","region":"Norman Island","areas":[
+      {"legendNo":38,"name":"Benures Bay","proposedOrExisting":"Fisheries Priority Area","siteType":"Marine","existingStatus":"Fisheries Priority Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.3280,"lng":-64.6050}},
+      {"legendNo":39,"name":"Money Bay","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.3200,"lng":-64.5950}},
+      {"legendNo":40,"name":"Norman Is. south west","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.3080,"lng":-64.6180}},
+      {"legendNo":41,"name":"Soldier Bay","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"Fisheries Priority Area","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.3300,"lng":-64.6100}},
+      {"legendNo":42,"name":"The Bight","proposedOrExisting":"Fisheries Priority Area","siteType":"Marine","existingStatus":"Fisheries Priority Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.3250,"lng":-64.6150}},
+      {"legendNo":43,"name":"The Caves","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15c","managementDescription":"Natural Monument","coordinates":{"lat":18.3150,"lng":-64.6200}},
+      {"legendNo":44,"name":"The Caves and Indians","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.3200,"lng":-64.6250}},
+      {"legendNo":45,"name":"Pelican Island","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"National Park","coordinates":{"lat":18.3400,"lng":-64.6350}},
+      {"legendNo":46,"name":"Pelican Island","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"National Park","coordinates":{"lat":18.3380,"lng":-64.6330}},
+      {"legendNo":47,"name":"Santa Monica Rock, South West","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":"15d","managementDescription":"Species Management Area","coordinates":{"lat":18.3050,"lng":-64.6250}},
+      {"legendNo":48,"name":"The Indians","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15c","managementDescription":"Natural Monument","coordinates":{"lat":18.3380,"lng":-64.6300}},
+      {"legendNo":49,"name":"The Indians","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15c","managementDescription":"Natural Monument","coordinates":{"lat":18.3370,"lng":-64.6310}},
+      {"legendNo":50,"name":"The Indians","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15c","managementDescription":"Natural Monument","coordinates":{"lat":18.3360,"lng":-64.6320}}
+    ]},
+    "map8_northSound": {"mapTitle":"Map 8: North Sound","region":"North Sound","areas":[
+      {"legendNo":51,"name":"Eustatia Sound, Necker Is. east","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.5200,"lng":-64.3500}},
+      {"legendNo":52,"name":"Hay Point","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Habitat Management Area","coordinates":{"lat":18.5000,"lng":-64.4050}},
+      {"legendNo":53,"name":"Prickly Pear","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.5130,"lng":-64.3830}},
+      {"legendNo":54,"name":"Cactus Point","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.4950,"lng":-64.3800}}
+    ]},
+    "map9_peterSaltCooper": {"mapTitle":"Map 9: Peter, Salt and Cooper Islands","region":"Peter, Salt and Cooper Islands","areas":[
+      {"legendNo":55,"name":"Dead Chest","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Marine Park","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.3700,"lng":-64.5600}},
+      {"legendNo":56,"name":"Dead Chest Island","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.3710,"lng":-64.5590}},
+      {"legendNo":57,"name":"Wreck of the Rhone Marine Park","proposedOrExisting":"Terrestrial Protected Area","siteType":"Marine","existingStatus":"Marine Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.3800,"lng":-64.5350}},
+      {"legendNo":58,"name":"Great Harbour","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"Fisheries Priority Area within boundary","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.3600,"lng":-64.5780}},
+      {"legendNo":59,"name":"Peter Is. west","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.3400,"lng":-64.5900}},
+      {"legendNo":60,"name":"Big Reef","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.3500,"lng":-64.5550}},
+      {"legendNo":61,"name":"Dead Chest to James George Bay","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"Marine Park","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.3450,"lng":-64.5600}},
+      {"legendNo":62,"name":"Great Harbour","proposedOrExisting":"Fisheries Priority Area","siteType":"Marine","existingStatus":"Fisheries Priority Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.3650,"lng":-64.5700}},
+      {"legendNo":63,"name":"Salt and Cooper Is","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.3950,"lng":-64.5050}},
+      {"legendNo":64,"name":"The Sound","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.3950,"lng":-64.5150}}
+    ]},
+    "map10_theDogs": {"mapTitle":"Map 10: The Dogs","region":"The Dogs","areas":[
+      {"legendNo":65,"name":"Cockroach Is.","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Species Management Area","coordinates":{"lat":18.4820,"lng":-64.4460}},
+      {"legendNo":66,"name":"East Seal Dog","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Species Management Area","coordinates":{"lat":18.4900,"lng":-64.4300}},
+      {"legendNo":67,"name":"George Dog","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"National Park","coordinates":{"lat":18.4780,"lng":-64.4410}},
+      {"legendNo":68,"name":"Great Dog","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"National Park","coordinates":{"lat":18.4750,"lng":-64.4540}},
+      {"legendNo":69,"name":"The Dogs","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.4830,"lng":-64.4400}},
+      {"legendNo":70,"name":"West Dog Island","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4700,"lng":-64.4580}},
+      {"legendNo":71,"name":"West Seal Dog","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Species Management Area","coordinates":{"lat":18.4910,"lng":-64.4280}}
+    ]},
+    "map11_theTobagos": {"mapTitle":"Map 11: The Tobagos","region":"The Tobagos","areas":[
+      {"legendNo":72,"name":"Great Tobago","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4720,"lng":-64.7800}},
+      {"legendNo":73,"name":"Great Tobago","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.4700,"lng":-64.7850}},
+      {"legendNo":74,"name":"Little Tobago","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4580,"lng":-64.7900}}
+    ]},
+    "map12_tortola": {"mapTitle":"Map 12: Tortola","region":"Tortola","areas":[
+      {"legendNo":75,"name":"Sopers Hole, Fisheries Area","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":"15d","managementDescription":"Habitat Management Area","coordinates":{"lat":18.3920,"lng":-64.6950}},
+      {"legendNo":76,"name":"Frenchman's Cay","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4000,"lng":-64.6900}},
+      {"legendNo":77,"name":"Frenchman's Cay","proposedOrExisting":"Fisheries Priority Area","siteType":"Marine","existingStatus":"Fisheries Priority Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4100,"lng":-64.6600}},
+      {"legendNo":78,"name":"Great Carrot Bay","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Habitat Management Area","coordinates":{"lat":18.4100,"lng":-64.6400}},
+      {"legendNo":79,"name":"Bar Bay","proposedOrExisting":"Proposed Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Habitat Management Area","coordinates":{"lat":18.4300,"lng":-64.5650}},
+      {"legendNo":80,"name":"Belmont","proposedOrExisting":"Proposed Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"National Park","coordinates":{"lat":18.4000,"lng":-64.6700}},
+      {"legendNo":81,"name":"Cooten, Josiahs, Lambert Bays","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Species Management Area","coordinates":{"lat":18.4550,"lng":-64.5800}},
+      {"legendNo":82,"name":"Mt. Healthy","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4350,"lng":-64.6300}},
+      {"legendNo":83,"name":"Paraquita Bay","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Habitat Management Area","coordinates":{"lat":18.4280,"lng":-64.5600}},
+      {"legendNo":84,"name":"Paraquita Bay","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15f","managementDescription":"Managed Resource Area","coordinates":{"lat":18.4250,"lng":-64.5550}},
+      {"legendNo":85,"name":"Sage Mountain","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4200,"lng":-64.6350}},
+      {"legendNo":86,"name":"Sage Mountain (Addition)","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4180,"lng":-64.6380}},
+      {"legendNo":87,"name":"Shark Bay","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4450,"lng":-64.6400}},
+      {"legendNo":88,"name":"Trunk Bay, Rogues Bay","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Species Management Area","coordinates":{"lat":18.4550,"lng":-64.6200}}
+    ]},
+    "map13_roadTown": {"mapTitle":"Map 13: Road Town, Tortola","region":"Road Town, Tortola","areas":[
+      {"legendNo":89,"name":"Botanic Gardens","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4280,"lng":-64.6180}},
+      {"legendNo":90,"name":"QEII Park","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4200,"lng":-64.6220}}
+    ]},
+    "map14_virginGorda": {"mapTitle":"Map 14: Virgin Gorda","region":"Virgin Gorda","areas":[
+      {"legendNo":92,"name":"Broken Jerusalem","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"National Park","coordinates":{"lat":18.4350,"lng":-64.3900}},
+      {"legendNo":93,"name":"Broken Jerusalem","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"National Park","coordinates":{"lat":18.4340,"lng":-64.3910}},
+      {"legendNo":94,"name":"Broken Jerusalem","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"National Park","coordinates":{"lat":18.4330,"lng":-64.3920}},
+      {"legendNo":95,"name":"Broken Jerusalem","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"National Park","coordinates":{"lat":18.4320,"lng":-64.3930}},
+      {"legendNo":96,"name":"Round Rock","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Habitat Management Area","coordinates":{"lat":18.4200,"lng":-64.4000}},
+      {"legendNo":97,"name":"Devil's Bay","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4320,"lng":-64.3680}},
+      {"legendNo":98,"name":"Fallen Jerusalem","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4360,"lng":-64.3780}},
+      {"legendNo":99,"name":"Little Fort","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4500,"lng":-64.3750}},
+      {"legendNo":100,"name":"Mountain Point","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.5100,"lng":-64.4200}},
+      {"legendNo":101,"name":"Savannah Bay","proposedOrExisting":"Proposed Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.4600,"lng":-64.3850}},
+      {"legendNo":102,"name":"South Sound","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":"15b","managementDescription":"Marine Park","coordinates":{"lat":18.4450,"lng":-64.4000}},
+      {"legendNo":103,"name":"South Sound","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4470,"lng":-64.3980}},
+      {"legendNo":104,"name":"South Sound west","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Terrestrial","existingStatus":"none","proposedMgmtCategory":"15d","managementDescription":"Habitat Management Area","coordinates":{"lat":18.4480,"lng":-64.4050}},
+      {"legendNo":105,"name":"Spring Bay","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4400,"lng":-64.3720}},
+      {"legendNo":106,"name":"Taylor Bay","proposedOrExisting":"Fisheries Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4500,"lng":-64.3850}},
+      {"legendNo":107,"name":"Taylors Bay, Handsome Bay","proposedOrExisting":"Proposed Marine Protected Area","siteType":"Marine","existingStatus":"Fisheries Protected Area","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.4550,"lng":-64.3900}},
+      {"legendNo":108,"name":"The Baths","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4310,"lng":-64.3700}},
+      {"legendNo":109,"name":"The Copper Mine","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4350,"lng":-64.3550}},
+      {"legendNo":110,"name":"Gorda Peak","proposedOrExisting":"Terrestrial Protected Area","siteType":"Terrestrial","existingStatus":"National Park","proposedMgmtCategory":null,"managementDescription":null,"coordinates":{"lat":18.4750,"lng":-64.3950}},
+      {"legendNo":111,"name":"Greater Baths area","proposedOrExisting":"Proposed Marine and Terrestrial Areas","siteType":"Marine","existingStatus":"none","proposedMgmtCategory":"15e","managementDescription":"Protected Landscape/Seascape","coordinates":{"lat":18.4280,"lng":-64.3650}}
+    ]}
+  },
+  "managementCategories": {
+    "15a(i)":{"code":"15a(i)","description":"Strict Nature Reserve","summary":"Managed for science or wilderness protection"},
+    "15b":{"code":"15b","description":"National Park / Marine Park","summary":"Managed for ecosystem protection and recreation"},
+    "15c":{"code":"15c","description":"Natural Monument","summary":"Managed for conservation of specific natural features"},
+    "15d":{"code":"15d","description":"Habitat/Species Management Area","summary":"Managed for conservation through intervention"},
+    "15e":{"code":"15e","description":"Protected Landscape/Seascape","summary":"Managed for landscape/seascape conservation and recreation"},
+    "15f":{"code":"15f","description":"Managed Resource Area","summary":"Managed for sustainable use of natural ecosystems"},
+    "15h":{"code":"15h","description":"Historic Site","summary":"Managed for historic and cultural preservation"}
+  },
+  "protectionTypes": ["Bird Sanctuary","Fisheries Protected Area","Fisheries Priority Area","National Park","Marine Park","Terrestrial Protected Area","Proposed Marine Protected Area","Proposed Marine and Terrestrial Areas","Proposed Terrestrial Protected Area","Strict Nature Reserve","Natural Monument","Protected Landscape/Seascape","Habitat Management Area","Managed Resource Area","Species Management Area","Historic Site"],
+  "regions": [
+    {"id":"anegada","name":"Anegada","mapReference":"Map 1"},
+    {"id":"beef-island-tortola-east","name":"Beef Island & Tortola (East)","mapReference":"Map 2"},
+    {"id":"ginger-island","name":"Ginger Island","mapReference":"Map 3"},
+    {"id":"great-thatch","name":"Great Thatch","mapReference":"Map 4"},
+    {"id":"guana-camanoe-scrub","name":"Guana, Great Camanoe, Scrub Islands","mapReference":"Map 5"},
+    {"id":"jost-van-dyke","name":"Jost Van Dyke","mapReference":"Map 6"},
+    {"id":"norman-island","name":"Norman Island","mapReference":"Map 7"},
+    {"id":"north-sound","name":"North Sound","mapReference":"Map 8"},
+    {"id":"peter-salt-cooper","name":"Peter, Salt and Cooper Islands","mapReference":"Map 9"},
+    {"id":"the-dogs","name":"The Dogs","mapReference":"Map 10"},
+    {"id":"the-tobagos","name":"The Tobagos","mapReference":"Map 11"},
+    {"id":"tortola","name":"Tortola","mapReference":"Map 12"},
+    {"id":"road-town","name":"Road Town, Tortola","mapReference":"Map 13"},
+    {"id":"virgin-gorda","name":"Virgin Gorda","mapReference":"Map 14"}
+  ]
+}

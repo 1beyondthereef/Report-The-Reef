@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 40" width="32" height="40">
+  <!-- Dive Flag (Alpha flag - red with white diagonal stripe) -->
+  <!-- Flag pole -->
+  <rect x="2" y="0" width="3" height="40" fill="#4A5568" stroke="#2D3748" stroke-width="0.5"/>
+  
+  <!-- Flag background (red) -->
+  <rect x="5" y="2" width="24" height="18" fill="#DC2626" stroke="#B91C1C" stroke-width="0.5"/>
+  
+  <!-- White diagonal stripe -->
+  <polygon points="5,2 29,20 29,14 11,2" fill="white"/>
+  <polygon points="5,8 23,20 29,20 5,2" fill="white"/>
+  
+  <!-- Flag detail/shadow -->
+  <rect x="5" y="2" width="24" height="18" fill="none" stroke="#991B1B" stroke-width="0.5"/>
+</svg>

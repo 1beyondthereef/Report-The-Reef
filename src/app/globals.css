@@ -1,0 +1,463 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Deep ocean blue palette - serene, sophisticated */
+    --background: 210 30% 99%;
+    --foreground: 215 20% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 215 20% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 20% 20%;
+    --primary: 205 70% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 25% 96%;
+    --secondary-foreground: 215 15% 35%;
+    --muted: 210 20% 95%;
+    --muted-foreground: 215 10% 50%;
+    --accent: 210 30% 94%;
+    --accent-foreground: 215 15% 28%;
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 20% 91%;
+    --input: 210 20% 91%;
+    --ring: 205 70% 50%;
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 215 30% 8%;
+    --foreground: 210 15% 92%;
+    --card: 215 25% 11%;
+    --card-foreground: 210 15% 92%;
+    --popover: 215 25% 11%;
+    --popover-foreground: 210 15% 92%;
+    --primary: 205 65% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 20% 14%;
+    --secondary-foreground: 210 12% 85%;
+    --muted: 215 18% 15%;
+    --muted-foreground: 210 10% 55%;
+    --accent: 215 20% 16%;
+    --accent-foreground: 210 12% 88%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 18% 18%;
+    --input: 215 18% 18%;
+    --ring: 205 65% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Elegant typography - refined serif headings */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-size: 2.75rem;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    font-weight: 400;
+  }
+
+  h2 {
+    font-size: 2rem;
+    line-height: 1.25;
+    letter-spacing: -0.005em;
+    font-weight: 400;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    line-height: 1.35;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+
+  h4, h5, h6 {
+    letter-spacing: 0.01em;
+    font-weight: 500;
+  }
+
+  p {
+    text-wrap: pretty;
+    line-height: 1.8;
+    letter-spacing: 0.01em;
+    font-weight: 300;
+  }
+
+  img {
+    @apply transition-opacity duration-700;
+  }
+}
+
+/* Premium glass components */
+@layer components {
+  /* Glassmorphism card - frosted glass effect */
+  .card-glass {
+    @apply bg-white/70 dark:bg-white/5;
+    @apply backdrop-blur-xl backdrop-saturate-150;
+    @apply border border-white/50 dark:border-white/10;
+    @apply rounded-2xl;
+    @apply shadow-glass;
+    @apply transition-all duration-700 ease-out;
+  }
+
+  .card-glass:hover {
+    @apply bg-white/80 dark:bg-white/8;
+    @apply shadow-glass-lg;
+    transform: translateY(-1px);
+  }
+
+  /* Subtle elevated card */
+  .card-elevated {
+    @apply bg-white dark:bg-card;
+    @apply rounded-2xl;
+    @apply border border-border/40;
+    @apply shadow-soft;
+    @apply transition-all duration-500 ease-out;
+  }
+
+  .card-elevated:hover {
+    @apply shadow-soft-lg border-border/60;
+    transform: translateY(-2px);
+  }
+
+  /* Serene button */
+  .btn-serene {
+    @apply relative overflow-hidden;
+    @apply transition-all duration-500 ease-out;
+    @apply bg-gradient-to-r from-primary to-primary/90;
+  }
+
+  .btn-serene::before {
+    content: "";
+    @apply absolute inset-0 bg-white/0;
+    @apply transition-all duration-500;
+  }
+
+  .btn-serene:hover::before {
+    @apply bg-white/10;
+  }
+
+  /* Soft glassmorphism */
+  .glass {
+    @apply bg-white/60 dark:bg-white/5;
+    @apply backdrop-blur-2xl backdrop-saturate-150;
+    @apply border border-white/40 dark:border-white/10;
+  }
+
+  .glass-subtle {
+    @apply bg-white/40 dark:bg-white/3;
+    @apply backdrop-blur-xl;
+    @apply border border-white/30 dark:border-white/5;
+  }
+
+  /* Calm gradient text */
+  .text-gradient-calm {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(205 70% 50%) 0%, hsl(210 55% 60%) 100%);
+  }
+
+  /* Breathing room sections */
+  .section-breathing {
+    @apply py-24 md:py-32 lg:py-40;
+  }
+
+  /* Elegant container with max width */
+  .container-calm {
+    @apply max-w-5xl mx-auto px-6 md:px-8 lg:px-12;
+  }
+
+  /* Soft animated underline */
+  .link-soft {
+    @apply relative;
+  }
+
+  .link-soft::after {
+    content: "";
+    @apply absolute bottom-0 left-0 w-0 h-px;
+    @apply bg-current opacity-40;
+    @apply transition-all duration-500 ease-out;
+  }
+
+  .link-soft:hover::after {
+    @apply w-full;
+  }
+}
+
+/* Serene ocean background styles */
+@layer components {
+  /* Soft ocean blue gradient */
+  .ocean-gradient-serene {
+    background: linear-gradient(
+      180deg,
+      hsl(210 30% 99%) 0%,
+      hsl(210 40% 97%) 30%,
+      hsl(208 45% 95%) 60%,
+      hsl(205 50% 93%) 100%
+    );
+  }
+
+  .dark .ocean-gradient-serene {
+    background: linear-gradient(
+      180deg,
+      hsl(215 30% 8%) 0%,
+      hsl(215 32% 9%) 30%,
+      hsl(212 35% 10%) 60%,
+      hsl(210 38% 11%) 100%
+    );
+  }
+
+  /* Extremely slow, gentle wave animations */
+  @keyframes wave-breathe {
+    0%, 100% {
+      transform: translateX(0) translateY(0);
+    }
+    50% {
+      transform: translateX(-0.5%) translateY(1px);
+    }
+  }
+
+  @keyframes wave-breathe-slow {
+    0%, 100% {
+      transform: translateX(0) translateY(0);
+    }
+    50% {
+      transform: translateX(0.5%) translateY(-1px);
+    }
+  }
+
+  @keyframes wave-breathe-slowest {
+    0%, 100% {
+      transform: translateX(0) translateY(0);
+    }
+    50% {
+      transform: translateX(-0.3%) translateY(1.5px);
+    }
+  }
+
+  .wave-serene-1 {
+    animation: wave-breathe 20s ease-in-out infinite;
+  }
+
+  .wave-serene-2 {
+    animation: wave-breathe-slow 28s ease-in-out infinite;
+  }
+
+  .wave-serene-3 {
+    animation: wave-breathe-slowest 35s ease-in-out infinite;
+  }
+
+  /* Very subtle light shimmer */
+  @keyframes light-dance {
+    0%, 100% {
+      opacity: 0.015;
+    }
+    50% {
+      opacity: 0.03;
+    }
+  }
+
+  .ocean-light::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 120% 60% at 50% 100%,
+      hsl(205 65% 70% / 0.04) 0%,
+      transparent 60%
+    );
+    animation: light-dance 12s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  .dark .ocean-light::before {
+    background: radial-gradient(
+      ellipse 120% 60% at 50% 100%,
+      hsl(205 55% 40% / 0.05) 0%,
+      transparent 60%
+    );
+  }
+}
+
+/* Mapbox styling - clean and minimal */
+.mapboxgl-map {
+  font-family: inherit;
+}
+
+.mapboxgl-ctrl-group {
+  border-radius: 0.75rem !important;
+  overflow: hidden;
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid hsl(var(--border) / 0.5) !important;
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+
+.mapboxgl-popup-content {
+  border-radius: 1rem !important;
+  padding: 0 !important;
+  box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid hsl(var(--border) / 0.3) !important;
+  backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.mapboxgl-popup-close-button {
+  font-size: 1.25rem;
+  padding: 0.75rem;
+  right: 0.5rem;
+  top: 0.5rem;
+  opacity: 0.4;
+  transition: opacity 0.5s ease;
+}
+
+.mapboxgl-popup-close-button:hover {
+  opacity: 0.8;
+}
+
+/* Minimal scrollbar */
+@layer utilities {
+  .scrollbar-minimal::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .scrollbar-minimal::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-minimal::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.15);
+    border-radius: 2px;
+  }
+
+  .scrollbar-minimal::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.25);
+  }
+
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hidden {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Touch targets */
+@layer utilities {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Refined focus states */
+@layer base {
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/20 ring-offset-2 ring-offset-background;
+    @apply transition-shadow duration-300;
+  }
+}
+
+/* Skip link */
+.skip-link {
+  @apply absolute -top-12 left-4 bg-primary text-primary-foreground;
+  @apply px-6 py-3 rounded-full z-50 font-medium;
+  @apply transition-all duration-500 focus:top-4;
+}
+
+/* Calm selection */
+::selection {
+  background-color: hsl(var(--primary) / 0.12);
+  color: inherit;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Safe area utilities for PWA/notch devices */
+@layer utilities {
+  .pt-safe-area-inset-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .pb-safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pl-safe-area-inset-left {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+
+  .pr-safe-area-inset-right {
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  .mt-safe-area-inset-top {
+    margin-top: env(safe-area-inset-top, 0px);
+  }
+
+  .mb-safe-area-inset-bottom {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .h-safe-area-inset-bottom {
+    height: env(safe-area-inset-bottom, 0px);
+  }
+
+  .min-h-safe-area-inset-bottom {
+    min-height: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* PWA standalone mode specific styles */
+@media (display-mode: standalone) {
+  /* More compact header in PWA mode */
+  .pwa-compact-header {
+    @apply h-12 sm:h-14;
+  }
+
+  /* Tighter spacing in PWA */
+  .pwa-compact-nav {
+    @apply h-14 px-0.5;
+  }
+
+  /* Ensure content doesn't go behind home indicator on iOS */
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
