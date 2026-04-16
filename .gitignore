@@ -61,9 +61,14 @@ public/IMG_*
 public/workbox-*.js
 public/workbox-*.js.map
 
-# Android build artifacts
+# DANGER: Never create a root-level app/ folder — Next.js will use it
+# instead of src/app/ and break the entire site. If intentionally migrating
+# to root app/, remove this ignore entry first.
+/app/
+
+# Android TWA build artifacts
+android-twa/
 .gradle/
-app/build/
 *.apk
 *.aab
 *.idsig
@@ -75,13 +80,13 @@ gradle.properties
 gradle/
 gradlew
 gradlew.bat
-app/src/
 twa-manifest.json
 manifest-checksum.txt
 
 # Signing keys and certificates (SENSITIVE)
 *.p8
 *.keystore
+android.keystore
 *.cer
 *.mobileprovision
 *.certSigningRequest
@@ -102,4 +107,3 @@ scripts/data/
 next-env.d.ts
 
 /src/generated/prisma
-.env

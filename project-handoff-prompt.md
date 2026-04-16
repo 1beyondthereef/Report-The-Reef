@@ -1,6 +1,6 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
-*Last updated: April 5, 2026 (Session 8g — Hide non-iOS platform references in native app, Guideline 2.3.10)*
+*Last updated: April 5, 2026 (Session 8i — Site outage recovery, gitignore cleanup, Cursor safety rules)*
 
 ## What This App Is
 Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://reportthereef.com
@@ -213,6 +213,11 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 70. ✅ OAuth buttons (Google, Apple) hidden in native iOS app — only email/password shown, eliminates Guideline 4.8 requirement
 71. ✅ Tri-state `isNative` detection (`null`/`true`/`false`) prevents OAuth button flash during hydration
 72. ✅ Android and Desktop Browser location help instructions hidden in native iOS app (Guideline 2.3.10)
+73. ✅ App Store download badge on home page hero (web only, hidden in native app via tri-state detection)
+74. ✅ Legal disclaimer updated on Info page with counsel-provided text
+75. ✅ TWA manifest updated — host/URLs changed to `www.reportthereef.com`, version bumped to 4
+76. ✅ `.gitignore` hardened — `/app/` guard with warning comment, `android-twa/` ignored, duplicate `.env` removed, `android.keystore` added
+77. ✅ Cursor safety rules (`.cursor/rules/git-safety.mdc`) — prevents force push, `git rm -r --cached .`, root `app/` creation, and guides recovery from diverged branches
 
 ## What Needs Fixing / Testing
 1. **Push notifications not appearing on screen** — `sent:1` is returned but no notification shows. Possible causes:
@@ -661,6 +666,49 @@ The OAuth flow opens SFSafariViewController via `Browser.open()`. After the user
 **Fix:** Added `isNative` state using `isNativePlatform()` to the Connect page. Wrapped the Android and Desktop Browser location help blocks in `{!isNative && (...)}`. iPhone/iPad instructions remain visible always. Web users still see all platform instructions.
 
 **Manual step required:** Also review and clean App Store Connect metadata (description, promotional text, keywords, What's New, App Review Notes, screenshots) for any Android/Google Play references — Guideline 2.3.10 says "app **or metadata**."
+
+### Session 8h Changes (April 5, 2026) — App Store Badge, Legal Disclaimer, TWA Manifest
+
+1. **App Store download badge** — Added official Apple "Download on the App Store" badge to the home page hero section (`src/app/(main)/page.tsx`). Uses `next/image` with `public/badges/app-store-badge.svg`. Hidden in native iOS app via tri-state `isNative` detection (`useState<boolean | null>(null)` resolved in `useEffect`). Only renders when `isNative === false` (web users).
+
+2. **Legal disclaimer replaced** — Replaced the entire "Disclaimer" section in `src/app/(main)/info/page.tsx` (lines 82–107) with new legal text provided by counsel. The previous disclaimer was generic placeholder text.
+
+3. **TWA manifest updated** — Updated `twa-manifest.json`:
+   - Changed `host` from `reportthereef.com` to `www.reportthereef.com`
+   - Updated `iconUrl`, `maskableIconUrl`, `webManifestUrl`, `fullScopeUrl` to use `www.reportthereef.com`
+   - Bumped `appVersionName` from `"3"` to `"4"`, `appVersionCode` from `3` to `4`, `appVersion` from `"3"` to `"4"`
+
+### Session 8i (April 5, 2026) — Site Outage Recovery + Prevention
+
+**Incident:** `www.reportthereef.com` returned a 404 error, taking the entire site offline.
+
+**Root cause:** Android TWA build tools (Bubblewrap) created a root-level `app/` directory containing Android-specific files (`build/`, `src/`, etc.). Next.js App Router auto-detects `app/` at the project root and uses it instead of `src/app/`. Since the root `app/` folder contained Android build files (not Next.js routes), every route resolved to nothing → 404.
+
+**Contributing factor — git history loss:** During troubleshooting, Cursor's shell experienced persistent filesystem errors (stale NFS handle, Bus error), preventing git operations from completing. A `git rm -r --cached .` followed by `git push --force` was run (following external AI advice), which reset the remote's entire commit history. While the code itself was correct, the git history was permanently lost.
+
+**Recovery:**
+1. Renamed `app/` to `android-twa/` — this removed the Next.js App Router conflict and the site immediately recovered.
+2. Ran `git add -A && git commit && git push` from Terminal.app (Cursor shell was hanging).
+
+**Prevention measures applied:**
+1. **`.gitignore` hardened:**
+   - Added `/app/` with a prominent warning comment explaining the Next.js conflict
+   - Added `android-twa/` to ignore the renamed TWA build output
+   - Removed duplicate `.env` entry (was at both line 29 and line 105)
+   - Added `android.keystore` explicitly
+   - Removed stale `app/build/` and `app/src/` entries (replaced by the blanket `/app/` ignore)
+
+2. **Cursor safety rules created** — New file `.cursor/rules/git-safety.mdc` (with `alwaysApply: true` frontmatter) containing 6 rules:
+   - Never `git push --force` without explicit user approval
+   - Never `git rm -r --cached .`
+   - Never create a root-level `app/` folder
+   - Use `git pull --rebase` for branch divergence (never default to force push)
+   - If git hangs in Cursor shell, tell user to use Terminal.app
+   - Before large git ops, review `git status` and `git ls-files --deleted`
+
+3. **Manual step required — GitHub branch protection:** Go to GitHub → repo Settings → Branches → Add branch protection rule for `main` → Check "Restrict force pushes". This prevents accidental history destruction even if someone runs `git push --force` locally.
+
+**Key lesson:** Never run `git rm -r --cached .` as a fix for tracking issues — it removes ALL files from git's index. If `.env` needs untracking, use `git rm --cached .env` (single file). If a directory needs untracking, use `git rm -r --cached <specific-directory>`. Always verify with `git status` before pushing.
 
 ### Critical constraints for future edits
 - **`server.url` must use `https://www.reportthereef.com`** (not the bare domain). The bare domain 307-redirects to `www`, which breaks WKWebView navigation. If the redirect behavior changes, this can be reverted.

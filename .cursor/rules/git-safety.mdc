@@ -1,0 +1,13 @@
+---
+description: Git safety rules to prevent force pushes, history loss, and build conflicts in the Report The Reef project
+alwaysApply: true
+---
+
+# Git Safety Rules
+
+1. NEVER use `git push --force` unless the user explicitly approves it.
+2. NEVER run `git rm -r --cached .` — this removes all files from git tracking and can cause total site outage.
+3. NEVER create a folder called `app/` at the project root — Next.js will use it instead of `src/app/` and break the entire site. The real App Router code lives in `src/app/`.
+4. If `git push` is rejected due to branch divergence, use `git pull --rebase` or ask the user for their preferred strategy. Never default to force push.
+5. If `git push` fails or hangs in Cursor's shell, tell the user to run it in Terminal.app instead of escalating to destructive git commands.
+6. Before any large git operation (rebase, cache clear, force push), run `git status` and `git ls-files --deleted`, and review staged changes to verify no files are accidentally removed.
