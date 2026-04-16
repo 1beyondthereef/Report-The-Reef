@@ -102,3 +102,4 @@ scripts/data/
 next-env.d.ts
 
 /src/generated/prisma
+.env
