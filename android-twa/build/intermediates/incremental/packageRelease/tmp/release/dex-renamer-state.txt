@@ -1,0 +1,4 @@
+#Mon Apr 13 13:38:08 EDT 2026
+base.0=/Users/kendylberna/Desktop/AI APPLICATIONS/Report The Reef/report-the-reef/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+renamed.0=classes.dex
+path.0=classes.dex
