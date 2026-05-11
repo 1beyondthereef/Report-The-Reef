@@ -137,6 +137,7 @@ export default function HomePage() {
                     alt="Download on the App Store"
                     height={40}
                     width={120}
+                    unoptimized
                     className="h-[40px] w-auto"
                   />
                 </a>
