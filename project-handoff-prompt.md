@@ -804,6 +804,23 @@ The full plan is at `.cursor/plans/domain_capacitor_fixes_v2_be46b5f5.plan.md` (
 7. **Android submission** — Upload signed AAB to Google Play Console with store listing + screenshots.
 8. **QR code + optional /download landing page** — Simple QR pointing to `https://reportthereef.com`, with optional user-agent detection to show App Store / Play Store badges.
 
+---
+
+## Upcoming Changes
+
+**Supabase API Access (October 30, 2026):**
+After October 30, 2026, any NEW table created in the "public" schema requires explicit GRANT statements before it can be accessed through PostgREST, supabase-js, or the Data API. When creating new tables, always include:
+
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.new_table_name TO anon, authenticated;
+```
+
+Existing tables (profiles, incidents, sightings, conversations, messages, check_ins, push_subscriptions, anchorages, dive_sites) are unaffected and retain their current access.
+
+Reference: Supabase changelog — "Public schema API access changes"
+
+---
+
 ### Architecture notes for native builds
 - The app is NOT statically exported. Native shells load `https://reportthereef.com` via `server.url` in `capacitor.config.ts`. All API routes stay on Vercel.
 - iOS uses Capacitor (WebView wrapper). Android uses TWA (Chrome-backed, web push works natively).

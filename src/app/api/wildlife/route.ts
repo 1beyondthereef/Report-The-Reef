@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createWildlifeSightingSchema } from "@/lib/validation";
+import { sendAlertEmail, buildWildlifeEmailHtml } from "@/lib/email";
 
 export const dynamic = 'force-dynamic';
 
@@ -112,6 +113,12 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    const species = (sighting.species as string) || 'Unknown';
+    sendAlertEmail({
+      subject: `New Wildlife Sighting — ${species}`,
+      html: buildWildlifeEmailHtml(sighting),
+    });
 
     return NextResponse.json({ sighting }, { status: 201 });
   } catch (error) {

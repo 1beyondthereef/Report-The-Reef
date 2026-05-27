@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createIncidentSchema } from "@/lib/validation";
 import { isAdmin } from "@/lib/api-helpers";
+import { sendAlertEmail, buildIncidentEmailHtml } from "@/lib/email";
 
 export const dynamic = 'force-dynamic';
 
@@ -111,6 +112,14 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    const activityLabel = incident.activity_type
+      ? incident.activity_type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+      : 'Unknown';
+    sendAlertEmail({
+      subject: `New Incident Report — ${activityLabel}`,
+      html: buildIncidentEmailHtml(incident),
+    });
 
     return NextResponse.json({ incident }, { status: 201 });
   } catch (error) {
