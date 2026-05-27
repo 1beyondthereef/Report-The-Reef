@@ -1,6 +1,6 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
-*Last updated: April 5, 2026 (Session 8i — Site outage recovery, gitignore cleanup, Cursor safety rules)*
+*Last updated: May 27, 2026 (Session 9 — Email alerts for new incidents and wildlife sightings via Resend)*
 
 ## What This App Is
 Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://reportthereef.com
@@ -81,6 +81,7 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 - `src/lib/geo-utils.ts` — Shared `calculateDistance()` haversine function
 - `src/lib/platform.ts` — Platform detection for Capacitor native vs web. Exports `isNativePlatform()`, `getPlatform()` ('ios'|'android'|'web'), `getPushChannel()` ('apns'|'web'). Uses multi-signal detection: `window.Capacitor` globals, `window.webkit?.messageHandlers?.bridge` (WKWebView bridge), and PWA standalone checks. Safe in web-only builds.
 - `src/lib/push-notifications.ts` — Push notification registration/unregistration. **Guarded with `isNativePlatform()` early return** to prevent `navigator.serviceWorker.ready` from crashing in WKWebView (service workers are not supported for remote URLs in WKWebView).
+- `src/lib/email.ts` — Email alert system via Resend. Exports `sendAlertEmail()` (fire-and-forget, never throws), `buildIncidentEmailHtml()`, `buildWildlifeEmailHtml()`, `ALERT_RECIPIENTS`, `ALERT_FROM`. Has env guard for missing `RESEND_API_KEY`.
 - `capacitor.config.ts` — Capacitor configuration. Points native shells at `https://www.reportthereef.com` via `server.url` (uses `www` to avoid a 307 redirect from the bare domain). App ID: `com.beyondthereef.reportthereef`. `allowNavigation`: `reportthereef.com`, `*.reportthereef.com`, `*.supabase.co`, `accounts.google.com`. iOS config: `contentInset: 'automatic'`, `allowsLinkPreview: false` (hides URL bar in WebView), `preferredContentMode: 'mobile'` (forces mobile layout on iPad), `backgroundColor: '#0a1628'` (prevents white flash between splash and WebView load).
 - `public/.well-known/assetlinks.json` — Android Digital Asset Links for TWA. **Contains placeholder fingerprint** — must be replaced before Android submission.
 - `public/.well-known/apple-app-site-association` — Apple Associated Domains configuration for Universal Links. Routes `/auth/callback*` and `/auth/native-callback*` to the native app. Also includes `webcredentials` for password autofill. App ID: `949R9WW2TN.com.beyondthereef.reportthereef`.
@@ -131,6 +132,7 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 - `NEXT_PUBLIC_MAPBOX_TOKEN`
 - `ADMIN_PASSWORD` — Used by `/api/admin/auth` to gate access to admin pages. Set on Vercel; not in `.env.local`.
 - `ADMIN_USER_IDS` — Comma-separated list of user UUIDs that have admin privileges (used by `isAdmin()` in `src/lib/api-helpers.ts`)
+- `RESEND_API_KEY` — Server-side only. API key for Resend email delivery. Used by `src/lib/email.ts` to send incident/wildlife alert emails. Domain `reportthereef.com` must be verified in Resend dashboard.
 
 ---
 
@@ -218,6 +220,8 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 75. ✅ TWA manifest updated — host/URLs changed to `www.reportthereef.com`, version bumped to 4
 76. ✅ `.gitignore` hardened — `/app/` guard with warning comment, `android-twa/` ignored, duplicate `.env` removed, `android.keystore` added
 77. ✅ Cursor safety rules (`.cursor/rules/git-safety.mdc`) — prevents force push, `git rm -r --cached .`, root `app/` creation, and guides recovery from diverged branches
+78. ✅ Email alerts via Resend — new incidents and wildlife sightings trigger immediate email to `kendyl@1beyondthereef.com` and `report@1beyondthereef.com` with full report details, Google Maps link, and admin dashboard link
+79. ✅ App Store badge SVG fix — added `unoptimized` prop to `next/image` for SVG (was returning 500 from Vercel image optimizer)
 
 ## What Needs Fixing / Testing
 1. **Push notifications not appearing on screen** — `sent:1` is returned but no notification shows. Possible causes:
@@ -709,6 +713,20 @@ The OAuth flow opens SFSafariViewController via `Browser.open()`. After the user
 3. **Manual step required — GitHub branch protection:** Go to GitHub → repo Settings → Branches → Add branch protection rule for `main` → Check "Restrict force pushes". This prevents accidental history destruction even if someone runs `git push --force` locally.
 
 **Key lesson:** Never run `git rm -r --cached .` as a fix for tracking issues — it removes ALL files from git's index. If `.env` needs untracking, use `git rm --cached .env` (single file). If a directory needs untracking, use `git rm -r --cached <specific-directory>`. Always verify with `git status` before pushing.
+
+### Session 9 Changes (May 27, 2026) — Email Alerts via Resend
+
+1. **Email alert system** — New incidents and wildlife sightings now trigger immediate email notifications via Resend (`resend` npm package).
+   - **Shared helper** — `src/lib/email.ts` centralizes the Resend client, recipient list, from address, `sendAlertEmail()`, and HTML template builders (`buildIncidentEmailHtml`, `buildWildlifeEmailHtml`).
+   - **Recipients:** `kendyl@1beyondthereef.com`, `report@1beyondthereef.com`
+   - **From:** `Report The Reef <alerts@reportthereef.com>`
+   - **Incidents** (`src/app/api/incidents/route.ts`): Subject "New Incident Report — [Type]". Body includes activity type, observed date, GPS coordinates with Google Maps link, reporter name/email, photo links, description, and a link to `/admin/incidents`.
+   - **Wildlife** (`src/app/api/wildlife/route.ts`): Subject "New Wildlife Sighting — [Species]". Body includes species, count, sighted date, location name, GPS coordinates with Google Maps link, reporter name/email, photo link, comments, and a link to `/admin/sightings`.
+   - **Non-blocking:** Email is fire-and-forget — called without `await` after successful Supabase insert, wrapped in try/catch inside `sendAlertEmail()`. A failed email never blocks the 201 response.
+   - **Env guard:** If `RESEND_API_KEY` is not set (local dev), logs a warning and skips — no noisy errors.
+   - **Env var:** `RESEND_API_KEY` (server-side only, set in Vercel). Domain `reportthereef.com` must be verified in Resend dashboard (DNS records via Cloudflare).
+
+2. **App Store badge SVG fix** — Added `unoptimized` prop to the `<Image>` component for the App Store badge in `src/app/(main)/page.tsx`. Vercel's `next/image` optimization pipeline can't process SVGs and was returning a 500 error.
 
 ### Critical constraints for future edits
 - **`server.url` must use `https://www.reportthereef.com`** (not the bare domain). The bare domain 307-redirects to `www`, which breaks WKWebView navigation. If the redirect behavior changes, this can be reverted.
