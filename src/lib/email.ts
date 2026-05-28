@@ -14,6 +14,7 @@ export const ALERT_RECIPIENTS = [
   'quennie@1beyondthereef.com',
   'rhyn@1beyondthereef.com',
   'jules@1beyondthereef.com',
+  'jpadmore@gov.vg',
 ];
 
 export const ALERT_FROM = 'Report The Reef <alerts@reportthereef.com>';
