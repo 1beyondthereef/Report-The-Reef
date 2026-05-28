@@ -1,6 +1,6 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
-*Last updated: May 27, 2026 (Session 9 — Email alerts for new incidents and wildlife sightings via Resend)*
+*Last updated: May 28, 2026 (Session 9b — Fix incident photo links in admin dashboard and email alerts)*
 
 ## What This App Is
 Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://reportthereef.com
@@ -222,6 +222,9 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 77. ✅ Cursor safety rules (`.cursor/rules/git-safety.mdc`) — prevents force push, `git rm -r --cached .`, root `app/` creation, and guides recovery from diverged branches
 78. ✅ Email alerts via Resend — new incidents and wildlife sightings trigger immediate email to `kendyl@1beyondthereef.com` and `report@1beyondthereef.com` with full report details, Google Maps link, and admin dashboard link
 79. ✅ App Store badge SVG fix — added `unoptimized` prop to `next/image` for SVG (was returning 500 from Vercel image optimizer)
+80. ✅ Incident photo links fixed — `/api/storage/signed-url` now uses service-role client to bypass storage RLS; email alerts include 14-day signed URLs for photos
+81. ✅ Admin incident dashboard photos fixed — same service-role signing fix enables admins to view photos uploaded by any user
+82. ✅ Alert email recipients expanded to 9 team members
 
 ## What Needs Fixing / Testing
 1. **Push notifications not appearing on screen** — `sent:1` is returned but no notification shows. Possible causes:
@@ -727,6 +730,35 @@ The OAuth flow opens SFSafariViewController via `Browser.open()`. After the user
    - **Env var:** `RESEND_API_KEY` (server-side only, set in Vercel). Domain `reportthereef.com` must be verified in Resend dashboard (DNS records via Cloudflare).
 
 2. **App Store badge SVG fix** — Added `unoptimized` prop to the `<Image>` component for the App Store badge in `src/app/(main)/page.tsx`. Vercel's `next/image` optimization pipeline can't process SVGs and was returning a 500 error.
+
+### Session 9b Changes (May 28, 2026) — Fix Incident Photo Links (Admin + Email)
+
+**Problem:** Incident photos weren't viewable in the admin dashboard or in email alerts. Links either failed to open or showed "server not found."
+
+**Root cause:** The `Incident-report-photos` Supabase storage bucket is private. The `/api/storage/signed-url` endpoint used a user-scoped Supabase client to generate signed URLs, but storage RLS prevented it from signing files uploaded by other users. The email template was using raw storage paths (e.g., `2026-05-28/a1b2c3d4.jpg`) as `<a href>` links instead of full URLs.
+
+**Fixes:**
+
+1. **`/api/storage/signed-url` — service-role signing** (`src/app/api/storage/signed-url/route.ts`):
+   - Added service-role Supabase client (bypasses storage RLS) for `createSignedUrl()` calls
+   - Kept user-scoped auth check (must be logged in to use endpoint)
+   - Added env guard: returns 500 if `SUPABASE_SERVICE_ROLE_KEY` is missing
+   - Added input validation: max 20 paths per request, filters empty/non-string paths
+   - Response shape unchanged (`{ signedUrls }`) — admin UI required no changes
+
+2. **Incident email photo links** (`src/app/api/incidents/route.ts`):
+   - After successful insert, generates 14-day signed URLs for `incident.photo_urls` via service-role client
+   - Passes signed URLs to `buildIncidentEmailHtml(incident, signedPhotoUrls)`
+   - If signing fails (env key missing, Supabase error), continues with empty array — email shows fallback text
+   - Wrapped in try/catch — never blocks the 201 response
+
+3. **Email template updated** (`src/lib/email.ts`):
+   - `buildIncidentEmailHtml` now accepts optional `photoLinks: string[]` parameter
+   - Three-tier rendering: signed URLs available → clickable links; photos uploaded but signing failed → "N photo(s) uploaded — view in admin dashboard"; no photos → "None"
+
+4. **Alert recipients expanded** to 9 team members (all `@1beyondthereef.com` addresses + `chris@commercialdivebvi.com`)
+
+5. **Wildlife unchanged** — uses public `Wildlife-sighting-photos` bucket; `photo_url` is already stored as a full public URL
 
 ### Critical constraints for future edits
 - **`server.url` must use `https://www.reportthereef.com`** (not the bare domain). The bare domain 307-redirects to `www`, which breaks WKWebView navigation. If the redirect behavior changes, this can be reverted.

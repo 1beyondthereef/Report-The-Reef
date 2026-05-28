@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createIncidentSchema } from "@/lib/validation";
 import { isAdmin } from "@/lib/api-helpers";
 import { sendAlertEmail, buildIncidentEmailHtml } from "@/lib/email";
+import { STORAGE_BUCKETS } from "@/lib/supabase/storage";
 
 export const dynamic = 'force-dynamic';
 
@@ -116,9 +118,39 @@ export async function POST(request: NextRequest) {
     const activityLabel = incident.activity_type
       ? incident.activity_type.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
       : 'Unknown';
+
+    let signedPhotoUrls: string[] = [];
+    const rawPhotoPaths = Array.isArray(incident.photo_urls) ? incident.photo_urls as string[] : [];
+    if (rawPhotoPaths.length > 0) {
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!serviceKey) {
+        console.warn("[incidents] SUPABASE_SERVICE_ROLE_KEY not set — skipping photo URL signing");
+      } else {
+        try {
+          const serviceClient = createServiceClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            serviceKey
+          );
+          const { data: signedList, error: signedError } = await serviceClient.storage
+            .from(STORAGE_BUCKETS.INCIDENT_REPORTS)
+            .createSignedUrls(rawPhotoPaths, 14 * 24 * 60 * 60);
+
+          if (signedError) {
+            console.error("[incidents] Failed to create signed photo URLs:", signedError);
+          } else {
+            signedPhotoUrls = (signedList || [])
+              .map((item) => item?.signedUrl)
+              .filter((u): u is string => Boolean(u));
+          }
+        } catch (signError) {
+          console.error("[incidents] Error signing photo URLs:", signError);
+        }
+      }
+    }
+
     sendAlertEmail({
       subject: `New Incident Report — ${activityLabel}`,
-      html: buildIncidentEmailHtml(incident),
+      html: buildIncidentEmailHtml(incident, signedPhotoUrls),
     });
 
     return NextResponse.json({ incident }, { status: 201 });

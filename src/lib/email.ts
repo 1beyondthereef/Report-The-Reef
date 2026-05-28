@@ -73,12 +73,20 @@ const ACTIVITY_TYPE_LABELS: Record<string, string> = {
   other: 'Other',
 };
 
-export function buildIncidentEmailHtml(incident: Record<string, unknown>): string {
+export function buildIncidentEmailHtml(
+  incident: Record<string, unknown>,
+  photoLinks: string[] = [],
+): string {
   const type = ACTIVITY_TYPE_LABELS[incident.activity_type as string] ?? (incident.activity_type as string);
-  const photoUrls = (incident.photo_urls as string[] | null) ?? [];
-  const photosHtml = photoUrls.length > 0
-    ? photoUrls.map((url, i) => `<a href="${escapeHtml(url)}">Photo ${i + 1}</a>`).join(' &nbsp; ')
-    : 'None';
+  const rawPaths = (incident.photo_urls as string[] | null) ?? [];
+  let photosHtml: string;
+  if (photoLinks.length > 0) {
+    photosHtml = photoLinks.map((url, i) => `<a href="${escapeHtml(url)}">Photo ${i + 1}</a>`).join(' &nbsp; ');
+  } else if (rawPaths.length > 0) {
+    photosHtml = `${rawPaths.length} photo(s) uploaded &mdash; <a href="https://www.reportthereef.com/admin/incidents">view in admin dashboard</a>`;
+  } else {
+    photosHtml = 'None';
+  }
   const mapsLink = incident.latitude && incident.longitude
     ? `<a href="https://www.google.com/maps?q=${incident.latitude},${incident.longitude}">View on Map</a>`
     : '';
