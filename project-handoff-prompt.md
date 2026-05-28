@@ -1,6 +1,6 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
-*Last updated: May 28, 2026 (Session 9c — Remove Supabase auth check from /api/storage/signed-url to match admin pattern)*
+*Last updated: May 28, 2026 (Session 9d — Fix Next.js fetch cache returning stale admin data via shared admin Supabase client helper)*
 
 ## What This App Is
 Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://reportthereef.com
@@ -227,7 +227,9 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 82. ✅ Alert email recipients expanded to 9 team members
 
 ## What Needs Fixing / Testing
-0. **Admin API hardening (future):** Admin endpoints currently rely on the client-side admin password gate in `src/app/admin/layout.tsx` and do not enforce server-side admin authorization. This now includes `src/app/api/storage/signed-url/route.ts`. Add consistent server-side admin auth verification across all `/api/admin/*` routes and signed URL endpoints in a dedicated security pass.
+0a. **Admin API hardening (future):** Admin endpoints currently rely on the client-side admin password gate in `src/app/admin/layout.tsx` and do not enforce server-side admin authorization. This now includes `src/app/api/storage/signed-url/route.ts`. Add consistent server-side admin auth verification across all `/api/admin/*` routes and signed URL endpoints in a dedicated security pass.
+
+0b. **Next.js fetch cache awareness:** Admin API routes use `createAdminClient()` from `src/lib/supabase/admin.ts` to bypass the Next.js 14 App Router's default fetch caching. Any new admin/service-role routes that read from Supabase should use this helper (not `createClient()` directly from `@supabase/supabase-js`) to avoid returning stale cached snapshots. The helper sets `cache: 'no-store'` on every internal Supabase fetch. When upgrading to Next.js 15, this workaround can be revisited since fetch caching defaults changed.
 
 1. **Push notifications not appearing on screen** — `sent:1` is returned but no notification shows. Possible causes:
    - Chrome may suppress when tab is active (test by switching tabs after sending)
@@ -762,7 +764,25 @@ The OAuth flow opens SFSafariViewController via `Browser.open()`. After the user
 
 5. **Wildlife unchanged** — uses public `Wildlife-sighting-photos` bucket; `photo_url` is already stored as a full public URL
 
-**Session 9c follow-up (same day):** The signed-url endpoint originally required Supabase `auth.getUser()`, but the admin pages use a separate client-side password gate (not Supabase auth). The Supabase auth check rejected legitimate admin sessions with `{ error: "Unauthorized" }`. Removed the Supabase auth check from `src/app/api/storage/signed-url/route.ts` and removed the now-unused `createServerClient` import to match the existing pattern of `/api/admin/*` routes (no server-side auth, relies on client-side password gate). Logged as a future hardening task in "What Needs Fixing / Testing" item 0.
+**Session 9c follow-up (same day):** The signed-url endpoint originally required Supabase `auth.getUser()`, but the admin pages use a separate client-side password gate (not Supabase auth). The Supabase auth check rejected legitimate admin sessions with `{ error: "Unauthorized" }`. Removed the Supabase auth check from `src/app/api/storage/signed-url/route.ts` and removed the now-unused `createServerClient` import to match the existing pattern of `/api/admin/*` routes (no server-side auth, relies on client-side password gate). Logged as a future hardening task in "What Needs Fixing / Testing" item 0a.
+
+### Session 9d Changes (May 28, 2026) — Fix Stale Admin Data via Next.js Fetch Cache
+
+**Problem:** Admin dashboard showed stale data. A new incident submitted at 11:32 AM (confirmed in Supabase Table Editor and SQL query) didn't appear in `/admin/incidents`, even with hard refresh, incognito mode, and cache-busting query strings. A separate report whose status had been changed from `pending` → `dismissed` in the database still showed as `pending` in the API response. Vercel env vars were verified to point to the correct Supabase project (`eeslurwenkpclurtqxvu`).
+
+**Root cause:** Next.js 14 App Router's automatic fetch cache. The Supabase JS client uses `fetch()` internally for every query. In Next.js 14, `fetch()` calls inside route handlers are cached by default — even inside routes with `export const dynamic = "force-dynamic"`. The `dynamic` directive marks the route as dynamic but does NOT disable the fetch cache for individual fetch calls. Result: the first time the admin API was called, Next.js cached Supabase's REST response, and every subsequent call returned the cached snapshot regardless of cache-busting at the admin API URL level (the cache key is the internal Supabase REST URL, not the admin API URL).
+
+**Fix:**
+
+1. **New shared helper** — Created `src/lib/supabase/admin.ts` exporting `createAdminClient()`. Returns a service-role Supabase client with a custom `global.fetch` that always sets `cache: 'no-store'`, bypassing Next.js's fetch cache for every internal Supabase call. Throws with a clear error if `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_SERVICE_ROLE_KEY` is missing.
+
+2. **`src/app/api/admin/incidents/route.ts`** — Replaced module-scope `createClient()` with `createAdminClient()` called inside the handler. Added `export const revalidate = 0` alongside existing `dynamic = "force-dynamic"`. Added `Cache-Control: no-store` to all `NextResponse.json()` responses (belt-and-suspenders at HTTP layer).
+
+3. **`src/app/api/admin/wildlife/route.ts`** — Same changes as incidents route.
+
+**Scope decision (per Codex):** This fix is scoped to admin **read** routes only. Write routes (`PATCH` on `[id]`) and signed URL generation in `src/app/api/incidents/route.ts` are not the stale-read path and don't need to be migrated for this bug. They can be migrated to `createAdminClient()` in a future consistency pass.
+
+**Key lesson:** In Next.js 14 App Router, `dynamic = "force-dynamic"` is not enough to guarantee fresh data when using libraries (like Supabase JS) that wrap `fetch()`. The library's internal fetch calls must also opt out of caching, either via `cache: 'no-store'` on each call or via a custom fetch wrapper in the client config. Next.js 15 changes fetch caching defaults, so this workaround can be revisited on upgrade.
 
 ### Critical constraints for future edits
 - **`server.url` must use `https://www.reportthereef.com`** (not the bare domain). The bare domain 307-redirects to `www`, which breaks WKWebView navigation. If the redirect behavior changes, this can be reverted.

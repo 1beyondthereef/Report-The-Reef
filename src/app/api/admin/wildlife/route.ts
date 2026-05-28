@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const revalidate = 0;
 
 export async function GET() {
   try {
+    const supabase = createAdminClient();
     const { data: sightings, error } = await supabase
       .from("wildlife_sightings")
       .select("*")
@@ -19,16 +16,19 @@ export async function GET() {
       console.error("Admin: Error fetching wildlife sightings:", error);
       return NextResponse.json(
         { error: "Failed to fetch sightings" },
-        { status: 500 }
+        { status: 500, headers: { "Cache-Control": "no-store" } }
       );
     }
 
-    return NextResponse.json({ sightings: sightings || [] });
+    return NextResponse.json(
+      { sightings: sightings || [] },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (error) {
     console.error("Error in GET /api/admin/wildlife:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500, headers: { "Cache-Control": "no-store" } }
     );
   }
 }
