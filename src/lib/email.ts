@@ -4,7 +4,7 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-export const ALERT_RECIPIENTS = [
+const CORE_RECIPIENTS = [
   'kendyl@1beyondthereef.com',
   'report@1beyondthereef.com',
   'chris@commercialdivebvi.com',
@@ -14,8 +14,14 @@ export const ALERT_RECIPIENTS = [
   'quennie@1beyondthereef.com',
   'rhyn@1beyondthereef.com',
   'jules@1beyondthereef.com',
+];
+
+export const INCIDENT_RECIPIENTS = [
+  ...CORE_RECIPIENTS,
   'jpadmore@gov.vg',
 ];
+
+export const WILDLIFE_RECIPIENTS = CORE_RECIPIENTS;
 
 export const ALERT_FROM = 'Report The Reef <alerts@reportthereef.com>';
 
@@ -25,9 +31,11 @@ export const ALERT_FROM = 'Report The Reef <alerts@reportthereef.com>';
 export async function sendAlertEmail({
   subject,
   html,
+  to,
 }: {
   subject: string;
   html: string;
+  to: string[];
 }) {
   if (!resend) {
     console.warn('[email] RESEND_API_KEY not set — skipping alert email');
@@ -37,7 +45,7 @@ export async function sendAlertEmail({
   try {
     await resend.emails.send({
       from: ALERT_FROM,
-      to: ALERT_RECIPIENTS,
+      to,
       subject,
       html,
     });

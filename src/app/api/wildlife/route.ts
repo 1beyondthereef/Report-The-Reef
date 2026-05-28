@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createWildlifeSightingSchema } from "@/lib/validation";
-import { sendAlertEmail, buildWildlifeEmailHtml } from "@/lib/email";
+import { sendAlertEmail, buildWildlifeEmailHtml, WILDLIFE_RECIPIENTS } from "@/lib/email";
 
 export const dynamic = 'force-dynamic';
 
@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
     sendAlertEmail({
       subject: `New Wildlife Sighting — ${species}`,
       html: buildWildlifeEmailHtml(sighting),
+      to: WILDLIFE_RECIPIENTS,
     });
 
     return NextResponse.json({ sighting }, { status: 201 });

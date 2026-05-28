@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { createIncidentSchema } from "@/lib/validation";
 import { isAdmin } from "@/lib/api-helpers";
-import { sendAlertEmail, buildIncidentEmailHtml } from "@/lib/email";
+import { sendAlertEmail, buildIncidentEmailHtml, INCIDENT_RECIPIENTS } from "@/lib/email";
 import { STORAGE_BUCKETS } from "@/lib/supabase/storage";
 
 export const dynamic = 'force-dynamic';
@@ -151,6 +151,7 @@ export async function POST(request: NextRequest) {
     sendAlertEmail({
       subject: `New Incident Report — ${activityLabel}`,
       html: buildIncidentEmailHtml(incident, signedPhotoUrls),
+      to: INCIDENT_RECIPIENTS,
     });
 
     return NextResponse.json({ incident }, { status: 201 });
