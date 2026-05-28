@@ -7,6 +7,13 @@ const resend = process.env.RESEND_API_KEY
 export const ALERT_RECIPIENTS = [
   'kendyl@1beyondthereef.com',
   'report@1beyondthereef.com',
+  'chris@commercialdivebvi.com',
+  'ben@1beyondthereef.com',
+  'Elanor@1beyondthereef.com',
+  'kat@1beyondthereef.com',
+  'quennie@1beyondthereef.com',
+  'rhyn@1beyondthereef.com',
+  'jules@1beyondthereef.com',
 ];
 
 export const ALERT_FROM = 'Report The Reef <alerts@reportthereef.com>';
