@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient as createServerClient } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import { STORAGE_BUCKETS } from "@/lib/supabase/storage";
 
@@ -10,20 +9,16 @@ const MAX_PATHS_PER_REQUEST = 20;
 
 /**
  * Generate signed URLs for private bucket files.
- * Requires authentication. Uses service-role client to bypass storage RLS
- * (allows admins to view files uploaded by any user).
+ * Uses service-role client to bypass storage RLS (allows admins to view
+ * files uploaded by any user). Access is currently protected by the
+ * client-side admin password gate in src/app/admin/layout.tsx — no
+ * server-side auth check (consistent with other /api/admin/* routes).
+ * See "Admin API hardening" follow-up in project-handoff-prompt.md.
  * POST /api/storage/signed-url
  * Body: { paths: string[], bucket: string }
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!serviceKey) {
       console.error("[signed-url] SUPABASE_SERVICE_ROLE_KEY not configured");

@@ -1,6 +1,6 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
-*Last updated: May 28, 2026 (Session 9b — Fix incident photo links in admin dashboard and email alerts)*
+*Last updated: May 28, 2026 (Session 9c — Remove Supabase auth check from /api/storage/signed-url to match admin pattern)*
 
 ## What This App Is
 Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://reportthereef.com
@@ -227,6 +227,8 @@ The app has two independent anchorage datasets that are kept in sync via an auto
 82. ✅ Alert email recipients expanded to 9 team members
 
 ## What Needs Fixing / Testing
+0. **Admin API hardening (future):** Admin endpoints currently rely on the client-side admin password gate in `src/app/admin/layout.tsx` and do not enforce server-side admin authorization. This now includes `src/app/api/storage/signed-url/route.ts`. Add consistent server-side admin auth verification across all `/api/admin/*` routes and signed URL endpoints in a dedicated security pass.
+
 1. **Push notifications not appearing on screen** — `sent:1` is returned but no notification shows. Possible causes:
    - Chrome may suppress when tab is active (test by switching tabs after sending)
    - Mac notification settings for Chrome may be off (System Settings → Notifications → Chrome)
@@ -759,6 +761,8 @@ The OAuth flow opens SFSafariViewController via `Browser.open()`. After the user
 4. **Alert recipients expanded** to 9 team members (all `@1beyondthereef.com` addresses + `chris@commercialdivebvi.com`)
 
 5. **Wildlife unchanged** — uses public `Wildlife-sighting-photos` bucket; `photo_url` is already stored as a full public URL
+
+**Session 9c follow-up (same day):** The signed-url endpoint originally required Supabase `auth.getUser()`, but the admin pages use a separate client-side password gate (not Supabase auth). The Supabase auth check rejected legitimate admin sessions with `{ error: "Unauthorized" }`. Removed the Supabase auth check from `src/app/api/storage/signed-url/route.ts` and removed the now-unused `createServerClient` import to match the existing pattern of `/api/admin/*` routes (no server-side auth, relies on client-side password gate). Logged as a future hardening task in "What Needs Fixing / Testing" item 0.
 
 ### Critical constraints for future edits
 - **`server.url` must use `https://www.reportthereef.com`** (not the bare domain). The bare domain 307-redirects to `www`, which breaks WKWebView navigation. If the redirect behavior changes, this can be reverted.
