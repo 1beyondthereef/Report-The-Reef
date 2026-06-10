@@ -1,6 +1,6 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
-*Last updated: May 28, 2026 (Session 9d — Fix Next.js fetch cache returning stale admin data via shared admin Supabase client helper)*
+*Last updated: June 10, 2026 (Session 10 — Rebrand: new professional logos across website header/footer, favicon, PWA icons, iOS splash + app icon, and email alerts)*
 
 ## What This App Is
 Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://reportthereef.com
@@ -649,7 +649,7 @@ The OAuth flow opens SFSafariViewController via `Browser.open()`. After the user
 
 **Fix:**
 - **`src/components/layout/Header.tsx`**: Changed `sticky top-0 z-40` to `fixed top-0 z-50`. Background opacity bumped to `bg-background/90` / `bg-background/80` to prevent content showing through.
-- **`src/app/(main)/layout.tsx`**: Added `pt-14 sm:pt-16 md:pt-20 lg:pt-44` to `<main>` to offset content below the fixed header, matching header heights at each breakpoint (`h-14`, `sm:h-16`, `md:h-20`, `lg:h-44`).
+- **`src/app/(main)/layout.tsx`**: Added `pt-14 sm:pt-16 md:pt-20 lg:pt-44` to `<main>` to offset content below the fixed header, matching header heights at each breakpoint (`h-14`, `sm:h-16`, `md:h-20`, `lg:h-44`). *(Header heights were reduced in Session 10 — this offset is now `pt-14 sm:pt-16 md:pt-16 lg:pt-20`. See Session 10.)*
 
 ### Session 8f Fix (April 2, 2026) — Hide OAuth in Native App
 
@@ -783,6 +783,33 @@ The OAuth flow opens SFSafariViewController via `Browser.open()`. After the user
 **Scope decision (per Codex):** This fix is scoped to admin **read** routes only. Write routes (`PATCH` on `[id]`) and signed URL generation in `src/app/api/incidents/route.ts` are not the stale-read path and don't need to be migrated for this bug. They can be migrated to `createAdminClient()` in a future consistency pass.
 
 **Key lesson:** In Next.js 14 App Router, `dynamic = "force-dynamic"` is not enough to guarantee fresh data when using libraries (like Supabase JS) that wrap `fetch()`. The library's internal fetch calls must also opt out of caching, either via `cache: 'no-store'` on each call or via a custom fetch wrapper in the client config. Next.js 15 changes fetch caching defaults, so this workaround can be revisited on upgrade.
+
+### Session 10 Changes (June 10, 2026) — Rebrand: New Professional Logos
+
+**Context:** New professional brand assets were added to `public/logos/`: `header-logo.svg` (horizontal white logo for dark backgrounds), `app-icon.png` (icon art), `splash-logo.png` (vertical stacked logo + tagline), `banner-logo.svg` (horizontal logo + tagline for email). All downstream assets were regenerated from these sources and old logos removed.
+
+**Source asset note:** `app-icon.png` is **3007×3249 (not square)**. All square icons are produced by padding it onto a centered square `#0a1628` canvas (no distortion) before resizing. The iOS app icon is flattened (no alpha) as Apple requires.
+
+**Asset generation script — `scripts/gen-icons.mjs` (new, committed):**
+- Run with `node scripts/gen-icons.mjs`. Re-run whenever brand art changes.
+- Requires devDeps `sharp` + `png-to-ico` (both added this session).
+- Regenerates, from the `public/logos/` sources: `public/favicon.ico` (16/32/48), `public/favicon-16.png`, `public/favicon-32.png`, `public/apple-touch-icon.png` (180), all 8 `public/icons/icon-*.png` (72→512), `ios/App/App/Assets.xcassets/AppIcon.appiconset/app-icon-1024.png` (1024, flattened), the three `ios/.../Splash.imageset/splash-2732x2732*.png` (logo centered on `#0a1628`), and `public/logos/banner-logo.png` (rasterized from `banner-logo.svg` for email).
+
+**Code changes:**
+1. **`src/components/layout/Header.tsx`** — Swapped the `next/image` `/logo-main.png` logo for a plain `<img src="/logos/header-logo.svg">` (SVG; `next/image` doesn't optimize SVGs). Responsive width `w-[150px] sm:w-[160px] md:w-[170px] lg:w-[180px]` (+ smaller standalone widths). Removed the old `mix-blend-screen` hack and the now-unused `Image` import. **Reduced the header bar heights** so the new logo fits without whitespace: `md:h-20→md:h-16`, `lg:h-44→lg:h-20`; standalone `md:h-16 lg:h-36→md:h-14 lg:h-16`.
+2. **`src/components/layout/Footer.tsx`** — Same logo swap to `/logos/header-logo.svg`; removed unused `Image` import.
+3. **`src/app/(main)/layout.tsx`** — Synced `<main>` top padding to the new header heights: `pt-14 sm:pt-16 md:pt-20 lg:pt-44` → `pt-14 sm:pt-16 md:pt-16 lg:pt-20`.
+4. **`src/app/(main)/anchorages/page.tsx`** — This map page encodes header heights in several spots; all updated to the new scale:
+   - Page container height calc: `md:h-[calc(100dvh-5rem)] lg:h-[calc(100dvh-11rem)]` → `md:h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-5rem)]`.
+   - `MapSidebar` (`fixed top-0`, so it clears the header) className: `pt-14 sm:pt-16 md:pt-20 lg:pt-44` → `pt-14 sm:pt-16 md:pt-16 lg:pt-20`.
+   - "Click here for more layers" tooltip top offset: `md:top-[6rem] lg:top-[12rem]` → `md:top-[5rem] lg:top-[6rem]`.
+   - **Left unchanged on purpose:** the `AnchorageMap` `pt-14` (it's `relative`, inside the already-header-offset container — that padding clears the absolute search bar, not the header; increasing it would open a gap) and the `top-16` loading indicator (sits below the search bar, never collides with the header).
+5. **`src/lib/email.ts`** — Added the banner logo above the `<h1>` in both `buildIncidentEmailHtml` and `buildWildlifeEmailHtml`: `<img src="https://www.reportthereef.com/logos/banner-logo.png" alt="Report The Reef" width="220" ...>`. **Must be an absolute production URL** — email clients can't load relative/localhost paths, so the logo only renders after deploy. Recipient lists were not touched.
+6. **Old assets deleted** after a repo-wide reference scan (`rg "logo-main|logo-stacked|logo\.png"` returned no live references): `public/logo-main.png`, `public/logo-stacked.png`, `public/logo.png`.
+
+**Path conventions kept (no breaking changes):** PWA icons remain at `public/icons/icon-*.png` (referenced by both `public/manifest.json` and the `icons` block in `src/app/layout.tsx`) — they were regenerated in place, so no manifest/layout path edits were needed. iOS `Contents.json` files for `Splash.imageset` and `AppIcon.appiconset` were unchanged (filenames preserved).
+
+**Verification note:** `next build` and `eslint` both **hang at startup in the Cursor sandbox shell** (0% CPU, stuck at "Creating an optimized production build…") — an environment limitation, not a code issue. Correctness was verified via `tsc --noEmit` (exit 0), which covers the removed imports, JSX validity, and email template types. The `<img>` usage produces a non-failing `@next/next/no-img-element` ESLint **warning** (rule is `warn` under `next/core-web-vitals`). **Recommend running `npm run build` once in Terminal.app before deploy.**
 
 ### Critical constraints for future edits
 - **`server.url` must use `https://www.reportthereef.com`** (not the bare domain). The bare domain 307-redirects to `www`, which breaks WKWebView navigation. If the redirect behavior changes, this can be reverted.
