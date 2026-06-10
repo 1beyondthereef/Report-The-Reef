@@ -235,7 +235,7 @@ export default function AnchoragesPage() {
   const hasPanelOpen = selectedAnchorage || selectedDiveSite || selectedRestrictedArea || selectedProtectedArea || showRegulations;
 
   return (
-    <div className="relative h-[calc(100dvh-3.5rem-5rem)] sm:h-[calc(100dvh-4rem-5rem)] md:h-[calc(100dvh-5rem)] lg:h-[calc(100dvh-11rem)]">
+    <div className="relative h-[calc(100dvh-3.5rem-5rem)] sm:h-[calc(100dvh-4rem-5rem)] md:h-[calc(100dvh-4rem)] lg:h-[calc(100dvh-5rem)]">
       {/* Top Search Bar */}
       <div className="absolute left-0 right-0 top-0 z-30 bg-background/95 p-3 backdrop-blur border-b">
         <div className="flex gap-2 max-w-xl mx-auto">
@@ -322,7 +322,7 @@ export default function AnchoragesPage() {
       {/* Sidebar Hint (shows on first load) */}
       {showSidebarHint && !sidebarOpen && (
         <div
-          className="fixed left-16 top-[4.5rem] sm:top-[5rem] md:top-[6rem] lg:top-[12rem] z-40 bg-primary text-primary-foreground px-3 py-2 rounded-lg shadow-lg text-sm max-w-[200px] animate-pulse cursor-pointer"
+          className="fixed left-16 top-[4.5rem] sm:top-[5rem] md:top-[5rem] lg:top-[6rem] z-40 bg-primary text-primary-foreground px-3 py-2 rounded-lg shadow-lg text-sm max-w-[200px] animate-pulse cursor-pointer"
           onClick={() => {
             setSidebarOpen(true);
             setShowSidebarHint(false);
@@ -350,7 +350,7 @@ export default function AnchoragesPage() {
         onSelectAnchorage={handleSelectAnchorage}
         onSelectDiveSite={handleSelectDiveSite}
         onSelectProtectedArea={handleSelectProtectedArea}
-        className="pt-14 sm:pt-16 md:pt-20 lg:pt-44"
+        className="pt-14 sm:pt-16 md:pt-16 lg:pt-20"
       />
 
       {/* Map */}

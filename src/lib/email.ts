@@ -103,6 +103,7 @@ export function buildIncidentEmailHtml(
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
       <div style="background: #0a1628; padding: 20px 24px; border-radius: 8px 8px 0 0;">
+        <img src="https://www.reportthereef.com/logos/banner-logo.png" alt="Report The Reef" width="220" style="display: block; height: auto; margin-bottom: 12px;" />
         <h1 style="color: #ffffff; margin: 0; font-size: 20px;">New Incident Report</h1>
       </div>
       <div style="background: #ffffff; padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">
@@ -137,6 +138,7 @@ export function buildWildlifeEmailHtml(sighting: Record<string, unknown>): strin
   return `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; color: #1a1a2e;">
       <div style="background: #0a1628; padding: 20px 24px; border-radius: 8px 8px 0 0;">
+        <img src="https://www.reportthereef.com/logos/banner-logo.png" alt="Report The Reef" width="220" style="display: block; height: auto; margin-bottom: 12px;" />
         <h1 style="color: #ffffff; margin: 0; font-size: 20px;">New Wildlife Sighting</h1>
       </div>
       <div style="background: #ffffff; padding: 24px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px;">

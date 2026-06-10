@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Home, AlertTriangle, Anchor, Users, Menu, LogOut, User, Info } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -49,32 +48,24 @@ export function Header() {
           // Tablet: medium size
           "sm:h-16 sm:px-4",
           // Desktop: full size header
-          "md:h-20 md:px-6",
-          "lg:h-44 lg:px-8",
+          "md:h-16 md:px-6",
+          "lg:h-20 lg:px-8",
           // PWA standalone: even more compact on mobile
-          isStandalone && "h-12 sm:h-14 md:h-16 lg:h-36"
+          isStandalone && "h-12 sm:h-14 md:h-14 lg:h-16"
         )}
       >
         {/* Logo */}
         <Link href="/" className="flex items-center group">
-          <Image
-            src="/logo-main.png"
+          <img
+            src="/logos/header-logo.svg"
             alt="Report The Reef"
-            width={450}
-            height={180}
             className={cn(
-              "w-auto object-contain transition-opacity duration-300 group-hover:opacity-90 mix-blend-screen",
-              // Mobile: small logo
-              "h-10",
-              // Tablet: medium logo
-              "sm:h-12",
-              // Desktop: larger logo
-              "md:h-16",
-              "lg:h-36",
-              // PWA standalone: smaller logos
-              isStandalone && "h-8 sm:h-10 md:h-12 lg:h-28"
+              "h-auto object-contain transition-opacity duration-300 group-hover:opacity-90",
+              // Responsive width sizing
+              "w-[150px] sm:w-[160px] md:w-[170px] lg:w-[180px]",
+              // PWA standalone: slightly smaller
+              isStandalone && "w-[130px] sm:w-[140px] md:w-[150px] lg:w-[160px]"
             )}
-            priority
           />
         </Link>
 

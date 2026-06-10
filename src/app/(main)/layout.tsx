@@ -15,7 +15,7 @@ export default function MainLayout({
     <div className="relative flex min-h-screen flex-col">
       <OceanBackground />
       <Header />
-      <main id="main-content" className="flex-1 pt-14 sm:pt-16 md:pt-20 lg:pt-44 pb-20 md:pb-0">
+      <main id="main-content" className="flex-1 pt-14 sm:pt-16 md:pt-16 lg:pt-20 pb-20 md:pb-0">
         <ErrorBoundary>
           {children}
         </ErrorBoundary>

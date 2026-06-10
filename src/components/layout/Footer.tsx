@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 export function Footer() {
@@ -19,12 +18,10 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <Link href="/" className="block">
-              <Image
-                src="/logo-main.png"
+              <img
+                src="/logos/header-logo.svg"
                 alt="Report The Reef"
-                width={180}
-                height={150}
-                className="h-32 w-auto object-contain"
+                className="h-16 w-auto object-contain"
               />
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs">
