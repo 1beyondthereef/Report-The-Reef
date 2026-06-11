@@ -1,6 +1,6 @@
 # REPORT THE REEF — COMPLETE PROJECT HANDOFF
 
-*Last updated: June 10, 2026 (Session 10 — Rebrand: new professional logos across website header/footer, favicon, PWA icons, iOS splash + app icon, and email alerts)*
+*Last updated: June 10, 2026 (Session 11 — Header logo SVG: removed black background rect so the white wordmark sits transparent on the dark header; branded heading font deferred pending license)*
 
 ## What This App Is
 Report The Reef is a web app (PWA) for the BVI (British Virgin Islands) boating community. It runs at https://reportthereef.com
@@ -810,6 +810,22 @@ The OAuth flow opens SFSafariViewController via `Browser.open()`. After the user
 **Path conventions kept (no breaking changes):** PWA icons remain at `public/icons/icon-*.png` (referenced by both `public/manifest.json` and the `icons` block in `src/app/layout.tsx`) — they were regenerated in place, so no manifest/layout path edits were needed. iOS `Contents.json` files for `Splash.imageset` and `AppIcon.appiconset` were unchanged (filenames preserved).
 
 **Verification note:** `next build` and `eslint` both **hang at startup in the Cursor sandbox shell** (0% CPU, stuck at "Creating an optimized production build…") — an environment limitation, not a code issue. Correctness was verified via `tsc --noEmit` (exit 0), which covers the removed imports, JSX validity, and email template types. The `<img>` usage produces a non-failing `@next/next/no-img-element` ESLint **warning** (rule is `warn` under `next/core-web-vitals`). **Recommend running `npm run build` once in Terminal.app before deploy.**
+
+### Session 11 Changes (June 10, 2026) — Header Logo Transparent Background + Font Deferred
+
+**Problem:** The Session 10 `header-logo.svg` (sourced from brand file `ReportTheReefBranding_Logos-02`) showed a dark box behind the wordmark, clashing with the `#0a1628` header.
+
+**Root cause:** The SVG's artwork is already white (every path/polygon/rect uses `class="cls-1"` → `fill: #fff`), but the file also contained a single full-bleed `<rect ... rx="58.02" ... transform="...rotate(90)"/>` with **no `fill` attribute**. SVG defaults unfilled shapes to black, so that rect rendered as a black rounded-rectangle background.
+
+**Fix:** Deleted that one `<rect>` line from `public/logos/header-logo.svg`. The white wordmark is unchanged and now sits transparent on the dark header. Because both `Header.tsx` and `Footer.tsx` reference the same file, both are fixed by this single change — no component edits, no CSS `filter`, no asset swap. Verified the SVG still parses (`xmllint --noout`) and the only remaining `<rect>` is the white artwork element.
+
+**Rejected alternatives (considered, intentionally not used):**
+- **Swapping in `ReportTheReefBranding_Logos-07.svg`** — it's an emblem-only mark (`867×910`, near-square, no "REPORT THE REEF" wordmark). In the header's width-based `<img>` sizing it would render ~190px tall and overflow the 80px (`lg:h-20`) bar. Wrong asset for a horizontal header.
+- **CSS `filter: brightness(0) invert(1)`** — unnecessary since the artwork is already white; it's a workaround for *black* source art.
+
+**Deferred — branded heading font (NOT shipped):** A request to use **MADE Tommy Soft Bold** for the hero "Report The Reef" heading (`src/app/(main)/page.tsx:93`) is **on hold**. The available file (`MADE Tommy Soft Bold PERSONAL USE.otf`) is **personal-use-only**; this site is public/commercial, and `next/font/local` self-hosts the font as a publicly downloadable asset (redistribution) — a license violation. **Blocked until a commercial/web license is obtained.** When unblocked: drop the licensed font into `src/app/fonts/`, add a `localFont` import in `src/app/layout.tsx` with `variable: '--font-made-tommy'`, expose it either via a Tailwind `fontFamily` mapping (e.g. `brand: ["var(--font-made-tommy)"]` → `font-brand`) or inline `style={{ fontFamily: 'var(--font-made-tommy)' }}`, and remove `font-serif font-light` from that specific `<h1>`. Note: a bare `font-made-tommy` class will not work unless the Tailwind `fontFamily` mapping is added (current config only defines sans/serif/mono).
+
+**Deploy note:** The SVG may be browser/CDN-cached — hard-refresh after Vercel redeploys to confirm the dark box is gone in the live header.
 
 ### Critical constraints for future edits
 - **`server.url` must use `https://www.reportthereef.com`** (not the bare domain). The bare domain 307-redirects to `www`, which breaks WKWebView navigation. If the redirect behavior changes, this can be reverted.
