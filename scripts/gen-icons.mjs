@@ -2,7 +2,10 @@
  * gen-icons.mjs — Regenerate all brand-derived image assets from the source logos.
  *
  * Sources (committed in public/logos/):
- *   - app-icon.png    : square-ish icon art (padded to a square #0a1628 canvas here)
+ *   - icon-mark.svg   : icon-only mark (Logo 05) — white art on transparent; composited
+ *                       on #0a1628 here for the favicon + apple-touch-icon
+ *   - app-icon.png    : square-ish icon art (padded to a square #0a1628 canvas here) —
+ *                       still used for the PWA manifest icons + iOS app icon
  *   - splash-logo.png : vertical stacked logo + tagline (for iOS splash)
  *   - banner-logo.svg : horizontal logo + tagline (rasterized to PNG for email)
  *
@@ -21,9 +24,20 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const p = (...parts) => resolve(ROOT, ...parts);
 
 const NAVY = "#0a1628";
+const ICON_MARK_SRC = p("public/logos/icon-mark.svg");
 const APP_ICON_SRC = p("public/logos/app-icon.png");
 const SPLASH_SRC = p("public/logos/splash-logo.png");
 const BANNER_SRC = p("public/logos/banner-logo.svg");
+
+/** Rasterize an SVG (white art on transparent) onto a square #0a1628 canvas at `size`. */
+async function svgToNavyPng(svgPath, size) {
+  const svg = await readFile(svgPath);
+  return sharp(svg, { density: 384 })
+    .resize(size, size, { fit: "contain", background: NAVY })
+    .flatten({ background: NAVY })
+    .png()
+    .toBuffer();
+}
 
 /** Pad the source icon onto a centered square #0a1628 canvas, return a Buffer at `size`. */
 async function squareIcon(size) {
@@ -44,11 +58,15 @@ async function writePng(buf, outPath) {
 }
 
 async function main() {
-  // --- Favicons + apple-touch-icon (Step 4) ---
-  await writePng(await squareIcon(16), p("public/favicon-16.png"));
-  await writePng(await squareIcon(32), p("public/favicon-32.png"));
-  await writePng(await squareIcon(180), p("public/apple-touch-icon.png"));
-  const ico = await pngToIco([await squareIcon(16), await squareIcon(32), await squareIcon(48)]);
+  // --- Favicons + apple-touch-icon (from icon-mark.svg / Logo 05, on navy) ---
+  await writePng(await svgToNavyPng(ICON_MARK_SRC, 16), p("public/favicon-16.png"));
+  await writePng(await svgToNavyPng(ICON_MARK_SRC, 32), p("public/favicon-32.png"));
+  await writePng(await svgToNavyPng(ICON_MARK_SRC, 180), p("public/apple-touch-icon.png"));
+  const ico = await pngToIco([
+    await svgToNavyPng(ICON_MARK_SRC, 16),
+    await svgToNavyPng(ICON_MARK_SRC, 32),
+    await svgToNavyPng(ICON_MARK_SRC, 48),
+  ]);
   await writePng(ico, p("public/favicon.ico"));
 
   // --- PWA manifest icons in place (Step 5) ---
