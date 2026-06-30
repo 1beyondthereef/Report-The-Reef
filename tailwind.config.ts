@@ -84,6 +84,7 @@ const config: Config = {
         sans: ["var(--font-inter)", "system-ui", "-apple-system", "sans-serif"],
         serif: ["var(--font-playfair)", "Georgia", "serif"],
         mono: ["var(--font-geist-mono)", "monospace"],
+        display: ["var(--font-made-tommy)", "var(--font-playfair)", "serif"],
       },
       fontSize: {
         "display-xl": ["4rem", { lineHeight: "1.05", letterSpacing: "-0.025em", fontWeight: "300" }],

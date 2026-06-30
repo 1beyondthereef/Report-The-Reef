@@ -90,7 +90,7 @@ export default function HomePage() {
             </div>
 
             {/* Main heading */}
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight text-foreground mb-6">
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight text-foreground mb-6">
               <span className="text-gradient">Report The Reef</span>
             </h1>
 
@@ -194,7 +194,7 @@ export default function HomePage() {
             "transition-all duration-700 delay-500",
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           )}>
-            <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-light mb-4">
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl mb-4">
               Everything You Need
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
@@ -269,7 +269,7 @@ export default function HomePage() {
             "transition-all duration-700",
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           )}>
-            <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl font-light mb-6">
+            <h2 className="font-display text-3xl md:text-4xl lg:text-5xl mb-6">
               Ready to Make a Difference?
             </h2>
             <p className="text-lg text-muted-foreground mb-10 max-w-xl mx-auto">

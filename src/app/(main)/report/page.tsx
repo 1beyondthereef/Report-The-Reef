@@ -124,7 +124,7 @@ export default function ReportPage() {
             Back
           </Link>
         </Button>
-        <h1 className="font-serif text-3xl md:text-4xl font-light mb-2">Report an Incident</h1>
+        <h1 className="font-display text-3xl md:text-4xl mb-2">Report an Incident</h1>
         <p className="text-muted-foreground text-lg">
           Help protect BVI waters by reporting environmental or safety concerns.
         </p>

@@ -25,6 +25,13 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
+const madeTommy = localFont({
+  src: "./fonts/made_tommy_soft_bold-webfont.woff2",
+  variable: "--font-made-tommy",
+  weight: "700",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: {
     default: "Report The Reef — BVI Marine Conservation",
@@ -93,7 +100,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${playfair.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${inter.variable} ${playfair.variable} ${geistMono.variable} ${madeTommy.variable} font-sans antialiased`}
       >
         <ThemeProvider>
           <AuthProvider>

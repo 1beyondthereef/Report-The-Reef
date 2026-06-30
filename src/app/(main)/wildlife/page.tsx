@@ -239,7 +239,7 @@ export default function WildlifePage() {
             Back
           </Link>
         </Button>
-        <h1 className="font-serif text-3xl md:text-4xl font-light mb-2">Wildlife Sightings</h1>
+        <h1 className="font-display text-3xl md:text-4xl mb-2">Wildlife Sightings</h1>
         <p className="text-muted-foreground text-lg">
           Report marine megafauna and contribute to citizen science!
         </p>
