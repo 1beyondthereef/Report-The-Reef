@@ -130,6 +130,11 @@ export const WILDLIFE_SPECIES = [
   { value: "tiger_shark", label: "Tiger shark", scientific: "Galeocerdo cuvier" },
   { value: "great_hammerhead", label: "Great hammerhead", scientific: "Sphyrna mokarran" },
   { value: "scalloped_hammerhead", label: "Scalloped hammerhead", scientific: "Sphyrna lewini" },
+  { value: "hawksbill_turtle", label: "Hawksbill turtle", scientific: "Eretmochelys imbricata" },
+  { value: "green_turtle", label: "Green turtle", scientific: "Chelonia mydas" },
+  { value: "leatherback_turtle", label: "Leatherback turtle", scientific: "Dermochelys coriacea" },
+  { value: "loggerhead_turtle", label: "Loggerhead turtle", scientific: "Caretta caretta" },
+  { value: "sea_turtle_unidentified", label: "Sea turtle (unidentified)", scientific: "" },
   { value: "unknown", label: "Unknown species", scientific: "" },
 ] as const;
 

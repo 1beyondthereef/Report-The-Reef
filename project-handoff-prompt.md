@@ -827,6 +827,25 @@ The OAuth flow opens SFSafariViewController via `Browser.open()`. After the user
 
 **Deploy note:** The SVG may be browser/CDN-cached — hard-refresh after Vercel redeploys to confirm the dark box is gone in the live header.
 
+**Update (July 2, 2026):** The MADE Tommy Soft Bold font is **no longer deferred — it shipped.** A commercial web license was purchased and the `made_tommy_soft_bold-webfont.woff2` (weight 700) now lives in `src/app/fonts/`. It's registered via `localFont` in `src/app/layout.tsx` (`variable: '--font-made-tommy'`, `display: 'swap'`), exposed as a Tailwind `fontFamily.display` mapping (`display: ["var(--font-made-tommy)", "var(--font-playfair)", "serif"]`), and applied via the `font-display` class on the major public headings (home hero `h1` + two section `h2`s, Report `h1`, Wildlife `h1`), with `font-light` removed from those headings since the face is single-weight 700. CardTitles/form-section titles and admin headings intentionally stay Playfair.
+
+### Session 14 Changes (July 2, 2026) — Wildlife: Add BVI Sea Turtle Species
+
+**Request:** Add sea turtle options to the wildlife sighting species dropdown.
+
+**What was added (5 species, sentence-case labels, inserted before "Unknown species"):** Hawksbill turtle (*Eretmochelys imbricata*), Green turtle (*Chelonia mydas*), Leatherback turtle (*Dermochelys coriacea*), Loggerhead turtle (*Caretta caretta*), and Sea turtle (unidentified).
+
+**Key architecture note — species is a locked enum, not free text.** The dropdown renders from `WILDLIFE_SPECIES` in `src/lib/constants.ts`, but the value is validated by a Zod `z.enum` in `src/lib/validation.ts` (`createWildlifeSightingSchema`). That schema is enforced on **both** the client form and the server API route (`src/app/api/wildlife/route.ts`), and the TS type `CreateWildlifeSightingInput` is `z.infer` of it. **Both files must be edited in lockstep** — adding to `constants.ts` alone would show the options but reject every submission with an invalid-enum error.
+
+**Files changed:**
+- `src/lib/constants.ts` — 5 new entries in `WILDLIFE_SPECIES` (value/label/scientific).
+- `src/lib/validation.ts` — same 5 `value`s added to the `species` `z.enum`.
+- No change needed in `wildlife/page.tsx` or `admin/sightings/page.tsx` — both read `WILDLIFE_SPECIES` dynamically. No separate species "category" is stored, so nothing else maps.
+
+**Dropdown is a flat list** (shadcn `Select` mapping `WILDLIFE_SPECIES` → `SelectItem`). Turtles were appended to the flat list; a grouped "Sea Turtles" section (`SelectGroup`/`SelectLabel`) was considered but declined as a larger refactor.
+
+**Supabase:** The `wildlife_sightings` table is managed in the dashboard (no in-repo migration defines it), and the API inserts `species` as a plain string. If the `species` column is `text`/`varchar` (most likely), **no DB change is needed**. Only if it's a Postgres `enum`/`CHECK` constraint would new values need `ALTER TYPE ... ADD VALUE`. Verify with: `select data_type, udt_name from information_schema.columns where table_name = 'wildlife_sightings' and column_name = 'species';`
+
 ### Critical constraints for future edits
 - **`server.url` must use `https://www.reportthereef.com`** (not the bare domain). The bare domain 307-redirects to `www`, which breaks WKWebView navigation. If the redirect behavior changes, this can be reverted.
 - **Auth allowlists must include both domains.** Supabase site URL, redirect URLs, and Google OAuth authorized origins/redirect URIs must include both `https://reportthereef.com` and `https://www.reportthereef.com`. Supabase redirect URLs must also include `https://www.reportthereef.com/auth/native-callback` for native OAuth flows.

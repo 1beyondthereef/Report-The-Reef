@@ -77,7 +77,9 @@ export const createWildlifeSightingSchema = z.object({
     "humpback_whale", "bottlenose_dolphin", "spinner_dolphin", "atlantic_spotted_dolphin",
     "clymene_dolphin", "rough_toothed_dolphin", "sperm_whale", "cuviers_beaked_whale",
     "dwarf_sperm_whale", "pygmy_sperm_whale", "west_indian_manatee", "short_finned_pilot_whale",
-    "tiger_shark", "great_hammerhead", "scalloped_hammerhead", "unknown"
+    "tiger_shark", "great_hammerhead", "scalloped_hammerhead",
+    "hawksbill_turtle", "green_turtle", "leatherback_turtle", "loggerhead_turtle", "sea_turtle_unidentified",
+    "unknown"
   ]),
   latitude: z.number()
     .min(BVI_BOUNDS.southwest.lat, "Location must be within BVI waters")
